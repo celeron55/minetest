@@ -154,7 +154,19 @@ function nodeupdate_single(p)
 			minetest.env:remove_node(p)
 			spawn_falling_node(p, n.name)
 			nodeupdate(p)
+			return
 		end
+	end
+	
+	if minetest.get_node_group(n.name, "hanging_node") ~= 0 then
+		p_top = {x=p.x, y=p.y+1, z=p.z}
+		n_top = minetest.env:get_node(p_top)
+		if minetest.registered_nodes[n_top.name].walkable == true then return end
+		if minetest.get_node_group(n_top.name, "hanging_node") ~= 0 == false then
+			drop_attached_node(p)
+			nodeupdate(p)
+		end
+		return
 	end
 	
 	if minetest.get_node_group(n.name, "attached_node") ~= 0 then
