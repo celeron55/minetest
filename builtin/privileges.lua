@@ -49,4 +49,5 @@ minetest.register_privilege("noclip", {
 	give_to_singleplayer = false,
 })
 minetest.register_privilege("rollback", "Can use the rollback functionality")
+minetest.register_privilege("regular", "Can join when player count is above max_nonregular_users")
 

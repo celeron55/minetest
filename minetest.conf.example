@@ -216,8 +216,10 @@
 #map-dir = /custom/world
 # Message of the Day
 #motd = Welcome to this awesome Minetest server!
-# Maximum number of players connected simultaneously
+# Maximum number of non-admin players connected simultaneously
 #max_users = 100
+# Maximum number of non-admin players without the "regular" privilege
+#max_nonregular_users = 50
 # Set to true to disallow old clients from connecting
 #strict_protocol_version_checking = false
 # Set to true to enable creative mode (unlimited inventory)

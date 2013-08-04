@@ -1991,12 +1991,37 @@ void Server::ProcessData(u8 *data, u32 datasize, u16 peer_id)
 
 		// Enforce user limit.
 		// Don't enforce for users that have some admin right
-		if(m_clients.size() >= g_settings->getU16("max_users") &&
-				!checkPriv(playername, "server") &&
-				!checkPriv(playername, "ban") &&
-				!checkPriv(playername, "privs") &&
-				!checkPriv(playername, "password") &&
-				playername != g_settings->get("name"))
+		bool is_some_kind_of_admin = (
+				checkPriv(playername, "server") ||
+				checkPriv(playername, "ban") ||
+				checkPriv(playername, "privs") ||
+				checkPriv(playername, "password") ||
+				playername == g_settings->get("name")
+		);
+		bool is_regular = (
+				is_some_kind_of_admin ||
+				checkPriv(playername, "regular")
+		);
+		u32 num_valid_clients = 0;
+		for(std::map<u16, RemoteClient*>::iterator
+			i = m_clients.begin(); i != m_clients.end(); ++i)
+		{
+			RemoteClient *client = i->second;
+			if(!client->denied)
+				num_valid_clients++;
+		}
+		if(!is_regular &&
+				num_valid_clients >= g_settings->getU16("max_nonregular_users"))
+		{
+			actionstream<<"Server: "<<playername<<" tried to join, but there"
+					<<" are already max_nonregular_users="
+					<<g_settings->getU16("max_nonregular_users")
+					<<" players."<<std::endl;
+			DenyAccess(peer_id, L"Too many users.");
+			return;
+		}
+		if(!is_some_kind_of_admin &&
+				num_valid_clients >= g_settings->getU16("max_users"))
 		{
 			actionstream<<"Server: "<<playername<<" tried to join, but there"
 					<<" are already max_users="
