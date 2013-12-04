@@ -40,6 +40,13 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 	#pragma comment(lib, "Shell32.lib")
 #endif
 
+#ifdef _IRR_ANDROID_PLATFORM_
+	#include <android_native_app_glue.h>
+	#include <android/log.h>
+
+	#define APPNAME "Freeminer"
+#endif
+
 #include "irrlicht.h" // createDevice
 
 #include "main.h"
@@ -755,8 +762,14 @@ static void print_worldspecs(const std::vector<WorldSpec> &worldspecs,
 	}
 }
 
+
+#ifdef _IRR_ANDROID_PLATFORM_
+android_app *app_global;
+#endif
+
 int main(int argc, char *argv[])
 {
+	__android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "The value of 1 + 1 is %d", 1+1);
 	int retval = 0;
 
 	/*
@@ -822,6 +835,8 @@ int main(int argc, char *argv[])
 			_("Disable main menu"))));
 #endif
 
+	__android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "FIRST");
+
 	Settings cmd_args;
 
 	bool ret = cmd_args.parseCommandLine(argc, argv, allowed_options);
@@ -848,6 +863,8 @@ int main(int argc, char *argv[])
 
 		return cmd_args.getFlag("help") ? 0 : 1;
 	}
+
+	__android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "SECOND");
 
 	if(cmd_args.getFlag("version"))
 	{
@@ -979,6 +996,8 @@ int main(int argc, char *argv[])
 		// If no path found, use the first one (menu creates the file)
 		if(g_settings_path == "")
 			g_settings_path = filenames[0];
+
+		infostream << "g_settings_path: " << g_settings_path << std::endl;
 	}
 
 	// Initialize debug streams
@@ -1435,6 +1454,10 @@ int main(int argc, char *argv[])
 	params.EventReceiver = &receiver;
 	params.HighPrecisionFPU = g_settings->getBool("high_precision_fpu");
 
+#ifdef _IRR_ANDROID_PLATFORM_
+	params.PrivateData = app_global;
+#endif
+
 	device = createDeviceEx(params);
 
 	if (device == 0)
@@ -1881,5 +1904,12 @@ int main(int argc, char *argv[])
 	return retval;
 }
 
-//END
 
+#ifdef _IRR_ANDROID_PLATFORM_
+void android_main(android_app *app) {
+	app_dummy();
+	app_global = app;
+	char *argv[] = {"freeminer"};
+	main(1, argv);
+}
+#endif
