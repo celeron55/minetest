@@ -29,6 +29,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "../hex.h"
 #include "../porting.h"
 
+#ifdef ANDROID
+int wctomb(char *s, wchar_t wc) { return wcrtomb(s,wc,NULL); }
+int mbtowc(wchar_t *pwc, const char *s, size_t n) { return mbrtowc(pwc, s, n, NULL); }
+#endif
+
 std::wstring narrow_to_wide(const std::string& mbs)
 {
 	size_t wcl = mbs.size();
