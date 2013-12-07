@@ -97,11 +97,7 @@ void set_default_settings(Settings *settings)
 	settings->setDefault("smooth_lighting", "true");
 	settings->setDefault("texture_path", "");
 	settings->setDefault("shader_path", "");
-#ifndef _IRR_ANDROID_PLATFORM_
 	settings->setDefault("video_driver", "opengl");
-#else
-	settings->setDefault("video_driver", "ogles1");
-#endif
 	settings->setDefault("free_move", "false");
 	settings->setDefault("noclip", "false");
 	settings->setDefault("continuous_forward", "false");
@@ -140,11 +136,7 @@ void set_default_settings(Settings *settings)
 	settings->setDefault("water_wave_speed", "5.0");
 	settings->setDefault("enable_waving_leaves", "false");
 	settings->setDefault("enable_waving_plants", "false");
-#ifndef ANDROID
 	settings->setDefault("enable_shaders", "true");
-#else
-	settings->setDefault("enable_shaders", "false");
-#endif
 	settings->setDefault("repeat_rightclick_time", "0.25");
 	settings->setDefault("enable_particles", "true");
 
@@ -310,7 +302,18 @@ void set_default_settings(Settings *settings)
 	settings->setDefault("high_precision_fpu", "true");
 
 	settings->setDefault("language", "");
-	#ifndef ANDROID
+#endif
+
+#ifdef ANDROID
+	settings->setDefault("enable_vbo", "false");
+	settings->setDefault("enable_shaders", "false");
+	settings->setDefault("video_driver", "ogles1");
+
+	// fullscreen
+	settings->setDefault("screenW", "0");
+	settings->setDefault("screenH", "0");
+
+	settings->setDefault("mouse_sensitivity", "0.01");
 	#endif
 }
 
