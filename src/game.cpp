@@ -2515,6 +2515,8 @@ void the_game(
 			d = 4.0;
 		core::line3d<f32> shootline(camera_position,
 				camera_position + camera_direction * BS * (d+1));
+		if (touchscreengui)
+			shootline = touchscreengui->getShootline();
 
 		ClientActiveObject *selected_object = NULL;
 
@@ -3320,9 +3322,9 @@ void the_game(
 		}
 
 		/*
-			Draw crosshair
+			Draw crosshair (only when no touchscreen gui is used)
 		*/
-		if (show_hud)
+		if (show_hud && !touchscreengui)
 			hud.drawCrosshair();
 			
 		} // timer
