@@ -273,6 +273,9 @@ public:
 			return g_menumgr.preprocessEvent(event);
 		}
 
+		if (touchscreengui)
+			touchscreengui->OnEvent(event);
+
 		// Remember whether each key is down or up
 		if(event.EventType == irr::EET_KEY_INPUT_EVENT)
 		{
@@ -284,7 +287,7 @@ public:
 			}
 		}
 
-		if(event.EventType == irr::EET_MOUSE_INPUT_EVENT)
+		if(event.EventType == irr::EET_MOUSE_INPUT_EVENT && !touchscreengui)
 		{
 			if(noMenuActive() == false)
 			{
@@ -321,8 +324,6 @@ public:
 			}
 		}
 
-		if (touchscreengui)
-			touchscreengui->OnEvent(event, &keyIsDown, &keyWasDown);
 		if(event.EventType == irr::EET_LOG_TEXT_EVENT)
 		{
 			dstream<<"Irrlicht log: "<<event.LogEvent.Text<<std::endl;
@@ -333,7 +334,6 @@ public:
 		{
 			dstream<<"Touch event"<<std::endl;
 		}
-
 		return false;
 	}
 
@@ -1526,8 +1526,14 @@ int main(int argc, char *argv[])
 	InputHandler *input = NULL;
 	if(random_input)
 		input = new RandomInputHandler();
-	else
-		input = new RealInputHandler(device, &receiver);
+	else {
+		if (g_settings->getBool("touchscreen")) {
+			touchscreengui = new TouchScreenGUI(device);
+			input = touchscreengui;
+		}
+		else
+			input = new RealInputHandler(device, &receiver);
+	}
 
 	scene::ISceneManager* smgr = device->getSceneManager();
 
