@@ -302,6 +302,8 @@ void set_default_settings(Settings *settings)
 	settings->setDefault("high_precision_fpu", "true");
 
 	settings->setDefault("language", "");
+	settings->setDefault("touchscreen", "0");
+
 #endif
 
 #ifdef ANDROID
@@ -313,9 +315,11 @@ void set_default_settings(Settings *settings)
 	settings->setDefault("screenW", "0");
 	settings->setDefault("screenH", "0");
 
-	settings->setDefault("mouse_sensitivity", "0.01");
+	settings->setDefault("mouse_sensitivity", "0.2");
 
 	settings->setDefault("viewing_range_nodes_max", "64");
+
+	settings->setDefault("touchscreen", "1");
 	#endif
 }
 
