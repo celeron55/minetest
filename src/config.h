@@ -24,7 +24,13 @@
 #define USE_FREETYPE 0
 #define STATIC_SHAREDIR ""
 //#define STATIC_SHAREDIR "/opt/sdk/test3/usr/share/minetest"
+
+#ifdef ANDROID
+// android builds will use leveldb by default because for some reason sqlite doesn't work very well
+#define USE_LEVELDB 1
+#else
 #define USE_LEVELDB 0
+#endif
 #define USE_LUAJIT 0
 
 #ifdef USE_CMAKE_CONFIG_H
