@@ -1852,11 +1852,10 @@ void GUIFormSpecMenu::drawMenu()
 		}
 	}
 
-	#ifndef ANDROID
-	m_pointer = m_device->getCursorControl()->getPosition();
-	#else
-	m_pointer = v2s32(0, 0);
-	#endif
+	if (touchscreengui)
+		m_pointer = touchscreengui->getMousePos();
+	else
+		m_pointer = m_device->getCursorControl()->getPosition();
 
 	updateSelectedItem();
 
@@ -2430,6 +2429,19 @@ bool GUIFormSpecMenu::OnEvent(const SEvent& event)
 		else if(event.MouseInput.Event == EMIE_MMOUSE_LEFT_UP)
 			{ button = 2; updown = 1; }
 
+		if (touchscreengui) {
+			updown = 0;
+			if (touchscreengui->isSingleClick())
+				button = 0;
+			else if (touchscreengui->isDoubleClick())
+				button = 1;
+			else
+				// no click
+				updown = 2;
+			if (updown != 2)
+				touchscreengui->resetClicks();
+		}
+
 		// Set this number to a positive value to generate a move action
 		// from m_selected_item to s.
 		u32 move_amount = 0;
@@ -2635,6 +2647,8 @@ bool GUIFormSpecMenu::OnEvent(const SEvent& event)
 			m_selected_dragging = false;
 			m_selected_content_guess = ItemStack();
 		}
+
+		// TODO: force redraw when touchscreengui is enabled?
 	}
 	if(event.EventType==EET_GUI_EVENT)
 	{
