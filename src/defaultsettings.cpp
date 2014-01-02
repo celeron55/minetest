@@ -326,8 +326,8 @@ void set_default_settings(Settings *settings)
 	settings->setDefault("enable_shaders", "false");
 	settings->setDefault("video_driver", "ogles2");
 
-	settings->setDefault("screenW", "960");
-	settings->setDefault("screenH", "540");
+	settings->setDefault("screenW", "540");
+	settings->setDefault("screenH", "960");
 
 	settings->setDefault("mouse_sensitivity", "0.2");
 
