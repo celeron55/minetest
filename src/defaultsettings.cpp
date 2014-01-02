@@ -331,10 +331,13 @@ void set_default_settings(Settings *settings)
 
 	settings->setDefault("mouse_sensitivity", "0.2");
 
-	//settings->setDefault("viewing_range_nodes_max", "10");
-	//settings->setDefault("viewing_range_nodes_min", "10");
+	settings->setDefault("viewing_range_nodes_max", "50");
+	settings->setDefault("viewing_range_nodes_min", "20");
 
 	settings->setDefault("touchscreen", "1");
+
+	settings->setDefault("enable_3d_clouds", "false");
+	settings->setDefault("new_style_leaves", "false");
 #endif
 }
 
