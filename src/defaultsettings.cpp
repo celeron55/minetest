@@ -321,7 +321,7 @@ void set_default_settings(Settings *settings)
 	settings->setDefault("touchscreen", "1");
 #endif
 
-#ifdef _IRR_SAILFISH_PLATFORM_
+#ifdef SAILFISH
 	settings->setDefault("enable_vbo", "false");
 	settings->setDefault("enable_shaders", "false");
 	settings->setDefault("video_driver", "ogles2");
