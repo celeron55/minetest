@@ -63,7 +63,7 @@ TouchScreenGUI::TouchScreenGUI(IrrlichtDevice *device):
 }
 
 void TouchScreenGUI::init() {
-	u32 control_pad_size = (2 * m_screensize.Y) / 3;
+	u32 control_pad_size = (2 * std::min(m_screensize.Y, m_screensize.X)) / 3;
 	u32 button_size = control_pad_size / 3;
 	m_down = false;
 	m_digging = false;
