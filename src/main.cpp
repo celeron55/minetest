@@ -330,10 +330,6 @@ public:
 			return true;
 		}
 
-		if(event.EventType == EET_MULTI_TOUCH_EVENT)
-		{
-			dstream<<"Touch event"<<std::endl;
-		}
 		return false;
 	}
 
