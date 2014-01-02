@@ -70,7 +70,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <list>
 #include "util/directiontables.h"
 #include "util/pointedthing.h"
-#include "mainwindow.h"
 
 /*
 	Text input system
@@ -1100,7 +1099,6 @@ void the_game(
 		u32 lasttime = device->getTimer()->getTime();
 		while(device->run())
 		{
-			g_main_application->processEvents();
 			f32 dtime = 0.033; // in seconds
 			if (cloud_menu_background) {
 				u32 time = device->getTimer()->getTime();
@@ -1195,7 +1193,6 @@ void the_game(
 		u32 lasttime = device->getTimer()->getTime();
 		while(device->run())
 		{
-			g_main_application->processEvents();
 			f32 dtime = 0.033; // in seconds
 			if (cloud_menu_background) {
 				u32 time = device->getTimer()->getTime();
@@ -3385,7 +3382,6 @@ void the_game(
 			driver->endScene();
 			endscenetime = timer.stop(true);
 		}
-		g_main_application->processEvents();
 
 		drawtime = tt_draw.stop(true);
 		g_profiler->graphAdd("mainloop_draw", (float)drawtime/1000.0f);

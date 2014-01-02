@@ -91,7 +91,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <qpa/qplatformnativeinterface.h>
 #include <QDebug>
 #include <QTimer>
-#include "mainwindow.h"
 
 /*
 	Settings.
@@ -743,33 +742,6 @@ static void print_worldspecs(const std::vector<WorldSpec> &worldspecs,
 		name = padStringRight(name, 14);
 		os<<"  "<<name<<" "<<path<<std::endl;
 	}
-}
-
-MainApplication *g_main_application = NULL; // mainwindow.h
-
-void MainApplication::update()
-{
-    //dstream<<"update"<<std::endl;
-    /*device->run();
-
-    IVideoDriver* driver = device->getVideoDriver();
-    ISceneManager* smgr = device->getSceneManager();
-    IGUIEnvironment* guienv = device->getGUIEnvironment();
-
-    driver->beginScene(true, true,
-            SColor(255,100,101,bcolor<0x80?bcolor*2:0xff-bcolor*2));
-    bcolor = (bcolor+1) & 0xff;
-
-    smgr->drawAll();
-    guienv->drawAll();
-
-    driver->endScene();*/
-}
-
-void MainApplication::requestQuit()
-{
-    dstream<<"requestQuit"<<std::endl;
-    device->closeDevice();
 }
 
 int main(int argc, char *argv[])
@@ -1436,28 +1408,6 @@ int main(int argc, char *argv[])
 	}
 
 	/*
-		Qt stuff to keep Sailfish happy
-	*/
-
-	MainApplication *app = new MainApplication(argc, argv);
-	g_main_application = app;
-    app->setQuitOnLastWindowClosed(false);
-    MainWindow *window = new MainWindow(app->primaryScreen());
-    window->show();
-
-    QObject::connect(window, SIGNAL(lolClose()), app, SLOT(requestQuit()));
-
-    QPlatformNativeInterface *native = app->platformNativeInterface();
-
-    struct wl_surface *surface = static_cast<struct wl_surface *>(
-            native->nativeResourceForWindow("surface", window));
-    dstream<<"surface: "<<surface<<std::endl;
-
-    struct wl_display *display = static_cast<struct wl_display *>(
-            native->nativeResourceForWindow("display", window));
-    dstream<<"display: "<<display<<std::endl;
-
-	/*
 		Create device and exit if creation failed
 	*/
 
@@ -1473,8 +1423,6 @@ int main(int argc, char *argv[])
 	params.Vsync         = vsync;
 	params.EventReceiver = &receiver;
 	params.HighPrecisionFPU = g_settings->getBool("high_precision_fpu");
-    params.WindowId = surface; // For Sailfish
-    params.DisplayId = display; // For Sailfish
 
 	device = createDeviceEx(params);
 
@@ -1699,7 +1647,6 @@ int main(int argc, char *argv[])
 								video::SColor(255,128,128,128));
 						guienv->drawAll();
 						driver->endScene();
-						g_main_application->processEvents();
 						// On some computers framerate doesn't seem to be
 						// automatically limited
 						sleep_ms(25);

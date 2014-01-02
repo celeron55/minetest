@@ -39,8 +39,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <curl/curl.h>
 #endif
 
-#include "mainwindow.h"
-
 /******************************************************************************/
 /** TextDestGuiEngine                                                         */
 /******************************************************************************/
@@ -284,7 +282,6 @@ void GUIEngine::run()
 		m_device->getGUIEnvironment()->drawAll();
 
 		driver->endScene();
-		g_main_application->processEvents();
 
 		if (m_clouds_enabled)
 			cloudPostProcess();

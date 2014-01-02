@@ -166,8 +166,8 @@ else()
 	find_library(XXF86VM_LIBRARY Xxf86vm)
 	mark_as_advanced(XXF86VM_LIBRARY)
 	set(CLIENT_PLATFORM_LIBS ${CLIENT_PLATFORM_LIBS} ${XXF86VM_LIBRARY})
-	set(CLIENT_PLATFORM_LIBS ${CLIENT_PLATFORM_LIBS} -lQt5Widgets -lQt5PlatformSupport -lQt5Gui -lQt5Core)
 	set(CLIENT_PLATFORM_LIBS ${CLIENT_PLATFORM_LIBS} -lGLESv2 -lEGL -lwayland-client -lwayland-egl)
+	set(CLIENT_PLATFORM_LIBS ${CLIENT_PLATFORM_LIBS} -lGLESv2 -lSDL2)
 endif()
 
 find_package(Sqlite3 REQUIRED)
@@ -426,12 +426,8 @@ endif(USE_CURL)
 set(EXECUTABLE_OUTPUT_PATH "${CMAKE_SOURCE_DIR}/bin")
 
 if(BUILD_CLIENT)
-	add_executable(${PROJECT_NAME} ${minetest_SRCS} moc_mainwindow.cpp)
+	add_executable(${PROJECT_NAME} ${minetest_SRCS)
 	add_dependencies(${PROJECT_NAME} GenerateVersion)
-	#add_dependencies(${PROJECT_NAME} GenerateVersion moc_mainwindow.cpp)
-	add_custom_command(OUTPUT moc_mainwindow.cpp
-			COMMAND moc ${CMAKE_SOURCE_DIR}/src/mainwindow.h -o ${PROJECT_BINARY_DIR}/moc_mainwindow.cpp
-			DEPENDS ${CMAKE_SOURCE_DIR}/src/mainwindow.h COMMENT "moc")
 	target_link_libraries(
 		${PROJECT_NAME}
 		${ZLIB_LIBRARIES}
