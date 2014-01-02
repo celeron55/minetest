@@ -86,6 +86,13 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "database-leveldb.h"
 #endif
 
+#include <QApplication>
+#include <QWindow>
+#include <qpa/qplatformnativeinterface.h>
+#include <QDebug>
+#include <QTimer>
+#include "mainwindow.h"
+
 /*
 	Settings.
 	These are loaded from the config file.
@@ -738,6 +745,33 @@ static void print_worldspecs(const std::vector<WorldSpec> &worldspecs,
 	}
 }
 
+MainApplication *g_main_application = NULL; // mainwindow.h
+
+void MainApplication::update()
+{
+    //dstream<<"update"<<std::endl;
+    /*device->run();
+
+    IVideoDriver* driver = device->getVideoDriver();
+    ISceneManager* smgr = device->getSceneManager();
+    IGUIEnvironment* guienv = device->getGUIEnvironment();
+
+    driver->beginScene(true, true,
+            SColor(255,100,101,bcolor<0x80?bcolor*2:0xff-bcolor*2));
+    bcolor = (bcolor+1) & 0xff;
+
+    smgr->drawAll();
+    guienv->drawAll();
+
+    driver->endScene();*/
+}
+
+void MainApplication::requestQuit()
+{
+    dstream<<"requestQuit"<<std::endl;
+    device->closeDevice();
+}
+
 int main(int argc, char *argv[])
 {
 	int retval = 0;
@@ -1218,18 +1252,18 @@ int main(int argc, char *argv[])
 			Settings world_mt;
 			bool success = world_mt.readConfigFile((world_path + DIR_DELIM + "world.mt").c_str());
 			if (!success) {
-				errorstream << "Cannot read world.mt" << std::endl;
+				errorstream<<"Cannot read world.mt"<<std::endl;
 				return 1;
 			}
 			if (!world_mt.exists("backend")) {
-				errorstream << "Please specify your current backend in world.mt file:"
-					<< std::endl << "	backend = {sqlite3|leveldb|dummy}" << std::endl;
+				errorstream<<"Please specify your current backend in world.mt file:"
+					<< std::endl<<"	backend = {sqlite3|leveldb|dummy}"<<std::endl;
 				return 1;
 			}
 			std::string backend = world_mt.get("backend");
 			Database *new_db;
 			if (backend == migrate_to) {
-				errorstream << "Cannot migrate: new backend is same as the old one" << std::endl;
+				errorstream<<"Cannot migrate: new backend is same as the old one"<<std::endl;
 				return 1;
 			}
 			if (migrate_to == "sqlite3")
@@ -1239,7 +1273,7 @@ int main(int argc, char *argv[])
 				new_db = new Database_LevelDB(&(ServerMap&)server.getMap(), world_path);
 			#endif
 			else {
-				errorstream << "Migration to " << migrate_to << " is not supported" << std::endl;
+				errorstream<<"Migration to "<<migrate_to<<" is not supported"<<std::endl;
 				return 1;
 			}
 
@@ -1255,12 +1289,12 @@ int main(int argc, char *argv[])
 				sector->deleteBlock(block);
 				++count;
 				if (count % 500 == 0)
-					actionstream << "Migrated " << count << " blocks "
-						<< (100.0 * count / blocks.size()) << "% completed" << std::endl;
+					actionstream<<"Migrated "<<count<<" blocks "
+						<< (100.0 * count / blocks.size())<<"% completed"<<std::endl;
 			}
 			new_db->endSave();
 
-			actionstream << "Successfully migrated " << count << " blocks" << std::endl;
+			actionstream<<"Successfully migrated "<<count<<" blocks"<<std::endl;
 			world_mt.set("backend", migrate_to);
 			if(!world_mt.updateConfigFile((world_path + DIR_DELIM + "world.mt").c_str()))
 				errorstream<<"Failed to update world.mt!"<<std::endl;
@@ -1328,7 +1362,7 @@ int main(int argc, char *argv[])
 		driverType = video::EDT_DIRECT3D8;
 	else if(driverstring == "direct3d9")
 		driverType = video::EDT_DIRECT3D9;
-	else if(driverstring == "opengl")
+    else if(driverstring == "opengl")
 		driverType = video::EDT_OPENGL;
 #ifdef _IRR_COMPILE_WITH_OGLES1_
 	else if(driverstring == "ogles1")
@@ -1338,7 +1372,7 @@ int main(int argc, char *argv[])
 	else if(driverstring == "ogles2")
 		driverType = video::EDT_OGLES2;
 #endif
-	else
+    else
 	{
 		errorstream<<"WARNING: Invalid video_driver specified; defaulting "
 				"to opengl"<<std::endl;
@@ -1402,6 +1436,28 @@ int main(int argc, char *argv[])
 	}
 
 	/*
+		Qt stuff to keep Sailfish happy
+	*/
+
+	MainApplication *app = new MainApplication(argc, argv);
+	g_main_application = app;
+    app->setQuitOnLastWindowClosed(false);
+    MainWindow *window = new MainWindow(app->primaryScreen());
+    window->show();
+
+    QObject::connect(window, SIGNAL(lolClose()), app, SLOT(requestQuit()));
+
+    QPlatformNativeInterface *native = app->platformNativeInterface();
+
+    struct wl_surface *surface = static_cast<struct wl_surface *>(
+            native->nativeResourceForWindow("surface", window));
+    dstream<<"surface: "<<surface<<std::endl;
+
+    struct wl_display *display = static_cast<struct wl_display *>(
+            native->nativeResourceForWindow("display", window));
+    dstream<<"display: "<<display<<std::endl;
+
+	/*
 		Create device and exit if creation failed
 	*/
 
@@ -1417,6 +1473,8 @@ int main(int argc, char *argv[])
 	params.Vsync         = vsync;
 	params.EventReceiver = &receiver;
 	params.HighPrecisionFPU = g_settings->getBool("high_precision_fpu");
+    params.WindowId = surface; // For Sailfish
+    params.DisplayId = display; // For Sailfish
 
 	device = createDeviceEx(params);
 
@@ -1641,6 +1699,7 @@ int main(int argc, char *argv[])
 								video::SColor(255,128,128,128));
 						guienv->drawAll();
 						driver->endScene();
+						g_main_application->processEvents();
 						// On some computers framerate doesn't seem to be
 						// automatically limited
 						sleep_ms(25);

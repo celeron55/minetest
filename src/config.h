@@ -6,13 +6,24 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#define PROJECT_NAME "Minetest"
+//#define PROJECT_NAME "Minetest"
+//#define RUN_IN_PLACE 0
+//#define USE_GETTEXT 0
+//#define USE_SOUND 0
+//#define USE_CURL 0
+//#define USE_FREETYPE 0
+//#define STATIC_SHAREDIR ""
+//#define USE_LEVELDB 0
+//#define USE_LUAJIT 0
+
+#define PROJECT_NAME "minetest"
 #define RUN_IN_PLACE 0
 #define USE_GETTEXT 0
 #define USE_SOUND 0
 #define USE_CURL 0
 #define USE_FREETYPE 0
 #define STATIC_SHAREDIR ""
+//#define STATIC_SHAREDIR "/opt/sdk/test3/usr/share/minetest"
 #define USE_LEVELDB 0
 #define USE_LUAJIT 0
 

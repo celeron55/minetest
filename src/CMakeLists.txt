@@ -142,11 +142,11 @@ if(WIN32)
 else()
 	# Unix probably
 	if(BUILD_CLIENT)
-		find_package(X11 REQUIRED)
-		find_package(OpenGL REQUIRED)
-		find_package(JPEG REQUIRED)
-		find_package(BZip2 REQUIRED)
-		find_package(PNG REQUIRED)
+		#find_package(X11 REQUIRED)
+		#find_package(OpenGL REQUIRED)
+		#find_package(JPEG REQUIRED)
+		#find_package(BZip2 REQUIRED)
+		#find_package(PNG REQUIRED)
 		if(APPLE)
 			FIND_LIBRARY(CARBON_LIB Carbon)
 			FIND_LIBRARY(COCOA_LIB Cocoa)
@@ -166,6 +166,8 @@ else()
 	find_library(XXF86VM_LIBRARY Xxf86vm)
 	mark_as_advanced(XXF86VM_LIBRARY)
 	set(CLIENT_PLATFORM_LIBS ${CLIENT_PLATFORM_LIBS} ${XXF86VM_LIBRARY})
+	set(CLIENT_PLATFORM_LIBS ${CLIENT_PLATFORM_LIBS} -lQt5Widgets -lQt5PlatformSupport -lQt5Gui -lQt5Core)
+	set(CLIENT_PLATFORM_LIBS ${CLIENT_PLATFORM_LIBS} -lGLESv2 -lEGL -lwayland-client -lwayland-egl)
 endif()
 
 find_package(Sqlite3 REQUIRED)
@@ -400,6 +402,11 @@ include_directories(
 	${SQLITE3_INCLUDE_DIR}
 	${LUA_INCLUDE_DIR}
 	${JSON_INCLUDE_DIR}
+	/usr/include/qt5
+	/usr/include/qt5/QtWidgets
+	/usr/include/qt5/QtCore
+	/usr/include/qt5/QtGui
+	/usr/include/qt5/QtGui/5.1.0/QtGui
 	${PROJECT_SOURCE_DIR}/script
 )
 
@@ -419,8 +426,12 @@ endif(USE_CURL)
 set(EXECUTABLE_OUTPUT_PATH "${CMAKE_SOURCE_DIR}/bin")
 
 if(BUILD_CLIENT)
-	add_executable(${PROJECT_NAME} ${minetest_SRCS})
+	add_executable(${PROJECT_NAME} ${minetest_SRCS} moc_mainwindow.cpp)
 	add_dependencies(${PROJECT_NAME} GenerateVersion)
+	#add_dependencies(${PROJECT_NAME} GenerateVersion moc_mainwindow.cpp)
+	add_custom_command(OUTPUT moc_mainwindow.cpp
+			COMMAND moc ${CMAKE_SOURCE_DIR}/src/mainwindow.h -o ${PROJECT_BINARY_DIR}/moc_mainwindow.cpp
+			DEPENDS ${CMAKE_SOURCE_DIR}/src/mainwindow.h COMMENT "moc")
 	target_link_libraries(
 		${PROJECT_NAME}
 		${ZLIB_LIBRARIES}
@@ -532,6 +543,8 @@ else()
 		set(CMAKE_OSX_ARCHITECTURES i386 CACHE STRING "do not build for 64-bit" FORCE)
 		set(ARCH i386)
 	endif()
+
+	set(OTHER_FLAGS "${OTHER_FLAGS} -fPIC")
 
 	set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG ${RELEASE_WARNING_FLAGS} ${WARNING_FLAGS} ${OTHER_FLAGS} -O3 -ffast-math -Wall -fomit-frame-pointer -pipe -funroll-loops")
 	set(CMAKE_CXX_FLAGS_DEBUG "-g -O1 -Wall ${WARNING_FLAGS} ${OTHER_FLAGS}")

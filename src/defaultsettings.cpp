@@ -97,7 +97,7 @@ void set_default_settings(Settings *settings)
 	settings->setDefault("smooth_lighting", "true");
 	settings->setDefault("texture_path", "");
 	settings->setDefault("shader_path", "");
-	settings->setDefault("video_driver", "opengl");
+    settings->setDefault("video_driver", "ogles2");
 	settings->setDefault("free_move", "false");
 	settings->setDefault("noclip", "false");
 	settings->setDefault("continuous_forward", "false");
@@ -136,7 +136,7 @@ void set_default_settings(Settings *settings)
 	settings->setDefault("water_wave_speed", "5.0");
 	settings->setDefault("enable_waving_leaves", "false");
 	settings->setDefault("enable_waving_plants", "false");
-	settings->setDefault("enable_shaders", "true");
+    settings->setDefault("enable_shaders", "false");
 	settings->setDefault("repeat_rightclick_time", "0.25");
 	settings->setDefault("enable_particles", "true");
 
@@ -172,7 +172,7 @@ void set_default_settings(Settings *settings)
 	// Server stuff
 	// "map-dir" doesn't exist by default.
 	settings->setDefault("port", "30000");
-	settings->setDefault("default_game", "minetest");
+    settings->setDefault("default_game", "minimal");
 	settings->setDefault("motd", "");
 	settings->setDefault("max_users", "15");
 	settings->setDefault("strict_protocol_version_checking", "false");
