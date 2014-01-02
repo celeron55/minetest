@@ -304,8 +304,6 @@ void set_default_settings(Settings *settings)
 	settings->setDefault("language", "");
 	settings->setDefault("touchscreen", "0");
 
-#endif
-
 #ifdef ANDROID
 	settings->setDefault("enable_vbo", "false");
 	settings->setDefault("enable_shaders", "false");
@@ -321,7 +319,24 @@ void set_default_settings(Settings *settings)
 	settings->setDefault("viewing_range_nodes_min", "10");
 
 	settings->setDefault("touchscreen", "1");
-	#endif
+#endif
+
+#ifdef _IRR_SAILFISH_PLATFORM_
+	settings->setDefault("enable_vbo", "false");
+	settings->setDefault("enable_shaders", "false");
+	settings->setDefault("video_driver", "ogles2");
+
+	// fullscreen
+	settings->setDefault("screenW", "0");
+	settings->setDefault("screenH", "0");
+
+	settings->setDefault("mouse_sensitivity", "0.2");
+
+	//settings->setDefault("viewing_range_nodes_max", "10");
+	//settings->setDefault("viewing_range_nodes_min", "10");
+
+	settings->setDefault("touchscreen", "1");
+#endif
 }
 
 void override_default_settings(Settings *settings, Settings *from)
