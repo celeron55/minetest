@@ -309,6 +309,17 @@ public:
 			}
 		}
 
+		if(event.EventType == irr::EET_LOG_TEXT_EVENT)
+		{
+			dstream<<"Irrlicht log: "<<event.LogEvent.Text<<std::endl;
+			return true;
+		}
+
+		if(event.EventType == EET_MULTI_TOUCH_EVENT)
+		{
+			dstream<<"Touch event"<<std::endl;
+		}
+
 		return false;
 	}
 

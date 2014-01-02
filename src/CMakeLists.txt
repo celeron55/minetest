@@ -426,7 +426,7 @@ endif(USE_CURL)
 set(EXECUTABLE_OUTPUT_PATH "${CMAKE_SOURCE_DIR}/bin")
 
 if(BUILD_CLIENT)
-	add_executable(${PROJECT_NAME} ${minetest_SRCS)
+	add_executable(${PROJECT_NAME} ${minetest_SRCS})
 	add_dependencies(${PROJECT_NAME} GenerateVersion)
 	target_link_libraries(
 		${PROJECT_NAME}
