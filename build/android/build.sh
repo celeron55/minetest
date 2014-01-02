@@ -39,12 +39,12 @@ echo ">> Building Irrlicht"
 cd $ROOT/deps/irrlicht/source/Irrlicht/Android/
 $ANDROID_NDK/ndk-build NDEBUG=$NDEBUG -j8 || exit 1
 
-echo ">> Building Freeminer"
+echo ">> Building Minetest"
 cd $ROOT
 $ANDROID_NDK/ndk-build NDEBUG=$NDEBUG -j8 || exit 1
 ant debug || exit 1
 
 echo "++ Success!"
-echo "APK: bin/Freeminer-debug.apk"
-echo "You can install it with \`adb install -r bin/Freeminer-debug.apk\`"
+echo "APK: bin/Minetest-debug.apk"
+echo "You can install it with \`adb install -r bin/Minetest-debug.apk\`"
 echo "or build a release version with \`ant release\`"

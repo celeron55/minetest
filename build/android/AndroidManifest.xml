@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-	package="org.freeminer"
+	package="org.minetest"
 	android:versionCode="1"
 	android:versionName="0.4.8.0">
 	<uses-sdk android:minSdkVersion="9"/>
@@ -9,14 +9,14 @@
 	<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 	<uses-permission android:name="android.permission.SET_DEBUG_APP" />
-	<application android:icon="@drawable/irr_icon" android:label="Freeminer" android:theme="@android:style/Theme.NoTitleBar.Fullscreen" android:debuggable="true">
+	<application android:icon="@drawable/irr_icon" android:label="Minetest" android:theme="@android:style/Theme.NoTitleBar.Fullscreen" android:debuggable="true">
         <activity android:name="android.app.NativeActivity"
-		android:label="Freeminer"
+		android:label="Minetest"
 		android:launchMode="singleTask"
 		android:configChanges="orientation|keyboardHidden"
 		android:screenOrientation="landscape"
 		android:clearTaskOnLaunch="true">
-		<meta-data android:name="android.app.lib_name" android:value="Freeminer" />
+		<meta-data android:name="android.app.lib_name" android:value="Minetest" />
 		<intent-filter>
                 	<action android:name="android.intent.action.MAIN" />
                 	<category android:name="android.intent.category.LAUNCHER" />

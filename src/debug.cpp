@@ -30,7 +30,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #ifdef ANDROID
 #include <android/log.h>
-#define APPNAME "Freeminer"
+#define APPNAME "Minetest"
 #endif
 
 /*

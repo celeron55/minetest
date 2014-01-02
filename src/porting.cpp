@@ -467,8 +467,8 @@ void initializePaths()
 #ifndef _IRR_ANDROID_PLATFORM_
 	path_user = std::string(getenv("HOME")) + "/." + PROJECT_NAME;
 #else
-	path_user = std::string("/sdcard/freeminer/");
-	path_share = std::string("/sdcard/freeminer/");
+	path_user = std::string("/sdcard/minetest/");
+	path_share = std::string("/sdcard/minetest/");
 #endif
 
 	infostream << path_user << std::endl;

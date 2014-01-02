@@ -1,7 +1,7 @@
 # NDK_TOOLCHAIN_VERSION := clang3.3
 
 APP_PLATFORM := android-10
-APP_MODULES := Freeminer
+APP_MODULES := Minetest
 APP_STL := gnustl_static
 
 APP_CPPFLAGS += -fexceptions

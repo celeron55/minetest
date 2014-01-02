@@ -29,7 +29,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #ifdef _IRR_ANDROID_PLATFORM_
 	#include <android/log.h>
-	#define APPNAME "Freeminer"
+	#define APPNAME "Minetest"
 #endif
 
 std::list<ILogOutput*> log_outputs[LMT_NUM_VALUES];

@@ -44,7 +44,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 	#include <android_native_app_glue.h>
 	#include <android/log.h>
 
-	#define APPNAME "Freeminer"
+	#define APPNAME "Minetest"
 #endif
 
 #include "irrlicht.h" // createDevice
@@ -1948,7 +1948,7 @@ int main(int argc, char *argv[])
 void android_main(android_app *app) {
 	app_dummy();
 	app_global = app;
-	char *argv[] = {"freeminer"/*, "--worldname", "test", "--go", "--random-input"*/};
+	char *argv[] = {"minetest"/*, "--worldname", "test", "--go", "--random-input"*/};
 	main(sizeof(argv) / sizeof(argv[0]), argv);
 }
 #endif
