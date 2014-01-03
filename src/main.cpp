@@ -111,9 +111,12 @@ void launch_keyboard()
 	}
 
 	QDBusConnection bus = QDBusConnection::sessionBus();
-	QDBusInterface dbus_iface("org.freedesktop.DBus", "/org/freedesktop/DBus",
-				   "org.freedesktop.DBus", bus);
-	qDebug() << dbus_iface.call("ListNames").arguments().at(0);
+	QDBusInterface dbus_iface("org.maliit.server",
+			"/org/maliit/server/address",
+			"org.freedesktop.DBus.Properties", bus);
+	QDBusReply<QVariant> reply = dbus_iface.call("Get",
+			QString("org.maliit.Server.Address"), QString("address"));
+	qDebug() << reply.value().toString();
 }
 #endif
 
