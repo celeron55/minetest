@@ -1,6 +1,9 @@
 Building Minetest on Sailfish
 =============================
 
+irrlicht/ogl-es available at:
+http://sourceforge.net/p/irrlicht/code/HEAD/tree/branches/
+
 cd build-arm
 sb2 cmake .. -DIRRLICHT_INCLUDE_DIR=../../irrlicht-git/include \
 	-DIRRLICHT_LIBRARY=../../irrlicht-git/lib/Linux/libIrrlicht.a \
