@@ -110,13 +110,32 @@ void launch_keyboard()
 		return;
 	}
 
-	QDBusConnection bus = QDBusConnection::sessionBus();
-	QDBusInterface dbus_iface("org.maliit.server",
-			"/org/maliit/server/address",
-			"org.freedesktop.DBus.Properties", bus);
-	QDBusReply<QVariant> reply = dbus_iface.call("Get",
-			QString("org.maliit.Server.Address"), QString("address"));
-	qDebug() << reply.value().toString();
+	QString maliit_address;
+	{
+		QDBusConnection bus = QDBusConnection::sessionBus();
+		QDBusInterface dbus_iface("org.maliit.server",
+				"/org/maliit/server/address",
+				"org.freedesktop.DBus.Properties", bus);
+		QDBusReply<QVariant> reply = dbus_iface.call("Get",
+				QString("org.maliit.Server.Address"), QString("address"));
+		maliit_address = reply.value().toString();
+		qDebug() << "maliit server address:" << maliit_address;
+	}
+	{
+		QDBusConnection bus = QDBusConnection::connectToPeer(
+				maliit_address, "Maliit::IMServerConnection");
+		if(!bus.isConnected()){
+			dstream<<"Failed to connect to "
+					<<maliit_address.toLocal8Bit().constData()<<std::endl;
+			return;
+		}
+		dstream<<"Connected to maliit private dbus"<<std::endl;
+
+		QDBusInterface dbus_iface("", "/com/meego/inputmethod/uiserver1",
+				"com.meego.inputmethod.uiserver1", bus);
+		QDBusMessage reply = dbus_iface.call("showInputMethod");
+		qDebug() << "showInputMethod reply: " << reply;
+	}
 }
 #endif
 
@@ -1634,7 +1653,7 @@ int main(int argc, char *argv[])
 	// TODO: Remove
 #ifdef SAILFISH
 	launch_keyboard();
-	return 0;
+	//return 0;
 #endif
 
 	/*
