@@ -95,65 +95,25 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "touchscreengui.h"
 
-// TODO: Remove
+// TODO: Move elsewhere
 #ifdef SAILFISH
-#include <dbus/dbus-glib.h>
+#include <qt5/QtDBus/QtDBus>
+#include <qt5/QtCore/QDebug>
 void launch_keyboard()
 {
 	dstream<<"launch_keyboard()"<<std::endl;
 
-	DBusGConnection *connection;
-	GError *error;
-	DBusGProxy *proxy;
-	char **name_list;
-	char **name_list_ptr;
-	
-	g_type_init();
-
-	error = NULL;
-	connection = dbus_g_bus_get(DBUS_BUS_SESSION, &error);
-	if(connection == NULL)
-	{
-		g_printerr("Failed to open connection to bus: %s\n",
-								error->message);
-		g_error_free(error);
-		exit(1);
+	if(!QDBusConnection::sessionBus().isConnected()) {
+		fprintf(stderr, "Cannot connect to the D-Bus session bus.\n"
+		 "To start it, run:\n"
+		 "\teval `dbus-launch --auto-syntax`\n");
+		return;
 	}
 
-	/* Create a proxy object for the "bus driver"(name "org.freedesktop.DBus") */
-
-	proxy = dbus_g_proxy_new_for_name(connection,
-			DBUS_SERVICE_DBUS,
-			DBUS_PATH_DBUS,
-			DBUS_INTERFACE_DBUS);
-
-	/* Call ListNames method, wait for reply */
-	error = NULL;
-	if(!dbus_g_proxy_call(proxy, "ListNames", &error, G_TYPE_INVALID,
-			G_TYPE_STRV, &name_list, G_TYPE_INVALID))
-	{
-		/* Just do demonstrate remote exceptions versus regular GError */
-		if(error->domain == DBUS_GERROR && error->code == DBUS_GERROR_REMOTE_EXCEPTION)
-			g_printerr("Caught remote method exception %s: %s",
-						dbus_g_error_get_name(error),
-						error->message);
-		else
-			g_printerr("Error: %s\n", error->message);
-		g_error_free(error);
-		exit(1);
-	}
-
-	/* Print the results */
- 
-	g_print("Names on the message bus:\n");
-
-	for(name_list_ptr = name_list; *name_list_ptr; name_list_ptr++)
-	{
-		g_print("  %s\n", *name_list_ptr);
-	}
-	g_strfreev(name_list);
-
-	g_object_unref(proxy);
+	QDBusConnection bus = QDBusConnection::sessionBus();
+	QDBusInterface dbus_iface("org.freedesktop.DBus", "/org/freedesktop/DBus",
+				   "org.freedesktop.DBus", bus);
+	qDebug() << dbus_iface.call("ListNames").arguments().at(0);
 }
 #endif
 

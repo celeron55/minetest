@@ -178,13 +178,8 @@ else()
 		# GLESv1
 		set(CLIENT_PLATFORM_LIBS ${CLIENT_PLATFORM_LIBS} -lGLESv1_CM -lEGL -lwayland-client -lwayland-egl -lSDL2)
 
-		# We need dbus-glib-1
-		find_package(PkgConfig)
-		pkg_check_modules(DBUSGLIB dbus-glib-1)
-		message(STATUS "DBUSGLIB_INCLUDE_DIRS=${DBUSGLIB_INCLUDE_DIRS}")
-		message(STATUS "DBUSGLIB_LIBRARIES=${DBUSGLIB_LIBRARIES}")
-		include_directories(${DBUSGLIB_INCLUDE_DIRS})
-		set(CLIENT_PLATFORM_LIBS ${CLIENT_PLATFORM_LIBS} ${DBUSGLIB_LIBRARIES})
+		include_directories("/usr/include/qt5")
+		set(CLIENT_PLATFORM_LIBS ${CLIENT_PLATFORM_LIBS} -lQt5Core -lQt5DBus)
 	endif()
 endif()
 
