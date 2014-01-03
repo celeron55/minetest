@@ -324,7 +324,11 @@ void set_default_settings(Settings *settings)
 #ifdef SAILFISH
 	settings->setDefault("enable_vbo", "false");
 	settings->setDefault("enable_shaders", "false");
+#ifdef _IRR_COMPILE_WITH_OGLES2_
 	settings->setDefault("video_driver", "ogles2");
+#else
+	settings->setDefault("video_driver", "ogles1");
+#endif
 
 	settings->setDefault("screenW", "540");
 	settings->setDefault("screenH", "960");

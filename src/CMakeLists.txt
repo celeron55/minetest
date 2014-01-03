@@ -172,9 +172,12 @@ else()
 	set(CLIENT_PLATFORM_LIBS ${CLIENT_PLATFORM_LIBS} ${XXF86VM_LIBRARY})
 
 	if(TARGET_SAILFISH)
-		set(CLIENT_PLATFORM_LIBS ${CLIENT_PLATFORM_LIBS} -lGLESv2 -lEGL -lwayland-client -lwayland-egl)
-		set(CLIENT_PLATFORM_LIBS ${CLIENT_PLATFORM_LIBS} -lGLESv2 -lSDL2)
-		add_definitions(-DSAILFISH -D_IRR_COMPILE_WITH_OGLES2_)
+		# GLESv2
+		#set(CLIENT_PLATFORM_LIBS ${CLIENT_PLATFORM_LIBS} -lGLESv2 -lEGL -lwayland-client -lwayland-egl -lSDL2)
+		#add_definitions(-DSAILFISH -D_IRR_COMPILE_WITH_OGLES2_)
+		# GLESv1
+		set(CLIENT_PLATFORM_LIBS ${CLIENT_PLATFORM_LIBS} -lGLESv1_CM -lEGL -lwayland-client -lwayland-egl -lSDL2)
+		add_definitions(-DSAILFISH -D_IRR_COMPILE_WITH_OGLES1_)
 	endif()
 endif()
 
