@@ -1,0 +1,23 @@
+From 135f2efeaa041fa0dd46e7fc232d473f7bb5a7cd Mon Sep 17 00:00:00 2001
+From: Perttu Ahola <celeron55@gmail.com>
+Date: Fri, 3 Jan 2014 00:04:24 +0000
+Subject: [PATCH 7/8] Sailfish build: Change ES2 shader path
+
+---
+ source/Irrlicht/Sailfish/build.sh | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/source/Irrlicht/Sailfish/build.sh b/source/Irrlicht/Sailfish/build.sh
+index 67ab78e..f40d049 100644
+--- a/source/Irrlicht/Sailfish/build.sh
++++ b/source/Irrlicht/Sailfish/build.sh
+@@ -1,5 +1,5 @@
+ #!/bin/sh
+ set -euv
+ # You probably want to run this script with sb2
+-make -j2 CXXFLAGS_EXTRA="-D_IRR_SAILFISH_PLATFORM_ -DIRR_OGLES2_SHADER_PATH=\\\"/usr/share/minetest/Shaders/\\\""
++make -j2 CXXFLAGS_EXTRA="-D_IRR_SAILFISH_PLATFORM_ -DIRR_OGLES2_SHADER_PATH=\\\"/usr/share/minetest/irrlicht_shaders/\\\""
+ 
+-- 
+1.8.4.2
+

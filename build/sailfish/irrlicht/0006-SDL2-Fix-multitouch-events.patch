@@ -1,0 +1,24 @@
+From 5c2d9ec76f4cf566f41ba00347708b9cc91f5314 Mon Sep 17 00:00:00 2001
+From: Perttu Ahola <celeron55@gmail.com>
+Date: Thu, 2 Jan 2014 21:46:23 +0000
+Subject: [PATCH 6/8] SDL2: Fix multitouch events
+
+---
+ source/Irrlicht/CIrrDeviceSDL2.cpp | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/source/Irrlicht/CIrrDeviceSDL2.cpp b/source/Irrlicht/CIrrDeviceSDL2.cpp
+index 1c47b5b..528c0d4 100644
+--- a/source/Irrlicht/CIrrDeviceSDL2.cpp
++++ b/source/Irrlicht/CIrrDeviceSDL2.cpp
+@@ -377,6 +377,7 @@ bool CIrrDeviceSDL2::run()
+ 					break;
+ 				}
+ 				int i = 0;
++				irrevent.MultiTouchInput.PointerCount = 1;
+ 				irrevent.MultiTouchInput.PrevX[i] = sdlevent.tfinger.x - sdlevent.tfinger.dx;
+ 				irrevent.MultiTouchInput.PrevY[i] = sdlevent.tfinger.y - sdlevent.tfinger.dy;
+ 				irrevent.MultiTouchInput.X[i] = sdlevent.tfinger.x;
+-- 
+1.8.4.2
+

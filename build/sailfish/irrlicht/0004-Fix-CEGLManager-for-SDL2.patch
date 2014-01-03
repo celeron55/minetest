@@ -1,0 +1,25 @@
+From 702b96b6eac057ec973f334531e92f52024d5bf9 Mon Sep 17 00:00:00 2001
+From: Perttu Ahola <celeron55@gmail.com>
+Date: Thu, 2 Jan 2014 22:35:12 +0200
+Subject: [PATCH 4/8] Fix CEGLManager for SDL2
+
+---
+ source/Irrlicht/CEGLManager.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/source/Irrlicht/CEGLManager.cpp b/source/Irrlicht/CEGLManager.cpp
+index 2fa8603..ccbf33d 100755
+--- a/source/Irrlicht/CEGLManager.cpp
++++ b/source/Irrlicht/CEGLManager.cpp
+@@ -43,7 +43,7 @@ bool CEGLManager::initialize(const SIrrlichtCreationParameters& params, const SE
+ 	EglWindow = (NativeWindowType)Data.OpenGLWin32.HWnd;
+ 	Data.OpenGLWin32.HDc = GetDC((HWND)EglWindow);
+ 	EglDisplay = eglGetDisplay((NativeDisplayType)Data.OpenGLWin32.HDc);
+-#elif defined(_IRR_COMPILE_WITH_X11_DEVICE_)
++#elif defined(_IRR_COMPILE_WITH_X11_DEVICE_) || defined(_IRR_COMPILE_WITH_SDL2_DEVICE_)
+ 	EglWindow = (NativeWindowType)Data.OpenGLLinux.X11Window;
+ 	EglDisplay = eglGetDisplay((NativeDisplayType)Data.OpenGLLinux.X11Display);
+ #elif defined(_IRR_COMPILE_WITH_ANDROID_DEVICE_)
+-- 
+1.8.4.2
+

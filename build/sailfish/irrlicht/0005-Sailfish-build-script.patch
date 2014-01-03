@@ -1,0 +1,38 @@
+From b19302a1350ca252eba6045c7a144e6c5692a470 Mon Sep 17 00:00:00 2001
+From: Perttu Ahola <celeron55@gmail.com>
+Date: Thu, 2 Jan 2014 21:21:44 +0000
+Subject: [PATCH 5/8] Sailfish build script
+
+---
+ source/Irrlicht/Makefile          | 2 +-
+ source/Irrlicht/Sailfish/build.sh | 5 +++++
+ 2 files changed, 6 insertions(+), 1 deletion(-)
+ create mode 100644 source/Irrlicht/Sailfish/build.sh
+
+diff --git a/source/Irrlicht/Makefile b/source/Irrlicht/Makefile
+index 656cb26..060baa7 100644
+--- a/source/Irrlicht/Makefile
++++ b/source/Irrlicht/Makefile
+@@ -64,7 +64,7 @@ LINKOBJ = $(IRRMESHOBJ) $(IRROBJ) $(IRRPARTICLEOBJ) $(IRRANIMOBJ) \
+ OGLESINCLUDES = -I$(HOME)/irrlicht/SDKPackage-ogles1/Builds/OGLES/Include -I$(HOME)/irrlicht/SDKPackage-ogles1/Builds/OGLES/LinuxPC/Include
+ OGLESLINK = -L$(HOME)/irrlicht/SDKPackage-ogles1/Builds/OGLES/LinuxPC/Lib -lGLES_CM
+ CXXINCS = -I../../include -Izlib -Ijpeglib -Ilibpng
+-CPPFLAGS += $(CXXINCS) $(OGLESINCLUDES) -DIRRLICHT_EXPORTS=1
++CPPFLAGS += $(CXXINCS) $(OGLESINCLUDES) -DIRRLICHT_EXPORTS=1 $(CXXFLAGS_EXTRA)
+ CXXFLAGS += -Wall -pipe -fno-exceptions -fno-rtti -fstrict-aliasing
+ ifndef NDEBUG
+ CXXFLAGS += -g -D_DEBUG
+diff --git a/source/Irrlicht/Sailfish/build.sh b/source/Irrlicht/Sailfish/build.sh
+new file mode 100644
+index 0000000..67ab78e
+--- /dev/null
++++ b/source/Irrlicht/Sailfish/build.sh
+@@ -0,0 +1,5 @@
++#!/bin/sh
++set -euv
++# You probably want to run this script with sb2
++make -j2 CXXFLAGS_EXTRA="-D_IRR_SAILFISH_PLATFORM_ -DIRR_OGLES2_SHADER_PATH=\\\"/usr/share/minetest/Shaders/\\\""
++
+-- 
+1.8.4.2
+
