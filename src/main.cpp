@@ -93,13 +93,16 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "database-leveldb.h"
 #endif
 
-#include <QApplication>
-#include <QWindow>
-#include <qpa/qplatformnativeinterface.h>
-#include <QDebug>
-#include <QTimer>
-
 #include "touchscreengui.h"
+
+// TODO: Remove
+#ifdef SAILFISH
+#include <dbus/dbus-glib.h>
+void launch_keyboard()
+{
+	dstream<<"launch_keyboard()"<<std::endl;
+}
+#endif
 
 /*
 	Settings.
@@ -1611,6 +1614,11 @@ int main(int argc, char *argv[])
 	std::string password;
 
 	bool first_loop = true;
+
+	// TODO: Remove
+#ifdef SAILFISH
+	launch_keyboard();
+#endif
 
 	/*
 		Menu-game loop

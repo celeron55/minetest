@@ -172,12 +172,19 @@ else()
 	set(CLIENT_PLATFORM_LIBS ${CLIENT_PLATFORM_LIBS} ${XXF86VM_LIBRARY})
 
 	if(TARGET_SAILFISH)
+		add_definitions(-DSAILFISH)
 		# GLESv2
 		#set(CLIENT_PLATFORM_LIBS ${CLIENT_PLATFORM_LIBS} -lGLESv2 -lEGL -lwayland-client -lwayland-egl -lSDL2)
-		#add_definitions(-DSAILFISH -D_IRR_COMPILE_WITH_OGLES2_)
 		# GLESv1
 		set(CLIENT_PLATFORM_LIBS ${CLIENT_PLATFORM_LIBS} -lGLESv1_CM -lEGL -lwayland-client -lwayland-egl -lSDL2)
-		add_definitions(-DSAILFISH -D_IRR_COMPILE_WITH_OGLES1_)
+
+		# We need dbus-glib-1
+		find_package(PkgConfig)
+		pkg_check_modules(DBUSGLIB dbus-glib-1)
+		message(STATUS "DBUSGLIB_INCLUDE_DIRS=${DBUSGLIB_INCLUDE_DIRS}")
+		message(STATUS "DBUSGLIB_LIBRARIES=${DBUSGLIB_LIBRARIES}")
+		include_directories(${DBUSGLIB_INCLUDE_DIRS})
+		set(CLIENT_PLATFORM_LIBS ${CLIENT_PLATFORM_LIBS} ${DBUSGLIB_LIBRARIES})
 	endif()
 endif()
 
@@ -414,11 +421,6 @@ include_directories(
 	${SQLITE3_INCLUDE_DIR}
 	${LUA_INCLUDE_DIR}
 	${JSON_INCLUDE_DIR}
-	/usr/include/qt5
-	/usr/include/qt5/QtWidgets
-	/usr/include/qt5/QtCore
-	/usr/include/qt5/QtGui
-	/usr/include/qt5/QtGui/5.1.0/QtGui
 	${PROJECT_SOURCE_DIR}/script
 )
 
