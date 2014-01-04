@@ -106,6 +106,9 @@ GUIFormSpecMenu::GUIFormSpecMenu(irr::IrrlichtDevice* dev,
 	current_keys_pending.key_enter = false;
 	current_keys_pending.key_escape = false;
 
+#ifdef SAILFISH
+	m_sailfish_ignore_edit_timer = 0;
+#endif
 }
 
 GUIFormSpecMenu::~GUIFormSpecMenu()
@@ -1848,6 +1851,10 @@ void GUIFormSpecMenu::drawSelectedItem()
 
 void GUIFormSpecMenu::drawMenu()
 {
+#ifdef SAILFISH
+	if(m_sailfish_ignore_edit_timer > 0)
+		m_sailfish_ignore_edit_timer--;
+#endif
 	if(m_form_src){
 		std::string newform = m_form_src->getForm();
 		if(newform != m_formspec_string){
@@ -2307,15 +2314,19 @@ bool GUIFormSpecMenu::preprocessEvent(const SEvent& event)
 
 	#ifdef SAILFISH
 	// display software keyboard when clicking edit boxes
-	if (event.EventType == EET_MOUSE_INPUT_EVENT
-			&& event.MouseInput.Event == EMIE_LMOUSE_PRESSED_DOWN) {
-		gui::IGUIElement *hovered =
-			Environment->getRootGUIElement()->getElementFromPoint(
-				core::position2d<s32>(event.MouseInput.X, event.MouseInput.Y));
-		if (hovered->getType() == irr::gui::EGUIET_EDIT_BOX){
-			std::string text = wide_to_narrow(hovered->getText());
-			text = sailfish_inputwindow_show(text);
-			hovered->setText(narrow_to_wide(text).c_str());
+	if(m_sailfish_ignore_edit_timer == 0){
+		if (event.EventType == EET_MOUSE_INPUT_EVENT
+				&& event.MouseInput.Event == EMIE_LMOUSE_PRESSED_DOWN) {
+			gui::IGUIElement *hovered =
+				Environment->getRootGUIElement()->getElementFromPoint(
+					core::position2d<s32>(event.MouseInput.X, event.MouseInput.Y));
+			if (hovered->getType() == irr::gui::EGUIET_EDIT_BOX){
+				std::string text = wide_to_narrow(hovered->getText());
+				text = sailfish_inputwindow_show(text);
+				hovered->setText(narrow_to_wide(text).c_str());
+				// This should get rid of unwanted editor popups
+				m_sailfish_ignore_edit_timer = 60;
+			}
 		}
 	}
 	#endif

@@ -293,6 +293,10 @@ protected:
 	video::SColor m_slotbg_n;
 	video::SColor m_slotbg_h;
 	video::SColor m_slotbordercolor;
+
+#ifdef SAILFISH
+	int m_sailfish_ignore_edit_timer;
+#endif
 private:
 	typedef struct {
 		v2s32 size;
