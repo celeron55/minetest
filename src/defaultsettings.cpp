@@ -139,6 +139,7 @@ void set_default_settings(Settings *settings)
 	settings->setDefault("enable_shaders", "true");
 	settings->setDefault("repeat_rightclick_time", "0.25");
 	settings->setDefault("enable_particles", "true");
+	settings->setDefault("draw_wielded_tool", "true");
 
 	settings->setDefault("curl_timeout", "5000");
 	settings->setDefault("curl_parallel_limit", "8");
@@ -342,6 +343,7 @@ void set_default_settings(Settings *settings)
 
 	settings->setDefault("enable_3d_clouds", "false");
 	settings->setDefault("new_style_leaves", "false");
+	settings->setDefault("draw_wielded_tool", "false");
 #endif
 }
 

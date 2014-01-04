@@ -3308,7 +3308,8 @@ void the_game(
 		/*
 			Wielded tool
 		*/
-		if(show_hud && (player->hud_flags & HUD_FLAG_WIELDITEM_VISIBLE))
+		if(show_hud && (player->hud_flags & HUD_FLAG_WIELDITEM_VISIBLE) &&
+				g_settings->getBool("draw_wielded_tool"))
 		{
 			// Warning: This clears the Z buffer.
 			camera.drawWieldedTool();
