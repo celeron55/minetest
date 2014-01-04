@@ -2359,6 +2359,20 @@ bool GUIFormSpecMenu::OnEvent(const SEvent& event)
 	{
 		// Mouse event other than movement
 
+#ifdef SAILFISH
+		{
+			// Make a way to exit the menu by tapping near screen edge
+			video::IVideoDriver* driver = Environment->getVideoDriver();
+			v2u32 screenSize = driver->getScreenSize();
+			if((event.MouseInput.X < (int)screenSize.X / 8 &&
+					event.MouseInput.Y > 100)||
+					event.MouseInput.X > (int)screenSize.X - screenSize.X / 8){
+				quitMenu();
+				return true;
+			}
+		}
+#endif
+
 		// Get selected item and hovered/clicked item (s)
 
 		updateSelectedItem();
