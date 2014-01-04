@@ -137,9 +137,8 @@ void launch_keyboard()
 		qDebug() << "showInputMethod reply: " << reply;
 	}
 }
-#include <QtWidgets/QApplication>
-#include <QtWidgets/QMainWindow>
-QApplication *qt_app = NULL;
+#include <QtCore/QCoreApplication>
+QCoreApplication *qt_app = NULL;
 #endif // SAILFISH
 
 /*
@@ -1530,7 +1529,7 @@ int main(int argc, char *argv[])
 		return 1; // could not create selected driver.
 
 #ifdef SAILFISH
-	qt_app = new QApplication(argc, argv);
+	qt_app = new QCoreApplication(argc, argv);
 	setlocale(LC_NUMERIC, "C");
 	//qt_app->exec();
 	qt_app->processEvents();

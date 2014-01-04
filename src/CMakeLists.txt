@@ -179,7 +179,7 @@ else()
 		set(CLIENT_PLATFORM_LIBS ${CLIENT_PLATFORM_LIBS} -lGLESv1_CM -lEGL -lwayland-client -lwayland-egl -lSDL2)
 
 		include_directories("/usr/include/qt5")
-		set(CLIENT_PLATFORM_LIBS ${CLIENT_PLATFORM_LIBS} -lQt5Core -lQt5DBus -lQt5Widgets)
+		set(CLIENT_PLATFORM_LIBS ${CLIENT_PLATFORM_LIBS} -lQt5Core -lQt5DBus)
 	endif()
 endif()
 
@@ -441,11 +441,12 @@ if(BUILD_CLIENT)
 				COMMAND moc -DSAILFISH ${CMAKE_SOURCE_DIR}/src/sailfish/sailfish_inputwindow.h -o ${PROJECT_BINARY_DIR}/moc_sailfish_inputwindow.cpp
 				DEPENDS ${CMAKE_SOURCE_DIR}/src/sailfish/sailfish_inputwindow.h COMMENT "moc")
 		# The input process executable
-		add_executable(sailfish_inputprocess sailfish/sailfish_inputprocess.cpp moc_sailfish_inputprocess.cpp)
-		target_link_libraries(sailfish_inputprocess -lQt5Core -lQt5DBus -lQt5Widgets)
-		add_custom_command(OUTPUT moc_sailfish_inputprocess.cpp
-				COMMAND moc -DSAILFISH ${CMAKE_SOURCE_DIR}/src/sailfish/sailfish_inputprocess.h -o ${PROJECT_BINARY_DIR}/moc_sailfish_inputprocess.cpp
-				DEPENDS ${CMAKE_SOURCE_DIR}/src/sailfish/sailfish_inputprocess.h COMMENT "moc")
+		#add_executable(sailfish_inputprocess sailfish/sailfish_inputprocess.cpp moc_sailfish_inputprocess.cpp)
+		#target_link_libraries(sailfish_inputprocess -lQt5Core -lQt5DBus -lQt5Widgets)
+		#add_custom_command(OUTPUT moc_sailfish_inputprocess.cpp
+		#		COMMAND moc -DSAILFISH ${CMAKE_SOURCE_DIR}/src/sailfish/sailfish_inputprocess.h -o ${PROJECT_BINARY_DIR}/moc_sailfish_inputprocess.cpp
+		#		DEPENDS ${CMAKE_SOURCE_DIR}/src/sailfish/sailfish_inputprocess.h COMMENT "moc")
+		add_subdirectory("sailfish/inputprocess")
 	endif()
 	add_executable(${PROJECT_NAME} ${minetest_SRCS})
 	add_dependencies(${PROJECT_NAME} GenerateVersion)
@@ -561,7 +562,9 @@ else()
 		set(ARCH i386)
 	endif()
 
-	set(OTHER_FLAGS "${OTHER_FLAGS} -fPIC")
+	if(TARGET_SAILFISH)
+		set(OTHER_FLAGS "${OTHER_FLAGS} -fPIC")
+	endif()
 
 	set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG ${RELEASE_WARNING_FLAGS} ${WARNING_FLAGS} ${OTHER_FLAGS} -O3 -ffast-math -Wall -fomit-frame-pointer -pipe -funroll-loops")
 	set(CMAKE_CXX_FLAGS_DEBUG "-g -O1 -Wall ${WARNING_FLAGS} ${OTHER_FLAGS}")

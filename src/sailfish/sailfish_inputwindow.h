@@ -21,8 +21,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #ifndef SAILFISH_INPUTWINDOW_HEADER
 #define SAILFISH_INPUTWINDOW_HEADER
 
-#include <QtWidgets/QApplication>
-extern QApplication *qt_app;
+#include <QtCore/QCoreApplication>
+extern QCoreApplication *qt_app;
 #include <QtCore/QProcess>
 
 inline std::string sailfish_inputwindow_show(const std::string &orig)
