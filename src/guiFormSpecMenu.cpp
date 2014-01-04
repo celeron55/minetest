@@ -69,7 +69,7 @@ extern JNIEnv *jnienv;
 #endif
 
 #ifdef SAILFISH
-#include "sailfish_inputwindow.h"
+#include "sailfish/sailfish_inputwindow.h"
 #endif
 
 /*
