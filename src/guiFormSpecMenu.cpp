@@ -2387,16 +2387,26 @@ bool GUIFormSpecMenu::OnEvent(const SEvent& event)
 	if(event.EventType==EET_MOUSE_INPUT_EVENT
 			&& event.MouseInput.Event != EMIE_MOUSE_MOVED)
 	{
+		// Update this so that things are very up to date
+		if (touchscreengui)
+			m_pointer = touchscreengui->getMousePos();
+		else
+			m_pointer = m_device->getCursorControl()->getPosition();
+
+		dstream<<"guiFormSpecMenu: Mouse input (non-movement) at ("
+				<<m_pointer.X<<","<<m_pointer.Y<<")"<<std::endl;
+
 		// Mouse event other than movement
 
 #ifdef SAILFISH
-		{
+		if(m_allowclose){
+			// TODO: Fix this, it doesn't really work
 			// Make a way to exit the menu by tapping near screen edge
 			video::IVideoDriver* driver = Environment->getVideoDriver();
 			v2u32 screenSize = driver->getScreenSize();
-			if((event.MouseInput.X < (int)screenSize.X / 8 &&
+			if((event.MouseInput.X < (int)screenSize.X / 6 &&
 					event.MouseInput.Y > 100)||
-					event.MouseInput.X > (int)screenSize.X - screenSize.X / 8){
+					event.MouseInput.X > (int)screenSize.X - screenSize.X / 6){
 				quitMenu();
 				return true;
 			}

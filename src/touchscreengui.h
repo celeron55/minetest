@@ -24,6 +24,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <IEventReceiver.h>
 
 #include <vector>
+#include <set>
 
 #include "game.h"
 
@@ -83,6 +84,7 @@ private:
 	u32 m_down_since;
 	v2s32 m_down_from; // first known position
 	v2s32 m_down_to; // last known position
+	std::set<s32> m_current_pointers; // Currently touched pointers
 
 	bool m_digging;
 	bool m_rightclick;

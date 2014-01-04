@@ -138,15 +138,30 @@ void TouchScreenGUI::OnEvent(const SEvent &event) {
 			}
 		}
 
+		std::set<s32> removed_pointers;
+		s32 new_pointer_id = -1;
+		v2s32 new_pointer_p;
 		bool main_pointer_still_here = false;
-
+		dstream<<"m_down="<<(int)m_down<<", m_down_pointer_id="
+				<<m_down_pointer_id<<std::endl;
 		for (int i = 0; i < event.MultiTouchInput.PointerCount; ++i) {
+			s32 id = event.MultiTouchInput.ID[i];
 			s32 x = event.MultiTouchInput.X[i];
 			s32 y = event.MultiTouchInput.Y[i];
-			if (event.MultiTouchInput.ID[i] == m_down_pointer_id)
+			dstream<<"i="<<i<<" id="<<id<<" x="<<x<<" y="<<y<<" touched="
+					<<(int)event.MultiTouchInput.Touched[i]<<std::endl;
+			if (id == m_down_pointer_id){
 				m_down_to = v2s32(x, y);
-			if (!event.MultiTouchInput.Touched[i])
+				dstream<<"m_down_to updated"<<std::endl;
+			}
+			if (!event.MultiTouchInput.Touched[i]) {
+				removed_pointers.insert(id);
 				continue;
+			}
+			if (m_current_pointers.count(id) == 0){
+				new_pointer_id = id;
+				new_pointer_p = v2s32(x, y);
+			}
 			if (event.MultiTouchInput.ID[i] == m_down_pointer_id)
 				main_pointer_still_here = true;
 			bool ignore_click = !m_visible;
@@ -214,6 +229,14 @@ void TouchScreenGUI::OnEvent(const SEvent &event) {
 				}
 		}
 
+		// Update current pointers
+		for (std::set<s32>::iterator i = removed_pointers.begin();
+				i != removed_pointers.end(); ++i) {
+			m_current_pointers.erase(*i);
+		}
+
+		dstream<<"main_pointer_still_here="<<(int)main_pointer_still_here
+				<<std::endl;
 		if (!main_pointer_still_here) {
 			// TODO: tweak this
 			// perhaps this should only right click when not digging?
@@ -221,6 +244,15 @@ void TouchScreenGUI::OnEvent(const SEvent &event) {
 				m_rightclick = true;
 			m_down = false;
 			m_digging = false;
+			// Update to new pointer if a new one just appeared
+			if(new_pointer_id != -1){
+				dstream<<"m_down to new pointer"<<std::endl;
+				m_down = true;
+				m_down_pointer_id = new_pointer_id;
+				m_down_since = getTimeMs();
+				m_down_from = new_pointer_p;
+				m_down_to = m_down_from;
+			}
 		}
 	}
 }
