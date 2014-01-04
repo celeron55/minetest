@@ -1,0 +1,174 @@
+From a64ed6e466ce5104b3a818c510a0f0fca87ca537 Mon Sep 17 00:00:00 2001
+From: Perttu Ahola <celeron55@gmail.com>
+Date: Sat, 4 Jan 2014 02:19:43 +0000
+Subject: [PATCH 1/2] Add _IRR_LANDSCAPE_HACK_ for enabling crapppy
+ irrlicht-based landscape mode
+
+---
+ source/Irrlicht/CIrrDeviceSDL2.cpp | 19 +++++++++++++++++++
+ source/Irrlicht/CNullDriver.cpp    |  5 +++++
+ source/Irrlicht/CNullDriver.h      |  4 ++++
+ source/Irrlicht/COGLESDriver.cpp   | 31 +++++++++++++++++++++++++++++++
+ source/Irrlicht/Sailfish/build.sh  |  2 +-
+ 5 files changed, 60 insertions(+), 1 deletion(-)
+
+diff --git a/source/Irrlicht/CIrrDeviceSDL2.cpp b/source/Irrlicht/CIrrDeviceSDL2.cpp
+index d7bc8df..3c90efb 100644
+--- a/source/Irrlicht/CIrrDeviceSDL2.cpp
++++ b/source/Irrlicht/CIrrDeviceSDL2.cpp
+@@ -71,6 +71,9 @@ CIrrDeviceSDL2::CIrrDeviceSDL2(const SIrrlichtCreationParameters& param)
+ 	#ifdef _DEBUG
+ 	setDebugName("CIrrDeviceSDL2");
+ 	#endif
++	os::Printer::log((core::stringc("SDL2: param.WindowSize=")+
++			core::stringc(param.WindowSize.Width)+"x"+
++			core::stringc(param.WindowSize.Height)).c_str(), ELL_INFORMATION);
+ 
+ 	// Initialize SDL... Timer for sleep, video for the obvious, and
+ 	// noparachute prevents SDL from catching fatal errors.
+@@ -141,6 +144,9 @@ CIrrDeviceSDL2::CIrrDeviceSDL2(const SIrrlichtCreationParameters& param)
+ 	// create driver
+ 	createDriver();
+ 
++	os::Printer::log((core::stringc("SDL_HasScreenKeyboardSupport: ")+
++			(SDL_HasScreenKeyboardSupport()?"Yes":"No")).c_str(), ELL_INFORMATION);
++
+ 	if (VideoDriver)
+ 		createGUIAndScene();
+ }
+@@ -408,6 +414,18 @@ bool CIrrDeviceSDL2::run()
+ 		case SDL_FINGERUP:
+ 		case SDL_FINGERMOTION:
+ 			{
++#ifdef _IRR_LANDSCAPE_HACK_
++				{
++					int x = sdlevent.tfinger.x;
++					int y = sdlevent.tfinger.y;
++					sdlevent.tfinger.x = y;
++					sdlevent.tfinger.y = Width - 1 - x;
++					int dx = sdlevent.tfinger.dx;
++					int dy = sdlevent.tfinger.dy;
++					sdlevent.tfinger.dx = dy;
++					sdlevent.tfinger.dy = -dx;
++				}
++#endif
+ 				// TODO: Implement properly
+ 				irrevent.EventType = EET_MULTI_TOUCH_EVENT;
+ 				irrevent.MultiTouchInput.clear();
+@@ -611,6 +629,7 @@ bool CIrrDeviceSDL2::run()
+ 			case SDL_WINDOWEVENT_MOVED:
+ 				break;
+ 			case SDL_WINDOWEVENT_RESIZED:
++				os::Printer::log("SDL2: SDL_WINDOWEVENT_RESIZED", ELL_INFORMATION);
+ 				// NOTE: Can be other window
+ 				Width = sdlevent.window.data1;
+ 				Height = sdlevent.window.data2;
+diff --git a/source/Irrlicht/CNullDriver.cpp b/source/Irrlicht/CNullDriver.cpp
+index 433a940..6f2aad0 100644
+--- a/source/Irrlicht/CNullDriver.cpp
++++ b/source/Irrlicht/CNullDriver.cpp
+@@ -899,6 +899,11 @@ ECOLOR_FORMAT CNullDriver::getColorFormat() const
+ //! returns screen size
+ const core::dimension2d<u32>& CNullDriver::getScreenSize() const
+ {
++#ifdef _IRR_LANDSCAPE_HACK_
++	ScreenSizeLandscape.Width = ScreenSize.Height;
++	ScreenSizeLandscape.Height = ScreenSize.Width;
++	return ScreenSizeLandscape;
++#endif
+ 	return ScreenSize;
+ }
+ 
+diff --git a/source/Irrlicht/CNullDriver.h b/source/Irrlicht/CNullDriver.h
+index 39324ba..8579a1b 100644
+--- a/source/Irrlicht/CNullDriver.h
++++ b/source/Irrlicht/CNullDriver.h
+@@ -828,6 +828,10 @@ namespace video
+ 
+ 		core::rect<s32> ViewPort;
+ 		core::dimension2d<u32> ScreenSize;
++#ifdef _IRR_LANDSCAPE_HACK_
++		// Updated in getScreenSize()
++		mutable core::dimension2d<u32> ScreenSizeLandscape;
++#endif
+ 		core::matrix4 TransformationMatrix;
+ 
+ 		CFPSCounter FPSCounter;
+diff --git a/source/Irrlicht/COGLESDriver.cpp b/source/Irrlicht/COGLESDriver.cpp
+index 0feb4ac..696ca9c 100644
+--- a/source/Irrlicht/COGLESDriver.cpp
++++ b/source/Irrlicht/COGLESDriver.cpp
+@@ -50,6 +50,7 @@ COGLES1Driver::COGLES1Driver(const SIrrlichtCreationParameters& params,
+ #if defined(_IRR_COMPILE_WITH_X11_DEVICE_) || defined(_IRR_WINDOWS_API_) || defined(_IRR_COMPILE_WITH_ANDROID_DEVICE_) || defined(_IRR_COMPILE_WITH_SDL2_DEVICE_)
+ 	if (!ContextManager)
+ 		return;
++	os::Printer::log((core::stringc("ES1: params.WindowSize=")+core::stringc(params.WindowSize.Width)+"x"+core::stringc(params.WindowSize.Height)).c_str(), ELL_INFORMATION);
+ 
+ 	ContextManager->grab();
+ 	ContextManager->generateSurface();
+@@ -133,6 +134,7 @@ bool COGLES1Driver::genericDriverInit(const core::dimension2d<u32>& screenSize,
+ {
+ 	Name=glGetString(GL_VERSION);
+ 	printVersion();
++	os::Printer::log((core::stringc("COGLES1Driver::genericDriverInit: screenSize=")+core::stringc(screenSize.Width)+"x"+core::stringc(screenSize.Height)).c_str(), ELL_INFORMATION);
+ 
+ 	// print renderer information
+ 	vendorName = glGetString(GL_VENDOR);
+@@ -347,6 +349,18 @@ void COGLES1Driver::setTransform(E_TRANSFORMATION_STATE state, const core::matri
+ 		break;
+ 	case ETS_PROJECTION:
+ 		{
++#ifdef _IRR_LANDSCAPE_HACK_
++			// HACK: Turn the thing -90deg from portrait to landscape
++			// NOTE: This isn't optimal because the rotation should happen at
++			// the correct vertical angle in order to not cause distortion when
++			// looking up and down
++			core::matrix4 m;
++			m.setRotationAxisRadians(-M_PI*0.5, core::vector3df(0,0,1));
++			Matrices[ETS_PROJECTION] *= m;
++			m.makeIdentity();
++			m.setScale(core::vector3df(1, 3.16, 1));
++			Matrices[ETS_PROJECTION] *= m;
++#endif
+ 			GLfloat glmat[16];
+ 			createGLMatrix(glmat, mat);
+ 			// flip z to compensate OGLES1s right-hand coordinate system
+@@ -2087,7 +2101,24 @@ void COGLES1Driver::setRenderStates2DMode(bool alpha, bool texture, bool alphaCh
+ 			const core::dimension2d<u32>& renderTargetSize = getCurrentRenderTargetSize();
+ 			core::matrix4 m;
+ 			m.buildProjectionMatrixOrthoLH(f32(renderTargetSize.Width), f32(-(s32)(renderTargetSize.Height)), -1.0, 1.0);
++#ifndef _IRR_LANDSCAPE_HACK_
+ 			m.setTranslation(core::vector3df(-1,1,0));
++#else
++			bool is_screen = (CurrentRendertargetSize.Width == 0);
++			if(!is_screen){
++				m.setTranslation(core::vector3df(-1,1,0));
++			} else {
++				// HACK: Turn the thing 90deg from portrait to landscape
++				//m.setTranslation(core::vector3df(-1.0+((f32)renderTargetSize.Height/(f32)renderTargetSize.Width), 1, 0));
++				// TODO: How to calculate the first value?
++				m.setTranslation(core::vector3df(1, 1, 0));
++				core::matrix4 m2;
++				m2.setRotationAxisRadians(M_PI*0.50, core::vector3df(0,0,1));
++				//m2.setRotationAxisRadians(M_PI*0.49, core::vector3df(0,0,1));
++				m *= m2;
++			}
++#endif
++
+ 			glLoadMatrixf(m.pointer());
+ 
+ 			glMatrixMode(GL_MODELVIEW);
+diff --git a/source/Irrlicht/Sailfish/build.sh b/source/Irrlicht/Sailfish/build.sh
+index f40d049..f7e4d2b 100644
+--- a/source/Irrlicht/Sailfish/build.sh
++++ b/source/Irrlicht/Sailfish/build.sh
+@@ -1,5 +1,5 @@
+ #!/bin/sh
+ set -euv
+ # You probably want to run this script with sb2
+-make -j2 CXXFLAGS_EXTRA="-D_IRR_SAILFISH_PLATFORM_ -DIRR_OGLES2_SHADER_PATH=\\\"/usr/share/minetest/irrlicht_shaders/\\\""
++make -j2 CXXFLAGS_EXTRA="-D_IRR_SAILFISH_PLATFORM_ -DIRR_OGLES2_SHADER_PATH=\\\"/usr/share/minetest/irrlicht_shaders/\\\" -D_IRR_LANDSCAPE_HACK_"
+ 
+-- 
+1.8.4.2
+

@@ -1,0 +1,29 @@
+From 9a123f9caab04106d039b6a76f9ce6d64df0701d Mon Sep 17 00:00:00 2001
+From: Perttu Ahola <celeron55@gmail.com>
+Date: Sat, 4 Jan 2014 02:50:25 +0000
+Subject: [PATCH 2/2] More _IRR_LANDSCAPE_HACK_ for enabling crapppy
+ irrlicht-based landscape mode
+
+---
+ source/Irrlicht/CSceneCollisionManager.cpp | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/source/Irrlicht/CSceneCollisionManager.cpp b/source/Irrlicht/CSceneCollisionManager.cpp
+index cda4133..da5514a 100644
+--- a/source/Irrlicht/CSceneCollisionManager.cpp
++++ b/source/Irrlicht/CSceneCollisionManager.cpp
+@@ -859,7 +859,11 @@ core::line3d<f32> CSceneCollisionManager::getRayFromScreenCoordinates(
+ 	core::vector3df uptodown = f->getFarLeftDown() - farLeftUp;
+ 
+ 	const core::rect<s32>& viewPort = Driver->getViewPort();
++#ifdef _IRR_LANDSCAPE_HACK_
++	core::dimension2d<u32> screenSize(viewPort.getHeight(), viewPort.getWidth());
++#else
+ 	core::dimension2d<u32> screenSize(viewPort.getWidth(), viewPort.getHeight());
++#endif
+ 
+ 	f32 dx = pos.X / (f32)screenSize.Width;
+ 	f32 dy = pos.Y / (f32)screenSize.Height;
+-- 
+1.8.4.2
+
