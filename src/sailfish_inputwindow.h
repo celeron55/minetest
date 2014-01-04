@@ -23,26 +23,13 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include <QtWidgets/QApplication>
 extern QApplication *qt_app;
-#include <QtWidgets/QMainWindow>
-#include <QtWidgets/QBoxLayout>
-#include <QtWidgets/QPushButton>
-#include <QtWidgets/QLineEdit>
-//#include <QtWidgets/QPlainTextEdit>
-#include <QtGui/QPalette>
-#include <QtWidgets/QSpacerItem>
-#include <QtCore/QTimer>
 #include <QtCore/QProcess>
-
-class InputWindow: public QMainWindow
-{
-		Q_OBJECT
-public:
-};
 
 inline std::string sailfish_inputwindow_show(const std::string &orig)
 {
 	QProcess p;
-	p.start("jolla-fileman", QStringList());
+	QString path = qt_app->applicationDirPath();
+	p.start(path+"/sailfish_inputprocess", QStringList());
 	if(!p.waitForStarted())
 		return orig;
 	p.write(orig.c_str());
@@ -51,29 +38,6 @@ inline std::string sailfish_inputwindow_show(const std::string &orig)
 		return orig;
 	QByteArray result = p.readAll();
 	return result.data();
-#if 0
-	InputWindow *window = new InputWindow();
-	QBoxLayout *bl = new QBoxLayout(QBoxLayout::TopToBottom, window);
-	QWidget *central = new QWidget();
-	central->setLayout(bl);
-	window->setCentralWidget(central);
-	window->setStyleSheet("background-color: #333333; color: #ffffff");
-	window->show();
-	bl->addWidget(new QPushButton("Done"));
-	QLineEdit *input = new QLineEdit();
-	bl->addWidget(input);
-	bl->addSpacerItem(new QSpacerItem(500,500));
-	QTimer::singleShot(0, input, SLOT(setFocus()));
-	/*QObject::connect(input, SIGNAL(returnPressed()),
-			qt_app, SLOT(quit()));*/
-	//bl->addWidget(new QPlainTextEdit);
-	for(;;){
-		qt_app->processEvents();
-		usleep(1000000/60);
-	}
-	//qt_app->exec();
-	return "foo";
-#endif
 }
 
 #endif

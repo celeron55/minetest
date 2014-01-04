@@ -440,6 +440,12 @@ if(BUILD_CLIENT)
 		add_custom_command(OUTPUT moc_sailfish_inputwindow.cpp
 				COMMAND moc -DSAILFISH ${CMAKE_SOURCE_DIR}/src/sailfish/sailfish_inputwindow.h -o ${PROJECT_BINARY_DIR}/moc_sailfish_inputwindow.cpp
 				DEPENDS ${CMAKE_SOURCE_DIR}/src/sailfish/sailfish_inputwindow.h COMMENT "moc")
+		# The input process executable
+		add_executable(sailfish_inputprocess sailfish/sailfish_inputprocess.cpp moc_sailfish_inputprocess.cpp)
+		target_link_libraries(sailfish_inputprocess -lQt5Core -lQt5DBus -lQt5Widgets)
+		add_custom_command(OUTPUT moc_sailfish_inputprocess.cpp
+				COMMAND moc -DSAILFISH ${CMAKE_SOURCE_DIR}/src/sailfish/sailfish_inputprocess.h -o ${PROJECT_BINARY_DIR}/moc_sailfish_inputprocess.cpp
+				DEPENDS ${CMAKE_SOURCE_DIR}/src/sailfish/sailfish_inputprocess.h COMMENT "moc")
 	endif()
 	add_executable(${PROJECT_NAME} ${minetest_SRCS})
 	add_dependencies(${PROJECT_NAME} GenerateVersion)
