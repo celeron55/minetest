@@ -2312,8 +2312,11 @@ bool GUIFormSpecMenu::preprocessEvent(const SEvent& event)
 		gui::IGUIElement *hovered =
 			Environment->getRootGUIElement()->getElementFromPoint(
 				core::position2d<s32>(event.MouseInput.X, event.MouseInput.Y));
-		if (hovered->getType() == irr::gui::EGUIET_EDIT_BOX)
-			sailfish_inputwindow_show("foo");
+		if (hovered->getType() == irr::gui::EGUIET_EDIT_BOX){
+			std::string text = wide_to_narrow(hovered->getText());
+			text = sailfish_inputwindow_show(text);
+			hovered->setText(narrow_to_wide(text).c_str());
+		}
 	}
 	#endif
 
