@@ -142,17 +142,12 @@ void TouchScreenGUI::OnEvent(const SEvent &event) {
 		s32 new_pointer_id = -1;
 		v2s32 new_pointer_p;
 		bool main_pointer_still_here = false;
-		dstream<<"m_down="<<(int)m_down<<", m_down_pointer_id="
-				<<m_down_pointer_id<<std::endl;
 		for (int i = 0; i < event.MultiTouchInput.PointerCount; ++i) {
 			s32 id = event.MultiTouchInput.ID[i];
 			s32 x = event.MultiTouchInput.X[i];
 			s32 y = event.MultiTouchInput.Y[i];
-			dstream<<"i="<<i<<" id="<<id<<" x="<<x<<" y="<<y<<" touched="
-					<<(int)event.MultiTouchInput.Touched[i]<<std::endl;
 			if (id == m_down_pointer_id){
 				m_down_to = v2s32(x, y);
-				dstream<<"m_down_to updated"<<std::endl;
 			}
 			if (!event.MultiTouchInput.Touched[i]) {
 				removed_pointers.insert(id);
@@ -235,8 +230,6 @@ void TouchScreenGUI::OnEvent(const SEvent &event) {
 			m_current_pointers.erase(*i);
 		}
 
-		dstream<<"main_pointer_still_here="<<(int)main_pointer_still_here
-				<<std::endl;
 		if (!main_pointer_still_here) {
 			// TODO: tweak this
 			// perhaps this should only right click when not digging?
@@ -246,7 +239,6 @@ void TouchScreenGUI::OnEvent(const SEvent &event) {
 			m_digging = false;
 			// Update to new pointer if a new one just appeared
 			if(new_pointer_id != -1){
-				dstream<<"m_down to new pointer"<<std::endl;
 				m_down = true;
 				m_down_pointer_id = new_pointer_id;
 				m_down_since = getTimeMs();
