@@ -97,8 +97,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 // TODO: Move elsewhere
 #ifdef SAILFISH
-#include <qt5/QtDBus/QtDBus>
-#include <qt5/QtCore/QDebug>
+#include <QtDBus/QtDBus>
+#include <QtCore/QDebug>
 void launch_keyboard()
 {
 	dstream<<"launch_keyboard()"<<std::endl;
@@ -137,7 +137,10 @@ void launch_keyboard()
 		qDebug() << "showInputMethod reply: " << reply;
 	}
 }
-#endif
+#include <QtWidgets/QApplication>
+#include <QtWidgets/QMainWindow>
+QApplication *qt_app = NULL;
+#endif // SAILFISH
 
 /*
 	Settings.
@@ -821,9 +824,11 @@ JNIEnv *jnienv;
 
 int main(int argc, char *argv[])
 {
+#ifdef ANDROID
 	// well android lags anyway so no one will notice anything
 	// (this is actually needed to give GDB time to attach before everything crashes)
 	sleep(5);
+#endif
 	int retval = 0;
 
 	/*
@@ -1524,6 +1529,13 @@ int main(int argc, char *argv[])
 	if (device == 0)
 		return 1; // could not create selected driver.
 
+#ifdef SAILFISH
+	qt_app = new QApplication(argc, argv);
+	setlocale(LC_NUMERIC, "C");
+	//qt_app->exec();
+	qt_app->processEvents();
+#endif
+
 	/*
 		Continue initialization
 	*/
@@ -1756,6 +1768,7 @@ int main(int argc, char *argv[])
 								video::SColor(255,128,128,128));
 						guienv->drawAll();
 						driver->endScene();
+						qt_app->processEvents();
 						// On some computers framerate doesn't seem to be
 						// automatically limited
 						sleep_ms(25);

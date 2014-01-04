@@ -68,6 +68,10 @@ extern android_app *app_global;
 extern JNIEnv *jnienv;
 #endif
 
+#ifdef SAILFISH
+#include "sailfish_inputwindow.h"
+#endif
+
 /*
 	GUIFormSpecMenu
 */
@@ -2298,6 +2302,18 @@ bool GUIFormSpecMenu::preprocessEvent(const SEvent& event)
 				core::position2d<s32>(event.MouseInput.X, event.MouseInput.Y));
 		if (hovered->getType() == irr::gui::EGUIET_EDIT_BOX)
 			porting::displayKeyboard(true, app_global, jnienv);
+	}
+	#endif
+
+	#ifdef SAILFISH
+	// display software keyboard when clicking edit boxes
+	if (event.EventType == EET_MOUSE_INPUT_EVENT
+			&& event.MouseInput.Event == EMIE_LMOUSE_PRESSED_DOWN) {
+		gui::IGUIElement *hovered =
+			Environment->getRootGUIElement()->getElementFromPoint(
+				core::position2d<s32>(event.MouseInput.X, event.MouseInput.Y));
+		if (hovered->getType() == irr::gui::EGUIET_EDIT_BOX)
+			sailfish_inputwindow_show("foo");
 	}
 	#endif
 

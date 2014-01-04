@@ -179,7 +179,7 @@ else()
 		set(CLIENT_PLATFORM_LIBS ${CLIENT_PLATFORM_LIBS} -lGLESv1_CM -lEGL -lwayland-client -lwayland-egl -lSDL2)
 
 		include_directories("/usr/include/qt5")
-		set(CLIENT_PLATFORM_LIBS ${CLIENT_PLATFORM_LIBS} -lQt5Core -lQt5DBus)
+		set(CLIENT_PLATFORM_LIBS ${CLIENT_PLATFORM_LIBS} -lQt5Core -lQt5DBus -lQt5Widgets)
 	endif()
 endif()
 
@@ -435,6 +435,12 @@ endif(USE_CURL)
 set(EXECUTABLE_OUTPUT_PATH "${CMAKE_SOURCE_DIR}/bin")
 
 if(BUILD_CLIENT)
+	if(TARGET_SAILFISH)
+		set(minetest_SRCS ${minetest_SRCS} moc_sailfish_inputwindow.cpp)
+		add_custom_command(OUTPUT moc_sailfish_inputwindow.cpp
+				COMMAND moc -DSAILFISH ${CMAKE_SOURCE_DIR}/src/sailfish_inputwindow.h -o ${PROJECT_BINARY_DIR}/moc_sailfish_inputwindow.cpp
+				DEPENDS ${CMAKE_SOURCE_DIR}/src/sailfish_inputwindow.h COMMENT "moc")
+	endif()
 	add_executable(${PROJECT_NAME} ${minetest_SRCS})
 	add_dependencies(${PROJECT_NAME} GenerateVersion)
 	target_link_libraries(
