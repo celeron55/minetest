@@ -619,7 +619,8 @@ assets : $(ASSETS_TIMESTAMP)
 	cp -r ${ROOT}/../../client ${ROOT}/assets/Minetest;                        \
 	cp -r ${ROOT}/../../doc ${ROOT}/assets/Minetest;                           \
 	cp -r ${ROOT}/../../fonts ${ROOT}/assets/Minetest;                         \
-	cp -r ${ROOT}/../../games ${ROOT}/assets/Minetest;                         \
+	mkdir -p ${ROOT}/assets/Minetest/games;                                          \
+	cp -r ${ROOT}/../../games/minetest_game ${ROOT}/assets/Minetest/games/minetest_game;                         \
 	cp -r ${ROOT}/../../mods ${ROOT}/assets/Minetest;                          \
 	cp -r ${ROOT}/../../po ${ROOT}/assets/Minetest;                            \
 	cp -r ${ROOT}/../../textures ${ROOT}/assets/Minetest;                      \
