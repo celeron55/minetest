@@ -321,6 +321,10 @@ void set_default_settings(Settings *settings)
 	settings->setDefault("viewing_range_nodes_min", "20");
 	settings->setDefault("inventory_image_hack", "false");
 
+	settings->setDefault("creative_mode", "true");
+	settings->setDefault("enable_damage", "false");
+	settings->setDefault("time_speed", "0");
+
 	//check for device with small screen
 	float x_inches = ((double) porting::getDisplaySize().X /
 			(160 * porting::getDisplayDensity()));
