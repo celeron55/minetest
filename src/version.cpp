@@ -31,6 +31,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #else
 	#define VERSION_GITHASH VERSION_STRING
 #endif
+#define VERSION_GITHASH "0.4.11-8dromeda-1"
 
 const char *minetest_version_simple = VERSION_STRING;
 const char *minetest_version_hash = VERSION_GITHASH;
