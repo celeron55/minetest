@@ -327,6 +327,8 @@ void set_default_settings(Settings *settings)
 	settings->setDefault("enable_damage", "false");
 	settings->setDefault("time_speed", "0");
 
+	settings->setDefault("default_game", "straightforward");
+
 	//check for device with small screen
 	float x_inches = ((double) porting::getDisplaySize().X /
 			(160 * porting::getDisplayDensity()));
