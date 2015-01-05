@@ -206,6 +206,7 @@ void LocalPlayer::move(f32 dtime, Environment *env, f32 pos_max_d,
 	}
 
 	float player_stepheight = touching_ground ? (BS*0.6) : (BS*0.2);
+	player_stepheight += BS*0.5;  // Glide uphills with magic
 
 	v3f accel_f = v3f(0,0,0);
 
