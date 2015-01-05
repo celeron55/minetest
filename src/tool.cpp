@@ -24,6 +24,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "exceptions.h"
 #include "util/serialize.h"
 #include "util/numeric.h"
+#ifdef __ANDROID__
+#include "main.h" // For g_settings
+#include "settings.h"
+#endif
 
 void ToolCapabilities::serialize(std::ostream &os, u16 protocol_version) const
 {
@@ -94,6 +98,13 @@ void ToolCapabilities::deSerialize(std::istream &is)
 DigParams getDigParams(const ItemGroupList &groups,
 		const ToolCapabilities *tp, float time_from_last_punch)
 {
+#ifdef __ANDROID__
+	if(g_settings->getBool("creative_mode")){
+		// This must be perfectly static on touchscreens for the game to be playable
+		return DigParams(true, 0.7, 0, "dig_immediate");
+	}
+#endif
+
 	//infostream<<"getDigParams"<<std::endl;
 	/* Check group dig_immediate */
 	switch(itemgroup_get(groups, "dig_immediate")){
