@@ -617,10 +617,13 @@ assets : $(ASSETS_TIMESTAMP)
 	cp ${ROOT}/../../README.txt ${ROOT}/assets/Minetest;                       \
 	cp -r ${ROOT}/../../builtin ${ROOT}/assets/Minetest;                       \
 	cp -r ${ROOT}/../../client ${ROOT}/assets/Minetest;                        \
-	cp -r ${ROOT}/../../doc ${ROOT}/assets/Minetest;                           \
 	cp -r ${ROOT}/../../fonts ${ROOT}/assets/Minetest;                         \
-	mkdir -p ${ROOT}/assets/Minetest/games;                                          \
-	cp -r ${ROOT}/../../games/minetest_game ${ROOT}/assets/Minetest/games/minetest_game;                         \
+	mkdir -p ${ROOT}/assets/Minetest/doc;                                      \
+	cp ${ROOT}/../../doc/lgpl-2.1.txt ${ROOT}/assets/Minetest/doc/;            \
+	cp ${ROOT}/../../doc/lua_api.txt ${ROOT}/assets/Minetest/doc/;             \
+	cp ${ROOT}/../../doc/menu_lua_api.txt ${ROOT}/assets/Minetest/doc/;        \
+	mkdir -p ${ROOT}/assets/Minetest/games;                                    \
+	cp -r ${ROOT}/../../games/minetest_game ${ROOT}/assets/Minetest/games/;    \
 	cp -r ${ROOT}/../../mods ${ROOT}/assets/Minetest;                          \
 	cp -r ${ROOT}/../../po ${ROOT}/assets/Minetest;                            \
 	cp -r ${ROOT}/../../textures ${ROOT}/assets/Minetest;                      \
@@ -629,6 +632,7 @@ assets : $(ASSETS_TIMESTAMP)
 	cd ${ROOT}/assets;                                                         \
 	find . -name "timestamp" -exec rm {} \; ;                                  \
 	find . -name "*.blend" -exec rm {} \; ;                                    \
+	find . -type d -path "*.git" -exec rm -rf {} \; ;                          \
 	ls -R | grep ":$$" | sed -e 's/:$$//' -e 's/\.//' -e 's/^\///' > "index.txt"; \
 	find Minetest >"filelist.txt";                                             \
 	cp ${ROOT}/${ASSETS_TIMESTAMP} ${ROOT}/${ASSETS_TIMESTAMP}.old;            \
