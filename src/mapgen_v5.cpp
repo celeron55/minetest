@@ -135,7 +135,7 @@ MapgenV5Params::MapgenV5Params() {
 	np_height       = NoiseParams(0, 10, v3f(250, 250, 250), 84174,  4, 0.5,  2.0);
 	np_cave1        = NoiseParams(0, 6,  v3f(50,  50,  50),  52534,  4, 0.5,  2.0, NOISE_FLAG_EASED);
 	np_cave2        = NoiseParams(0, 6,  v3f(50,  50,  50),  10325,  4, 0.5,  2.0, NOISE_FLAG_EASED);
-	np_ground       = NoiseParams(0, 40, v3f(80,  80,  80),  983240, 4, 0.55, 2.0, NOISE_FLAG_EASED);
+	np_ground       = NoiseParams(5, 20, v3f(80,  80,  80),  983240, 4, 0.55, 2.0, NOISE_FLAG_EASED);
 	np_crumble      = NoiseParams(0, 1,  v3f(20,  20,  20),  34413,  3, 1.3,  2.0, NOISE_FLAG_EASED);
 	np_wetness      = NoiseParams(0, 1,  v3f(40,  40,  40),  32474,  4, 1.1,  2.0);
 }
