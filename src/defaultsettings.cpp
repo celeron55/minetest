@@ -317,7 +317,7 @@ void set_default_settings(Settings *settings)
 	settings->setDefault("emergequeue_limit_generate", "8");
 	settings->setDefault("preload_item_visuals", "false");
 	settings->setDefault("max_block_send_distance", "5");
-	settings->setDefault("max_block_generate_distance", "5");
+	settings->setDefault("max_block_generate_distance", "4");
 
 	settings->setDefault("viewing_range_nodes_max", "50");
 	settings->setDefault("viewing_range_nodes_min", "20");
