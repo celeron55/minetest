@@ -4,12 +4,16 @@ project(minetest)
 
 INCLUDE(CheckIncludeFiles)
 
+# Use C++11 (bdebug requires it)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -Wall")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++0x -g -O0 -Wall")
+
 # Add custom SemiDebug build mode
-set(CMAKE_CXX_FLAGS_SEMIDEBUG "-O1 -g -Wall -Wabi" CACHE STRING
+set(CMAKE_CXX_FLAGS_SEMIDEBUG "-O1 -g -Wall -Wabi -std=c++0x" CACHE STRING
 	"Flags used by the C++ compiler during semidebug builds."
 	FORCE
 )
-set(CMAKE_C_FLAGS_SEMIDEBUG "-O1 -g -Wall -pedantic" CACHE STRING
+set(CMAKE_C_FLAGS_SEMIDEBUG "-O1 -g -Wall -pedantic -std=c++0x" CACHE STRING
 	"Flags used by the C compiler during semidebug builds."
 	FORCE
 )
@@ -366,6 +370,13 @@ set(common_SRCS
 	${UTIL_SRCS}
 	${UNITTEST_SRCS}
 )
+if(WIN32)
+	set(common_SRCS ${common_SRCS} bdebug/windows/cmem.c)
+	set(common_SRCS ${common_SRCS} bdebug/windows/debug.cpp)
+else()
+	set(common_SRCS ${common_SRCS} bdebug/linux/cmem.c)
+	set(common_SRCS ${common_SRCS} bdebug/linux/debug.cpp)
+endif()
 
 
 # This gives us the icon and file version information

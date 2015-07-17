@@ -53,6 +53,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #ifndef SERVER
 #include "client/clientlauncher.h"
 #endif
+#include "bdebug/cmem.h"
+#include "bdebug/debug.h"
 
 #ifdef HAVE_TOUCHSCREENGUI
 #include "touchscreengui.h"
@@ -150,6 +152,11 @@ int main(int argc, char *argv[])
 	int retval;
 
 	debug_set_exception_handler();
+	bdebug::cmem_libc_enable();
+	bdebug::SigConfig bdsg;
+	bdsg.catch_segfault = true;
+	bdsg.catch_abort = true;
+	bdebug::init_signal_handlers(bdsg);
 
 	log_add_output_maxlev(&main_stderr_log_out, LMT_ACTION);
 	log_add_output_all_levs(&main_dstream_no_stderr_log_out);
