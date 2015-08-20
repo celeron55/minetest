@@ -24,11 +24,18 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "noise.h"
 
 #define AVERAGE_MUD_AMOUNT 4
+#define DESERT_STONE_BASE -32
+#define ICE_BASE 0
+#define FREQ_HOT 0.4
+#define FREQ_SNOW -0.4
+#define FREQ_TAIGA 0.5
+#define FREQ_JUNGLE 0.5
 
-/////////////////// Mapgen V6 flags
+//////////// Mapgen V6 flags
 #define MGV6_JUNGLES    0x01
 #define MGV6_BIOMEBLEND 0x02
 #define MGV6_MUDFLOW    0x04
+#define MGV6_SNOWBIOMES 0x08
 
 
 extern FlagDesc flagdesc_mapgen_v6[];
@@ -37,8 +44,12 @@ extern FlagDesc flagdesc_mapgen_v6[];
 enum BiomeV6Type
 {
 	BT_NORMAL,
-	BT_DESERT
+	BT_DESERT,
+	BT_JUNGLE,
+	BT_TUNDRA,
+	BT_TAIGA,
 };
+
 
 struct MapgenV6Params : public MapgenSpecificParams {
 	u32 spflags;
@@ -59,9 +70,10 @@ struct MapgenV6Params : public MapgenSpecificParams {
 	MapgenV6Params();
 	~MapgenV6Params() {}
 
-	void readParams(Settings *settings);
-	void writeParams(Settings *settings);
+	void readParams(const Settings *settings);
+	void writeParams(Settings *settings) const;
 };
+
 
 class MapgenV6 : public Mapgen {
 public:
@@ -84,6 +96,7 @@ public:
 	Noise *noise_mud;
 	Noise *noise_beach;
 	Noise *noise_biome;
+	Noise *noise_humidity;
 	NoiseParams *np_cave;
 	NoiseParams *np_humidity;
 	NoiseParams *np_trees;
@@ -98,14 +111,16 @@ public:
 	content_t c_water_source;
 	content_t c_lava_source;
 	content_t c_gravel;
-	content_t c_cobble;
-	content_t c_desert_sand;
 	content_t c_desert_stone;
+	content_t c_desert_sand;
+	content_t c_dirt_with_snow;
+	content_t c_snow;
+	content_t c_snowblock;
+	content_t c_ice;
 
+	content_t c_cobble;
 	content_t c_mossycobble;
-	content_t c_sandbrick;
 	content_t c_stair_cobble;
-	content_t c_stair_sandstone;
 
 	MapgenV6(int mapgenid, MapgenParams *params, EmergeManager *emerge);
 	~MapgenV6();
@@ -139,12 +154,11 @@ public:
 	int generateGround();
 	void addMud();
 	void flowMud(s16 &mudflow_minpos, s16 &mudflow_maxpos);
-	void addDirtGravelBlobs();
 	void growGrass();
 	void placeTreesAndJungleGrass();
 	virtual void generateCaves(int max_stone_y);
-	virtual void generateExperimental() {}
 };
+
 
 struct MapgenFactoryV6 : public MapgenFactory {
 	Mapgen *createMapgen(int mgid, MapgenParams *params, EmergeManager *emerge)
@@ -157,5 +171,6 @@ struct MapgenFactoryV6 : public MapgenFactory {
 		return new MapgenV6Params();
 	};
 };
+
 
 #endif

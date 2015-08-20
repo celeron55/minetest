@@ -18,49 +18,46 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include "mg_biome.h"
+#include "mg_decoration.h"
+#include "emerge.h"
 #include "gamedef.h"
 #include "nodedef.h"
 #include "map.h" //for MMVManip
 #include "log.h"
 #include "util/numeric.h"
-#include "main.h"
 #include "util/mathconstants.h"
 #include "porting.h"
-
-const char *BiomeManager::ELEMENT_TITLE = "biome";
 
 
 ///////////////////////////////////////////////////////////////////////////////
 
+
 BiomeManager::BiomeManager(IGameDef *gamedef) :
-	GenElementManager(gamedef)
+	ObjDefManager(gamedef, OBJDEF_BIOME)
 {
+	m_gamedef = gamedef;
+
 	// Create default biome to be used in case none exist
 	Biome *b = new Biome;
 
-	b->id              = 0;
 	b->name            = "Default";
 	b->flags           = 0;
 	b->depth_top       = 0;
-	b->depth_filler    = 0;
-	b->height_shore    = 0;
+	b->depth_filler    = -MAX_MAP_GENERATION_LIMIT;
 	b->depth_water_top = 0;
-	b->y_min           = -MAP_GENERATION_LIMIT;
-	b->y_max           = MAP_GENERATION_LIMIT;
+	b->y_min           = -MAX_MAP_GENERATION_LIMIT;
+	b->y_max           = MAX_MAP_GENERATION_LIMIT;
 	b->heat_point      = 0.0;
 	b->humidity_point  = 0.0;
 
-	NodeResolveInfo *nri = new NodeResolveInfo(b);
-	nri->nodenames.push_back("air");
-	nri->nodenames.push_back("air");
-	nri->nodenames.push_back("air");
-	nri->nodenames.push_back("air");
-	nri->nodenames.push_back("air");
-	nri->nodenames.push_back("mapgen_stone");
-	nri->nodenames.push_back("mapgen_water_source");
-	nri->nodenames.push_back("mapgen_water_source");
-	nri->nodenames.push_back("air");
-	m_ndef->pendNodeResolve(nri);
+	b->m_nodenames.push_back("mapgen_stone");
+	b->m_nodenames.push_back("mapgen_stone");
+	b->m_nodenames.push_back("mapgen_stone");
+	b->m_nodenames.push_back("mapgen_water_source");
+	b->m_nodenames.push_back("mapgen_water_source");
+	b->m_nodenames.push_back("mapgen_river_water_source");
+	b->m_nodenames.push_back("air");
+	m_ndef->pendNodeResolve(b);
 
 	add(b);
 }
@@ -79,8 +76,10 @@ BiomeManager::~BiomeManager()
 void BiomeManager::calcBiomes(s16 sx, s16 sy, float *heat_map,
 	float *humidity_map, s16 *height_map, u8 *biomeid_map)
 {
-	for (s32 i = 0; i != sx * sy; i++)
-		biomeid_map[i] = getBiome(heat_map[i], humidity_map[i], height_map[i])->id;
+	for (s32 i = 0; i != sx * sy; i++) {
+		Biome *biome = getBiome(heat_map[i], humidity_map[i], height_map[i]);
+		biomeid_map[i] = biome->index;
+	}
 }
 
 
@@ -89,8 +88,8 @@ Biome *BiomeManager::getBiome(float heat, float humidity, s16 y)
 	Biome *b, *biome_closest = NULL;
 	float dist_min = FLT_MAX;
 
-	for (size_t i = 1; i < m_elements.size(); i++) {
-		b = (Biome *)m_elements[i];
+	for (size_t i = 1; i < m_objects.size(); i++) {
+		b = (Biome *)m_objects[i];
 		if (!b || y > b->y_max || y < b->y_min)
 			continue;
 
@@ -104,34 +103,40 @@ Biome *BiomeManager::getBiome(float heat, float humidity, s16 y)
 		}
 	}
 
-	return biome_closest ? biome_closest : (Biome *)m_elements[0];
+	return biome_closest ? biome_closest : (Biome *)m_objects[0];
 }
 
 void BiomeManager::clear()
 {
+	EmergeManager *emerge = m_gamedef->getEmergeManager();
 
-	for (size_t i = 1; i < m_elements.size(); i++) {
-		Biome *b = (Biome *)m_elements[i];
+	// Remove all dangling references in Decorations
+	DecorationManager *decomgr = emerge->decomgr;
+	for (size_t i = 0; i != decomgr->getNumObjects(); i++) {
+		Decoration *deco = (Decoration *)decomgr->getRaw(i);
+		deco->biomes.clear();
+	}
+
+	// Don't delete the first biome
+	for (size_t i = 1; i < m_objects.size(); i++) {
+		Biome *b = (Biome *)m_objects[i];
 		delete b;
 	}
 
-	m_elements.resize(1);
+	m_objects.resize(1);
 }
 
 
 ///////////////////////////////////////////////////////////////////////////////
 
 
-void Biome::resolveNodeNames(NodeResolveInfo *nri)
+void Biome::resolveNodeNames()
 {
-	m_ndef->getIdFromResolveInfo(nri, "mapgen_dirt_with_grass", CONTENT_AIR,    c_top);
-	m_ndef->getIdFromResolveInfo(nri, "mapgen_dirt",            CONTENT_AIR,    c_filler);
-	m_ndef->getIdFromResolveInfo(nri, "mapgen_sand",            CONTENT_AIR,    c_shore_top);
-	m_ndef->getIdFromResolveInfo(nri, "mapgen_sand",            CONTENT_AIR,    c_shore_filler);
-	m_ndef->getIdFromResolveInfo(nri, "mapgen_sand",            CONTENT_AIR,    c_underwater);
-	m_ndef->getIdFromResolveInfo(nri, "mapgen_stone",           CONTENT_AIR,    c_stone);
-	m_ndef->getIdFromResolveInfo(nri, "mapgen_water_source",    CONTENT_AIR,    c_water_top);
-	m_ndef->getIdFromResolveInfo(nri, "mapgen_water_source",    CONTENT_AIR,    c_water);
-	m_ndef->getIdFromResolveInfo(nri, "air",                    CONTENT_IGNORE, c_dust);
+	getIdFromNrBacklog(&c_top,         "mapgen_stone",              CONTENT_AIR);
+	getIdFromNrBacklog(&c_filler,      "mapgen_stone",              CONTENT_AIR);
+	getIdFromNrBacklog(&c_stone,       "mapgen_stone",              CONTENT_AIR);
+	getIdFromNrBacklog(&c_water_top,   "mapgen_water_source",       CONTENT_AIR);
+	getIdFromNrBacklog(&c_water,       "mapgen_water_source",       CONTENT_AIR);
+	getIdFromNrBacklog(&c_river_water, "mapgen_river_water_source", CONTENT_AIR);
+	getIdFromNrBacklog(&c_dust,        "air",                       CONTENT_IGNORE);
 }
-

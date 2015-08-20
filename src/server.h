@@ -20,7 +20,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #ifndef SERVER_HEADER
 #define SERVER_HEADER
 
-#include "connection.h"
+#include "network/connection.h"
 #include "irr_v3d.h"
 #include "map.h"
 #include "hud.h"
@@ -33,6 +33,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "util/thread.h"
 #include "environment.h"
 #include "clientiface.h"
+#include "network/networkpacket.h"
 #include <string>
 #include <list>
 #include <map>
@@ -61,11 +62,6 @@ enum ClientDeletionReason {
 	CDR_TIMEOUT,
 	CDR_DENY
 };
-
-/*
-	Some random functions
-*/
-v3f findSpawnPos(ServerMap &map);
 
 class MapEditEventIgnorer
 {
@@ -187,7 +183,42 @@ public:
 	void AsyncRunStep(bool initial_step=false);
 	void Receive();
 	PlayerSAO* StageTwoClientInit(u16 peer_id);
-	void ProcessData(u8 *data, u32 datasize, u16 peer_id);
+
+	/*
+	 * Command Handlers
+	 */
+
+	void handleCommand(NetworkPacket* pkt);
+
+	void handleCommand_Null(NetworkPacket* pkt) {};
+	void handleCommand_Deprecated(NetworkPacket* pkt);
+	void handleCommand_Init(NetworkPacket* pkt);
+	void handleCommand_Init_Legacy(NetworkPacket* pkt);
+	void handleCommand_Init2(NetworkPacket* pkt);
+	void handleCommand_RequestMedia(NetworkPacket* pkt);
+	void handleCommand_ReceivedMedia(NetworkPacket* pkt);
+	void handleCommand_ClientReady(NetworkPacket* pkt);
+	void handleCommand_GotBlocks(NetworkPacket* pkt);
+	void handleCommand_PlayerPos(NetworkPacket* pkt);
+	void handleCommand_DeletedBlocks(NetworkPacket* pkt);
+	void handleCommand_InventoryAction(NetworkPacket* pkt);
+	void handleCommand_ChatMessage(NetworkPacket* pkt);
+	void handleCommand_Damage(NetworkPacket* pkt);
+	void handleCommand_Breath(NetworkPacket* pkt);
+	void handleCommand_Password(NetworkPacket* pkt);
+	void handleCommand_PlayerItem(NetworkPacket* pkt);
+	void handleCommand_Respawn(NetworkPacket* pkt);
+	void handleCommand_Interact(NetworkPacket* pkt);
+	void handleCommand_RemovedSounds(NetworkPacket* pkt);
+	void handleCommand_NodeMetaFields(NetworkPacket* pkt);
+	void handleCommand_InventoryFields(NetworkPacket* pkt);
+	void handleCommand_FirstSrp(NetworkPacket* pkt);
+	void handleCommand_SrpBytesA(NetworkPacket* pkt);
+	void handleCommand_SrpBytesM(NetworkPacket* pkt);
+
+	void ProcessData(NetworkPacket *pkt);
+
+	void Send(NetworkPacket* pkt);
 
 	// Environment must be locked when called
 	void setTimeOfDay(u32 time);
@@ -203,7 +234,7 @@ public:
 		Shall be called with the environment and the connection locked.
 	*/
 	Inventory* getInventory(const InventoryLocation &loc);
-	void setInventoryModified(const InventoryLocation &loc);
+	void setInventoryModified(const InventoryLocation &loc, bool playerSend = true);
 
 	// Connection must be locked when called
 	std::wstring getStatusString();
@@ -213,8 +244,13 @@ public:
 			{ return m_shutdown_requested; }
 
 	// request server to shutdown
-	inline void requestShutdown(void)
-			{ m_shutdown_requested = true; }
+	inline void requestShutdown() { m_shutdown_requested = true; }
+	void requestShutdown(const std::string &msg, bool reconnect)
+	{
+		m_shutdown_requested = true;
+		m_shutdown_msg = msg;
+		m_shutdown_ask_reconnect = reconnect;
+	}
 
 	// Returns -1 if failed, sound handle on success
 	// Envlock
@@ -233,43 +269,27 @@ public:
 
 	void notifyPlayer(const char *name, const std::wstring &msg);
 	void notifyPlayers(const std::wstring &msg);
-	void spawnParticle(const char *playername,
+	void spawnParticle(const std::string &playername,
 		v3f pos, v3f velocity, v3f acceleration,
 		float expirationtime, float size,
-		bool collisiondetection, bool vertical, std::string texture);
+		bool collisiondetection, bool vertical, const std::string &texture);
 
-	void spawnParticleAll(v3f pos, v3f velocity, v3f acceleration,
-		float expirationtime, float size,
-		bool collisiondetection, bool vertical, std::string texture);
-
-	u32 addParticleSpawner(const char *playername,
-		u16 amount, float spawntime,
+	u32 addParticleSpawner(u16 amount, float spawntime,
 		v3f minpos, v3f maxpos,
 		v3f minvel, v3f maxvel,
 		v3f minacc, v3f maxacc,
 		float minexptime, float maxexptime,
 		float minsize, float maxsize,
-		bool collisiondetection, bool vertical, std::string texture);
+		bool collisiondetection, bool vertical, const std::string &texture,
+		const std::string &playername);
 
-	u32 addParticleSpawnerAll(u16 amount, float spawntime,
-		v3f minpos, v3f maxpos,
-		v3f minvel, v3f maxvel,
-		v3f minacc, v3f maxacc,
-		float minexptime, float maxexptime,
-		float minsize, float maxsize,
-		bool collisiondetection, bool vertical, std::string texture);
-
-	void deleteParticleSpawner(const char *playername, u32 id);
-	void deleteParticleSpawnerAll(u32 id);
+	void deleteParticleSpawner(const std::string &playername, u32 id);
 
 	// Creates or resets inventory
 	Inventory* createDetachedInventory(const std::string &name);
 
 	// Envlock and conlock should be locked when using scriptapi
 	GameScripting *getScriptIface(){ return m_script; }
-
-	//TODO: determine what (if anything) should be locked to access EmergeManager
-	EmergeManager *getEmergeManager(){ return m_emerge; }
 
 	// actions: time-reversed list
 	// Return value: success/failure
@@ -288,16 +308,16 @@ public:
 	virtual MtEventManager* getEventManager();
 	virtual scene::ISceneManager* getSceneManager();
 	virtual IRollbackManager *getRollbackManager() { return m_rollback; }
-
+	virtual EmergeManager *getEmergeManager() { return m_emerge; }
 
 	IWritableItemDefManager* getWritableItemDefManager();
 	IWritableNodeDefManager* getWritableNodeDefManager();
 	IWritableCraftDefManager* getWritableCraftDefManager();
 
-	const ModSpec* getModSpec(const std::string &modname);
-	void getModNames(std::list<std::string> &modlist);
+	const ModSpec* getModSpec(const std::string &modname) const;
+	void getModNames(std::vector<std::string> &modlist);
 	std::string getBuiltinLuaPath();
-	inline std::string getWorldPath()
+	inline std::string getWorldPath() const
 			{ return m_path_world; }
 
 	inline bool isSingleplayer()
@@ -309,24 +329,27 @@ public:
 	bool showFormspec(const char *name, const std::string &formspec, const std::string &formname);
 	Map & getMap() { return m_env->getMap(); }
 	ServerEnvironment & getEnv() { return *m_env; }
-	
+
 	u32 hudAdd(Player *player, HudElement *element);
 	bool hudRemove(Player *player, u32 id);
 	bool hudChange(Player *player, u32 id, HudElementStat stat, void *value);
 	bool hudSetFlags(Player *player, u32 flags, u32 mask);
 	bool hudSetHotbarItemcount(Player *player, s32 hotbar_itemcount);
+	s32 hudGetHotbarItemcount(Player *player);
 	void hudSetHotbarImage(Player *player, std::string name);
+	std::string hudGetHotbarImage(Player *player);
 	void hudSetHotbarSelectedImage(Player *player, std::string name);
+	std::string hudGetHotbarSelectedImage(Player *player);
 
 	inline Address getPeerAddress(u16 peer_id)
 			{ return m_con.GetPeerAddress(peer_id); }
-			
+
 	bool setLocalPlayerAnimations(Player *player, v2s32 animation_frames[4], f32 frame_speed);
 	bool setPlayerEyeOffset(Player *player, v3f first, v3f third);
 
 	bool setSky(Player *player, const video::SColor &bgcolor,
 			const std::string &type, const std::vector<std::string> &params);
-	
+
 	bool overrideDayNightRatio(Player *player, bool do_override,
 			float brightness);
 
@@ -334,11 +357,21 @@ public:
 	void peerAdded(con::Peer *peer);
 	void deletingPeer(con::Peer *peer, bool timeout);
 
-	void DenyAccess(u16 peer_id, const std::wstring &reason);
+	void DenySudoAccess(u16 peer_id);
+	void DenyAccessVerCompliant(u16 peer_id, u16 proto_ver, AccessDeniedCode reason,
+		const std::string &str_reason = "", bool reconnect = false);
+	void DenyAccess(u16 peer_id, AccessDeniedCode reason, const std::string &custom_reason="");
+	void acceptAuth(u16 peer_id, bool forSudoMode);
+	void DenyAccess_Legacy(u16 peer_id, const std::wstring &reason);
 	bool getClientConInfo(u16 peer_id, con::rtt_stat_type type,float* retval);
 	bool getClientInfo(u16 peer_id,ClientState* state, u32* uptime,
 			u8* ser_vers, u16* prot_vers, u8* major, u8* minor, u8* patch,
 			std::string* vers_string);
+
+	void SendPlayerHPOrDie(PlayerSAO *player);
+	void SendPlayerBreath(u16 peer_id);
+	void SendInventory(PlayerSAO* playerSAO);
+	void SendMovePlayer(u16 peer_id);
 
 	// Bind address
 	Address m_bind_addr;
@@ -351,7 +384,9 @@ private:
 	void SendMovement(u16 peer_id);
 	void SendHP(u16 peer_id, u8 hp);
 	void SendBreath(u16 peer_id, u16 breath);
-	void SendAccessDenied(u16 peer_id,const std::wstring &reason);
+	void SendAccessDenied(u16 peer_id, AccessDeniedCode reason,
+		const std::string &custom_reason, bool reconnect = false);
+	void SendAccessDenied_Legacy(u16 peer_id, const std::wstring &reason);
 	void SendDeathscreen(u16 peer_id,bool set_camera_point_target, v3f camera_point_target);
 	void SendItemDef(u16 peer_id,IItemDefManager *itemdef, u16 protocol_version);
 	void SendNodeDef(u16 peer_id,INodeDefManager *nodedef, u16 protocol_version);
@@ -359,13 +394,11 @@ private:
 	/* mark blocks not sent for all clients */
 	void SetBlocksNotSent(std::map<v3s16, MapBlock *>& block);
 
-	// Envlock and conlock should be locked when calling these
-	void SendInventory(u16 peer_id);
+
 	void SendChatMessage(u16 peer_id, const std::wstring &message);
 	void SendTimeOfDay(u16 peer_id, u16 time, f32 time_speed);
 	void SendPlayerHP(u16 peer_id);
-	void SendPlayerBreath(u16 peer_id);
-	void SendMovePlayer(u16 peer_id);
+
 	void SendLocalPlayerAnimations(u16 peer_id, v2s32 animation_frames[4], f32 animation_speed);
 	void SendEyeOffset(u16 peer_id, v3f first, v3f third);
 	void SendPlayerPrivileges(u16 peer_id);
@@ -379,7 +412,7 @@ private:
 	void SendSetSky(u16 peer_id, const video::SColor &bgcolor,
 			const std::string &type, const std::vector<std::string> &params);
 	void SendOverrideDayNightRatio(u16 peer_id, bool do_override, float ratio);
-	
+
 	/*
 		Send a node removal/addition event to all clients except ignore_id.
 		Additionally, if far_players!=NULL, players further away than
@@ -387,9 +420,9 @@ private:
 	*/
 	// Envlock and conlock should be locked when calling these
 	void sendRemoveNode(v3s16 p, u16 ignore_id=0,
-			std::list<u16> *far_players=NULL, float far_d_nodes=100);
+			std::vector<u16> *far_players=NULL, float far_d_nodes=100);
 	void sendAddNode(v3s16 p, MapNode n, u16 ignore_id=0,
-			std::list<u16> *far_players=NULL, float far_d_nodes=100,
+			std::vector<u16> *far_players=NULL, float far_d_nodes=100,
 			bool remove_metadata=true);
 	void setBlockNotSent(v3s16 p);
 
@@ -402,7 +435,7 @@ private:
 	void fillMediaCache();
 	void sendMediaAnnouncement(u16 peer_id);
 	void sendRequestedMedia(u16 peer_id,
-			const std::list<std::string> &tosend);
+			const std::vector<std::string> &tosend);
 
 	void sendDetachedInventory(const std::string &name, u16 peer_id);
 	void sendDetachedInventories(u16 peer_id);
@@ -424,6 +457,8 @@ private:
 		float expirationtime, float size,
 		bool collisiondetection, bool vertical, std::string texture);
 
+	u32 SendActiveObjectRemoveAdd(u16 peer_id, const std::string &datas);
+	void SendActiveObjectMessages(u16 peer_id, const std::string &datas, bool reliable = true);
 	/*
 		Something random
 	*/
@@ -431,7 +466,9 @@ private:
 	void DiePlayer(u16 peer_id);
 	void RespawnPlayer(u16 peer_id);
 	void DeleteClient(u16 peer_id, ClientDeletionReason reason);
-	void UpdateCrafting(u16 peer_id);
+	void UpdateCrafting(Player *player);
+
+	v3f findSpawnPos();
 
 	// When called, connection mutex should be locked
 	RemoteClient* getClient(u16 peer_id,ClientState state_min=CS_Active);
@@ -448,7 +485,7 @@ private:
 
 		Call with env and con locked.
 	*/
-	PlayerSAO *emergePlayer(const char *name, u16 peer_id);
+	PlayerSAO *emergePlayer(const char *name, u16 peer_id, u16 proto_version);
 
 	void handlePeerChanges();
 
@@ -547,16 +584,15 @@ private:
 		Queues stuff from peerAdded() and deletingPeer() to
 		handlePeerChanges()
 	*/
-	Queue<con::PeerChange> m_peer_change_queue;
+	std::queue<con::PeerChange> m_peer_change_queue;
 
 	/*
 		Random stuff
 	*/
 
-	// Mod parent directory paths
-	std::list<std::string> m_modspaths;
-
 	bool m_shutdown_requested;
+	std::string m_shutdown_msg;
+	bool m_shutdown_ask_reconnect;
 
 	/*
 		Map edit event queue. Automatically receives all map edits.
@@ -571,7 +607,7 @@ private:
 		Queue of map edits from the environment for sending to the clients
 		This is behind m_env_mutex
 	*/
-	Queue<MapEditEvent*> m_unsent_map_edit_queue;
+	std::queue<MapEditEvent*> m_unsent_map_edit_queue;
 	/*
 		Set to true when the server itself is modifying the map and does
 		all sending of information by itself.
@@ -616,9 +652,9 @@ private:
 /*
 	Runs a simple dedicated server loop.
 
-	Shuts down when run is set to false.
+	Shuts down when kill is set to true.
 */
-void dedicated_server_loop(Server &server, bool &run);
+void dedicated_server_loop(Server &server, bool &kill);
 
 #endif
 

@@ -35,12 +35,14 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 	#include <unistd.h>
 	#include <sys/utsname.h>
 #endif
-
+#if defined(__hpux)
+	#define _PSTAT64
+	#include <sys/pstat.h>
+#endif
 #if !defined(_WIN32) && !defined(__APPLE__) && \
 	!defined(__ANDROID__) && !defined(SERVER)
 	#define XORG_USED
 #endif
-
 #ifdef XORG_USED
 	#include <X11/Xlib.h>
 	#include <X11/Xutil.h>
@@ -51,7 +53,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "filesys.h"
 #include "log.h"
 #include "util/string.h"
-#include "main.h"
 #include "settings.h"
 #include <list>
 
@@ -74,8 +75,7 @@ bool * signal_handler_killstatus(void)
 
 void sigint_handler(int sig)
 {
-	if(g_killed == false)
-	{
+	if(!g_killed) {
 		dstream<<DTIME<<"INFO: sigint_handler(): "
 				<<"Ctrl-C pressed, shutting down."<<std::endl;
 
@@ -85,9 +85,7 @@ void sigint_handler(int sig)
 		debug_stacks_print();*/
 
 		g_killed = true;
-	}
-	else
-	{
+	} else {
 		(void)signal(SIGINT, SIG_DFL);
 	}
 }
@@ -100,42 +98,32 @@ void signal_handler_init(void)
 #else // _WIN32
 	#include <signal.h>
 
-	BOOL WINAPI event_handler(DWORD sig)
-	{
-		switch(sig)
-		{
-		case CTRL_C_EVENT:
-		case CTRL_CLOSE_EVENT:
-		case CTRL_LOGOFF_EVENT:
-		case CTRL_SHUTDOWN_EVENT:
-
-			if(g_killed == false)
-			{
-				dstream<<DTIME<<"INFO: event_handler(): "
-						<<"Ctrl+C, Close Event, Logoff Event or Shutdown Event, shutting down."<<std::endl;
-				// Comment out for less clutter when testing scripts
-				/*dstream<<DTIME<<"INFO: event_handler(): "
-						<<"Printing debug stacks"<<std::endl;
-				debug_stacks_print();*/
-
-				g_killed = true;
-			}
-			else
-			{
-				(void)signal(SIGINT, SIG_DFL);
-			}
-
-			break;
-		case CTRL_BREAK_EVENT:
-			break;
+BOOL WINAPI event_handler(DWORD sig)
+{
+	switch (sig) {
+	case CTRL_C_EVENT:
+	case CTRL_CLOSE_EVENT:
+	case CTRL_LOGOFF_EVENT:
+	case CTRL_SHUTDOWN_EVENT:
+		if (g_killed == false) {
+			dstream << DTIME << "INFO: event_handler(): "
+				<< "Ctrl+C, Close Event, Logoff Event or Shutdown Event,"
+				" shutting down." << std::endl;
+			g_killed = true;
+		} else {
+			(void)signal(SIGINT, SIG_DFL);
 		}
-
-		return TRUE;
+		break;
+	case CTRL_BREAK_EVENT:
+		break;
 	}
+
+	return TRUE;
+}
 
 void signal_handler_init(void)
 {
-	SetConsoleCtrlHandler( (PHANDLER_ROUTINE)event_handler,TRUE);
+	SetConsoleCtrlHandler((PHANDLER_ROUTINE)event_handler, TRUE);
 }
 
 #endif
@@ -144,7 +132,8 @@ void signal_handler_init(void)
 /*
 	Multithreading support
 */
-int getNumberOfProcessors() {
+int getNumberOfProcessors()
+{
 #if defined(_SC_NPROCESSORS_ONLN)
 
 	return sysconf(_SC_NPROCESSORS_ONLN);
@@ -178,7 +167,8 @@ int getNumberOfProcessors() {
 
 
 #ifndef __ANDROID__
-bool threadBindToProcessor(threadid_t tid, int pnumber) {
+bool threadBindToProcessor(threadid_t tid, int pnumber)
+{
 #if defined(_WIN32)
 
 	HANDLE hThread = OpenThread(THREAD_ALL_ACCESS, 0, tid);
@@ -202,7 +192,7 @@ bool threadBindToProcessor(threadid_t tid, int pnumber) {
 #elif defined(__sun) || defined(sun)
 
 	return processor_bind(P_LWPID, MAKE_LWPID_PTHREAD(tid),
-						pnumber, NULL) == 0;
+		pnumber, NULL) == 0;
 
 #elif defined(_AIX)
 
@@ -213,7 +203,7 @@ bool threadBindToProcessor(threadid_t tid, int pnumber) {
 	pthread_spu_t answer;
 
 	return pthread_processor_bind_np(PTHREAD_BIND_ADVISORY_NP,
-									&answer, pnumber, tid) == 0;
+		&answer, pnumber, tid) == 0;
 
 #elif defined(__APPLE__)
 
@@ -222,7 +212,7 @@ bool threadBindToProcessor(threadid_t tid, int pnumber) {
 	thread_port_t threadport = pthread_mach_thread_np(tid);
 	tapol.affinity_tag = pnumber + 1;
 	return thread_policy_set(threadport, THREAD_AFFINITY_POLICY,
-			(thread_policy_t)&tapol, THREAD_AFFINITY_POLICY_COUNT) == KERN_SUCCESS;
+		(thread_policy_t)&tapol, THREAD_AFFINITY_POLICY_COUNT) == KERN_SUCCESS;
 
 #else
 
@@ -232,7 +222,8 @@ bool threadBindToProcessor(threadid_t tid, int pnumber) {
 }
 #endif
 
-bool threadSetPriority(threadid_t tid, int prio) {
+bool threadSetPriority(threadid_t tid, int prio)
+{
 #if defined(_WIN32)
 
 	HANDLE hThread = OpenThread(THREAD_ALL_ACCESS, 0, tid);
@@ -287,14 +278,14 @@ void pathRemoveFile(char *path, char delim)
 	path[i] = 0;
 }
 
-bool detectMSVCBuildDir(char *c_path)
+bool detectMSVCBuildDir(const std::string &path)
 {
-	std::string path(c_path);
 	const char *ends[] = {
 		"bin\\Release",
 		"bin\\Debug",
 		"bin\\Build",
-		NULL};
+		NULL
+	};
 	return (removeStringEnd(path, ends) != "");
 }
 
@@ -312,14 +303,14 @@ std::string get_sysinfo()
 
 	oss << "Windows/" << osvi.dwMajorVersion << "."
 		<< osvi.dwMinorVersion;
-	if(osvi.szCSDVersion[0])
+	if (osvi.szCSDVersion[0])
 		oss << "-" << tmp;
 	oss << " ";
 	#ifdef _WIN64
 	oss << "x86_64";
 	#else
 	BOOL is64 = FALSE;
-	if(IsWow64Process(GetCurrentProcess(), &is64) && is64)
+	if (IsWow64Process(GetCurrentProcess(), &is64) && is64)
 		oss << "x86_64"; // 32-bit app on 64-bit OS
 	else
 		oss << "x86";
@@ -334,231 +325,322 @@ std::string get_sysinfo()
 #endif
 }
 
-void initializePaths()
+
+bool getCurrentWorkingDir(char *buf, size_t len)
 {
-#if RUN_IN_PLACE
-	/*
-		Use relative paths if RUN_IN_PLACE
-	*/
+#ifdef _WIN32
+	DWORD ret = GetCurrentDirectory(len, buf);
+	return (ret != 0) && (ret <= len);
+#else
+	return getcwd(buf, len);
+#endif
+}
 
-	infostream<<"Using relative paths (RUN_IN_PLACE)"<<std::endl;
 
-	/*
-		Windows
-	*/
-	#if defined(_WIN32)
+bool getExecPathFromProcfs(char *buf, size_t buflen)
+{
+#ifndef _WIN32
+	buflen--;
 
-	const DWORD buflen = 1000;
-	char buf[buflen];
-	DWORD len;
+	ssize_t len;
+	if ((len = readlink("/proc/self/exe",     buf, buflen)) == -1 &&
+		(len = readlink("/proc/curproc/file", buf, buflen)) == -1 &&
+		(len = readlink("/proc/curproc/exe",  buf, buflen)) == -1)
+		return false;
 
-	// Find path of executable and set path_share relative to it
-	len = GetModuleFileName(GetModuleHandle(NULL), buf, buflen);
-	assert(len < buflen);
-	pathRemoveFile(buf, '\\');
+	buf[len] = '\0';
+	return true;
+#else
+	return false;
+#endif
+}
 
-	if(detectMSVCBuildDir(buf)){
-		infostream<<"MSVC build directory detected"<<std::endl;
-		path_share = std::string(buf) + "\\..\\..";
-		path_user = std::string(buf) + "\\..\\..";
-	}
-	else{
-		path_share = std::string(buf) + "\\..";
-		path_user = std::string(buf) + "\\..";
-	}
+//// Windows
+#if defined(_WIN32)
 
-	/*
-		Linux
-	*/
-	#elif defined(linux)
+bool getCurrentExecPath(char *buf, size_t len)
+{
+	DWORD written = GetModuleFileNameA(NULL, buf, len);
+	if (written == 0 || written == len)
+		return false;
 
-	char buf[BUFSIZ];
-	memset(buf, 0, BUFSIZ);
-	// Get path to executable
-	assert(readlink("/proc/self/exe", buf, BUFSIZ-1) != -1);
+	return true;
+}
 
-	pathRemoveFile(buf, '/');
 
-	path_share = std::string(buf) + "/..";
-	path_user = std::string(buf) + "/..";
+//// Linux
+#elif defined(linux) || defined(__linux) || defined(__linux__)
 
-	/*
-		OS X
-	*/
-	#elif defined(__APPLE__)
+bool getCurrentExecPath(char *buf, size_t len)
+{
+	if (!getExecPathFromProcfs(buf, len))
+		return false;
 
-	//https://developer.apple.com/library/mac/#documentation/Darwin/Reference/ManPages/man3/dyld.3.html
-	//TODO: Test this code
-	char buf[BUFSIZ];
-	uint32_t len = sizeof(buf);
-	assert(_NSGetExecutablePath(buf, &len) != -1);
+	return true;
+}
 
-	pathRemoveFile(buf, '/');
 
-	path_share = std::string(buf) + "/..";
-	path_user = std::string(buf) + "/..";
+//// Mac OS X, Darwin
+#elif defined(__APPLE__)
 
-	/*
-		FreeBSD
-	*/
-	#elif defined(__FreeBSD__)
+bool getCurrentExecPath(char *buf, size_t len)
+{
+	uint32_t lenb = (uint32_t)len;
+	if (_NSGetExecutablePath(buf, &lenb) == -1)
+		return false;
+
+	return true;
+}
+
+
+//// FreeBSD, NetBSD, DragonFlyBSD
+#elif defined(__FreeBSD__) || defined(__NetBSD__) || defined(__DragonFly__)
+
+bool getCurrentExecPath(char *buf, size_t len)
+{
+	// Try getting path from procfs first, since valgrind
+	// doesn't work with the latter
+	if (getExecPathFromProcfs(buf, len))
+		return true;
 
 	int mib[4];
-	char buf[BUFSIZ];
-	size_t len = sizeof(buf);
 
 	mib[0] = CTL_KERN;
 	mib[1] = KERN_PROC;
 	mib[2] = KERN_PROC_PATHNAME;
 	mib[3] = -1;
-	assert(sysctl(mib, 4, buf, &len, NULL, 0) != -1);
 
-	pathRemoveFile(buf, '/');
+	if (sysctl(mib, 4, buf, &len, NULL, 0) == -1)
+		return false;
 
-	path_share = std::string(buf) + "/..";
-	path_user = std::string(buf) + "/..";
+	return true;
+}
 
-	#else
 
-	//TODO: Get path of executable. This assumes working directory is bin/
-	dstream<<"WARNING: Relative path not properly supported on this platform"
-			<<std::endl;
+//// Solaris
+#elif defined(__sun) || defined(sun)
 
-	/* scriptapi no longer allows paths that start with "..", so assuming that
-	   the current working directory is bin/, strip off the last component. */
-	char *cwd = getcwd(NULL, 0);
-	pathRemoveFile(cwd, '/');
-	path_share = std::string(cwd);
-	path_user = std::string(cwd);
+bool getCurrentExecPath(char *buf, size_t len)
+{
+	const char *exec = getexecname();
+	if (exec == NULL)
+		return false;
 
-	#endif
+	if (strlcpy(buf, exec, len) >= len)
+		return false;
 
-#else // RUN_IN_PLACE
+	return true;
+}
 
-	/*
-		Use platform-specific paths otherwise
-	*/
 
-	infostream<<"Using system-wide paths (NOT RUN_IN_PLACE)"<<std::endl;
+// HP-UX
+#elif defined(__hpux)
 
-	/*
-		Windows
-	*/
-	#if defined(_WIN32)
+bool getCurrentExecPath(char *buf, size_t len)
+{
+	struct pst_status psts;
 
-	const DWORD buflen = 1000;
-	char buf[buflen];
-	DWORD len;
+	if (pstat_getproc(&psts, sizeof(psts), 0, getpid()) == -1)
+		return false;
+
+	if (pstat_getpathname(buf, len, &psts.pst_fid_text) == -1)
+		return false;
+
+	return true;
+}
+
+
+#else
+
+bool getCurrentExecPath(char *buf, size_t len)
+{
+	return false;
+}
+
+#endif
+
+
+//// Windows
+#if defined(_WIN32)
+
+bool setSystemPaths()
+{
+	char buf[BUFSIZ];
 
 	// Find path of executable and set path_share relative to it
-	len = GetModuleFileName(GetModuleHandle(NULL), buf, buflen);
-	assert(len < buflen);
+	FATAL_ERROR_IF(!getCurrentExecPath(buf, sizeof(buf)),
+		"Failed to get current executable path");
 	pathRemoveFile(buf, '\\');
 
 	// Use ".\bin\.."
 	path_share = std::string(buf) + "\\..";
 
 	// Use "C:\Documents and Settings\user\Application Data\<PROJECT_NAME>"
-	len = GetEnvironmentVariable("APPDATA", buf, buflen);
-	assert(len < buflen);
+	DWORD len = GetEnvironmentVariable("APPDATA", buf, sizeof(buf));
+	FATAL_ERROR_IF(len == 0 || len > sizeof(buf), "Failed to get APPDATA");
+
 	path_user = std::string(buf) + DIR_DELIM + PROJECT_NAME;
+	return true;
+}
 
-	/*
-		Linux
-	*/
-	#elif defined(linux)
 
-	// Get path to executable
-	std::string bindir = "";
-	{
-		char buf[BUFSIZ];
-		memset(buf, 0, BUFSIZ);
-		if (readlink("/proc/self/exe", buf, BUFSIZ-1) == -1) {
-			errorstream << "Unable to read bindir "<< std::endl;
-#ifndef __ANDROID__
-			assert("Unable to read bindir" == 0);
+//// Linux
+#elif defined(linux) || defined(__linux)
+
+bool setSystemPaths()
+{
+	char buf[BUFSIZ];
+
+	if (!getCurrentExecPath(buf, sizeof(buf))) {
+#ifdef __ANDROID__
+		errorstream << "Unable to read bindir "<< std::endl;
+#else
+		FATAL_ERROR("Unable to read bindir");
 #endif
-		} else {
-			pathRemoveFile(buf, '/');
-			bindir = buf;
-		}
+		return false;
 	}
+
+	pathRemoveFile(buf, '/');
+	std::string bindir(buf);
 
 	// Find share directory from these.
 	// It is identified by containing the subdirectory "builtin".
 	std::list<std::string> trylist;
 	std::string static_sharedir = STATIC_SHAREDIR;
-	if(static_sharedir != "" && static_sharedir != ".")
+	if (static_sharedir != "" && static_sharedir != ".")
 		trylist.push_back(static_sharedir);
-	trylist.push_back(
-			bindir + DIR_DELIM + ".." + DIR_DELIM + "share" + DIR_DELIM + PROJECT_NAME);
-	trylist.push_back(bindir + DIR_DELIM + "..");
+
+	trylist.push_back(bindir + DIR_DELIM ".." DIR_DELIM "share"
+		DIR_DELIM + PROJECT_NAME);
+	trylist.push_back(bindir + DIR_DELIM "..");
+
 #ifdef __ANDROID__
 	trylist.push_back(path_user);
 #endif
 
-	for(std::list<std::string>::const_iterator i = trylist.begin();
-			i != trylist.end(); i++)
-	{
+	for (std::list<std::string>::const_iterator
+			i = trylist.begin(); i != trylist.end(); i++) {
 		const std::string &trypath = *i;
-		if(!fs::PathExists(trypath) || !fs::PathExists(trypath + DIR_DELIM + "builtin")){
-			dstream<<"WARNING: system-wide share not found at \""
-					<<trypath<<"\""<<std::endl;
+		if (!fs::PathExists(trypath) ||
+			!fs::PathExists(trypath + DIR_DELIM + "builtin")) {
+			dstream << "WARNING: system-wide share not found at \""
+					<< trypath << "\""<< std::endl;
 			continue;
 		}
+
 		// Warn if was not the first alternative
-		if(i != trylist.begin()){
-			dstream<<"WARNING: system-wide share found at \""
-					<<trypath<<"\""<<std::endl;
+		if (i != trylist.begin()) {
+			dstream << "WARNING: system-wide share found at \""
+					<< trypath << "\"" << std::endl;
 		}
+
 		path_share = trypath;
 		break;
 	}
+
 #ifndef __ANDROID__
-	path_user = std::string(getenv("HOME")) + DIR_DELIM + "." + PROJECT_NAME;
+	path_user = std::string(getenv("HOME")) + DIR_DELIM "."
+		+ PROJECT_NAME;
 #endif
 
-	/*
-		OS X
-	*/
-	#elif defined(__APPLE__)
+	return true;
+}
 
-	// Code based on
-	// http://stackoverflow.com/questions/516200/relative-paths-not-working-in-xcode-c
+
+//// Mac OS X
+#elif defined(__APPLE__)
+
+bool setSystemPaths()
+{
 	CFBundleRef main_bundle = CFBundleGetMainBundle();
 	CFURLRef resources_url = CFBundleCopyResourcesDirectoryURL(main_bundle);
 	char path[PATH_MAX];
-	if(CFURLGetFileSystemRepresentation(resources_url, TRUE, (UInt8 *)path, PATH_MAX))
-	{
-		dstream<<"Bundle resource path: "<<path<<std::endl;
-		//chdir(path);
-		path_share = std::string(path) + DIR_DELIM + STATIC_SHAREDIR;
-	}
-	else
-	{
-		// error!
-		dstream<<"WARNING: Could not determine bundle resource path"<<std::endl;
+	if (CFURLGetFileSystemRepresentation(resources_url,
+			TRUE, (UInt8 *)path, PATH_MAX)) {
+		path_share = std::string(path);
+	} else {
+		dstream << "WARNING: Could not determine bundle resource path" << std::endl;
 	}
 	CFRelease(resources_url);
 
-	path_user = std::string(getenv("HOME")) + "/Library/Application Support/" + PROJECT_NAME;
-
-	#else // FreeBSD, and probably many other POSIX-like systems.
-
-	path_share = STATIC_SHAREDIR;
-	path_user = std::string(getenv("HOME")) + DIR_DELIM + "." + PROJECT_NAME;
-
-	#endif
-
-#endif // RUN_IN_PLACE
+	path_user = std::string(getenv("HOME"))
+		+ "/Library/Application Support/"
+		+ PROJECT_NAME;
+	return true;
 }
 
-static irr::IrrlichtDevice *device;
 
-void initIrrlicht(irr::IrrlichtDevice *device_)
+#else
+
+bool setSystemPaths()
 {
-	device = device_;
+	path_share = STATIC_SHAREDIR;
+	path_user  = std::string(getenv("HOME")) + DIR_DELIM "."
+		+ lowercase(PROJECT_NAME);
+	return true;
 }
+
+
+#endif
+
+
+void initializePaths()
+{
+#if RUN_IN_PLACE
+	char buf[BUFSIZ];
+
+	infostream << "Using relative paths (RUN_IN_PLACE)" << std::endl;
+
+	bool success =
+		getCurrentExecPath(buf, sizeof(buf)) ||
+		getExecPathFromProcfs(buf, sizeof(buf));
+
+	if (success) {
+		pathRemoveFile(buf, DIR_DELIM_CHAR);
+		std::string execpath(buf);
+
+		path_share = execpath + DIR_DELIM "..";
+		path_user  = execpath + DIR_DELIM "..";
+
+		if (detectMSVCBuildDir(execpath)) {
+			path_share += DIR_DELIM "..";
+			path_user  += DIR_DELIM "..";
+		}
+	} else {
+		errorstream << "Failed to get paths by executable location, "
+			"trying cwd" << std::endl;
+
+		if (!getCurrentWorkingDir(buf, sizeof(buf)))
+			FATAL_ERROR("Ran out of methods to get paths");
+
+		size_t cwdlen = strlen(buf);
+		if (cwdlen >= 1 && buf[cwdlen - 1] == DIR_DELIM_CHAR) {
+			cwdlen--;
+			buf[cwdlen] = '\0';
+		}
+
+		if (cwdlen >= 4 && !strcmp(buf + cwdlen - 4, DIR_DELIM "bin"))
+			pathRemoveFile(buf, DIR_DELIM_CHAR);
+
+		std::string execpath(buf);
+
+		path_share = execpath;
+		path_user  = execpath;
+	}
+
+#else
+	infostream << "Using system-wide paths (NOT RUN_IN_PLACE)" << std::endl;
+
+	if (!setSystemPaths())
+		errorstream << "Failed to get one or more system-wide path" << std::endl;
+
+#endif
+
+	infostream << "Detected share path: " << path_share << std::endl;
+	infostream << "Detected user path: " << path_user << std::endl;
+}
+
+
 
 void setXorgClassHint(const video::SExposedVideoData &video_data,
 	const std::string &name)
@@ -577,17 +659,33 @@ void setXorgClassHint(const video::SExposedVideoData &video_data,
 #endif
 }
 
+
+////
+//// Video/Display Information (Client-only)
+////
+
 #ifndef SERVER
+
+static irr::IrrlichtDevice *device;
+
+void initIrrlicht(irr::IrrlichtDevice *device_)
+{
+	device = device_;
+}
+
 v2u32 getWindowSize()
 {
 	return device->getVideoDriver()->getScreenSize();
 }
 
 
-std::vector<core::vector3d<u32> > getVideoModes()
+std::vector<core::vector3d<u32> > getSupportedVideoModes()
 {
+	IrrlichtDevice *nulldevice = createDevice(video::EDT_NULL);
+	sanity_check(nulldevice != NULL);
+
 	std::vector<core::vector3d<u32> > mlist;
-	video::IVideoModeList *modelist = device->getVideoModeList();
+	video::IVideoModeList *modelist = nulldevice->getVideoModeList();
 
 	u32 num_modes = modelist->getVideoModeCount();
 	for (u32 i = 0; i != num_modes; i++) {
@@ -595,6 +693,8 @@ std::vector<core::vector3d<u32> > getVideoModes()
 		s32 mode_depth = modelist->getVideoModeDepth(i);
 		mlist.push_back(core::vector3d<u32>(mode_res.Width, mode_res.Height, mode_depth));
 	}
+
+	nulldevice->drop();
 
 	return mlist;
 }
@@ -644,31 +744,28 @@ const char *getVideoDriverFriendlyName(irr::video::E_DRIVER_TYPE type)
 	return driver_names[type];
 }
 
-
-#ifndef __ANDROID__
-#ifdef XORG_USED
+#	ifndef __ANDROID__
+#		ifdef XORG_USED
 
 static float calcDisplayDensity()
 {
-	const char* current_display = getenv("DISPLAY");
+	const char *current_display = getenv("DISPLAY");
 
 	if (current_display != NULL) {
-			Display * x11display = XOpenDisplay(current_display);
+		Display *x11display = XOpenDisplay(current_display);
 
-			if (x11display != NULL) {
-				/* try x direct */
-				float dpi_height =
-						floor(DisplayHeight(x11display, 0) /
-								(DisplayHeightMM(x11display, 0) * 0.039370) + 0.5);
-				float dpi_width =
-						floor(DisplayWidth(x11display, 0) /
-								(DisplayWidthMM(x11display, 0) * 0.039370) +0.5);
+		if (x11display != NULL) {
+			/* try x direct */
+			float dpi_height = floor(DisplayHeight(x11display, 0) /
+							(DisplayHeightMM(x11display, 0) * 0.039370) + 0.5);
+			float dpi_width = floor(DisplayWidth(x11display, 0) /
+							(DisplayWidthMM(x11display, 0) * 0.039370) + 0.5);
 
-				XCloseDisplay(x11display);
+			XCloseDisplay(x11display);
 
-				return std::max(dpi_height,dpi_width) / 96.0;
-			}
+			return std::max(dpi_height,dpi_width) / 96.0;
 		}
+	}
 
 	/* return manually specified dpi */
 	return g_settings->getFloat("screen_dpi")/96.0;
@@ -682,12 +779,12 @@ float getDisplayDensity()
 }
 
 
-#else
+#		else // XORG_USED
 float getDisplayDensity()
 {
 	return g_settings->getFloat("screen_dpi")/96.0;
 }
-#endif
+#		endif // XORG_USED
 
 v2u32 getDisplaySize()
 {
@@ -698,8 +795,8 @@ v2u32 getDisplaySize()
 
 	return deskres;
 }
-#endif
-#endif
+#	endif // __ANDROID__
+#endif // SERVER
 
 } //namespace porting
 

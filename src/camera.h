@@ -23,7 +23,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "irrlichttypes_extrabloated.h"
 #include "inventory.h"
 #include "mesh.h"
-#include "tile.h"
+#include "client/tile.h"
 #include "util/numeric.h"
 #include <ICameraSceneNode.h>
 
@@ -110,7 +110,7 @@ public:
 	}
 
 	// Checks if the constructor was able to create the scene nodes
-	bool successfullyCreated(std::wstring& error_message);
+	bool successfullyCreated(std::string &error_message);
 
 	// Step the camera: updates the viewing range and view bobbing.
 	void step(f32 dtime);
@@ -159,7 +159,6 @@ private:
 
 	scene::ISceneManager* m_wieldmgr;
 	WieldMeshSceneNode* m_wieldnode;
-	scene::ILightSceneNode* m_wieldlightnode;
 
 	// draw control
 	MapDrawControl& m_draw_control;

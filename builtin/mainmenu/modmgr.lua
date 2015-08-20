@@ -17,7 +17,7 @@
 
 --------------------------------------------------------------------------------
 function get_mods(path,retval,modpack)
-	local mods = core.get_dirlist(path, true)
+	local mods = core.get_dir_list(path, true)
 	
 	for i=1, #mods, 1 do
 		if mods[i]:sub(1,1) ~= "." then
@@ -94,7 +94,7 @@ function modmgr.getbasefolder(temppath)
 				}
 	end
 
-	local subdirs = core.get_dirlist(temppath,true)
+	local subdirs = core.get_dir_list(temppath, true)
 
 	--only single mod or modpack allowed
 	if #subdirs ~= 1 then
@@ -321,8 +321,10 @@ function modmgr.get_worldconfig(worldpath)
 	for key,value in pairs(worldfile:to_table()) do
 		if key == "gameid" then
 			worldconfig.id = value
-		else
+		elseif key:sub(0, 9) == "load_mod_" then
 			worldconfig.global_mods[key] = core.is_yes(value)
+		else
+			worldconfig[key] = value
 		end
 	end
 

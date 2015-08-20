@@ -28,10 +28,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "mapblock_mesh.h"
 #include "mesh.h"
 #include "wieldmesh.h"
-#include "tile.h"
+#include "client/tile.h"
 #endif
 #include "log.h"
-#include "main.h" // g_settings
 #include "settings.h"
 #include "util/serialize.h"
 #include "util/container.h"
@@ -249,8 +248,8 @@ public:
 	virtual ~CItemDefManager()
 	{
 #ifndef SERVER
-		const std::list<ClientCached*> &values = m_clientcached.getValues();
-		for(std::list<ClientCached*>::const_iterator
+		const std::vector<ClientCached*> &values = m_clientcached.getValues();
+		for(std::vector<ClientCached*>::const_iterator
 				i = values.begin(); i != values.end(); ++i)
 		{
 			ClientCached *cc = *i;
@@ -281,26 +280,23 @@ public:
 	}
 	virtual std::string getAlias(const std::string &name) const
 	{
-		std::map<std::string, std::string>::const_iterator i;
-		i = m_aliases.find(name);
-		if(i != m_aliases.end())
-			return i->second;
+		StringMap::const_iterator it = m_aliases.find(name);
+		if (it != m_aliases.end())
+			return it->second;
 		return name;
 	}
 	virtual std::set<std::string> getAll() const
 	{
 		std::set<std::string> result;
-		for(std::map<std::string, ItemDefinition*>::const_iterator
-				i = m_item_definitions.begin();
-				i != m_item_definitions.end(); i++)
-		{
-			result.insert(i->first);
+		for(std::map<std::string, ItemDefinition *>::const_iterator
+				it = m_item_definitions.begin();
+				it != m_item_definitions.end(); ++it) {
+			result.insert(it->first);
 		}
-		for(std::map<std::string, std::string>::const_iterator
-				i = m_aliases.begin();
-				i != m_aliases.end(); i++)
-		{
-			result.insert(i->first);
+		for (StringMap::const_iterator
+				it = m_aliases.begin();
+				it != m_aliases.end(); ++it) {
+			result.insert(it->first);
 		}
 		return result;
 	}
@@ -321,7 +317,7 @@ public:
 				<<name<<"\""<<std::endl;
 
 		// This is not thread-safe
-		assert(get_current_thread_id() == m_main_thread);
+		sanity_check(get_current_thread_id() == m_main_thread);
 
 		// Skip if already in cache
 		ClientCached *cc = NULL;
@@ -362,8 +358,6 @@ public:
 
 			scene::IMesh *node_mesh = NULL;
 
-			bool reenable_shaders = false;
-
 			if (need_rtt_mesh || need_wield_mesh) {
 				u8 param1 = 0;
 				if (f.param_type == CPT_LIGHT)
@@ -372,11 +366,7 @@ public:
 				/*
 					Make a mesh from the node
 				*/
-				if (g_settings->getBool("enable_shaders")) {
-					reenable_shaders = true;
-					g_settings->setBool("enable_shaders", false);
-				}
-				MeshMakeData mesh_make_data(gamedef);
+				MeshMakeData mesh_make_data(gamedef, false);
 				u8 param2 = 0;
 				if (f.param_type_2 == CPT2_WALLMOUNTED)
 					param2 = 1;
@@ -443,9 +433,6 @@ public:
 
 			if (node_mesh)
 				node_mesh->drop();
-
-			if (reenable_shaders)
-				g_settings->setBool("enable_shaders",true);
 		}
 
 		// Put in cache
@@ -553,7 +540,7 @@ public:
 		verbosestream<<"ItemDefManager: registering \""<<def.name<<"\""<<std::endl;
 		// Ensure that the "" item (the hand) always has ToolCapabilities
 		if(def.name == "")
-			assert(def.tool_capabilities != NULL);
+			FATAL_ERROR_IF(!def.tool_capabilities, "Hand does not have ToolCapabilities");
 
 		if(m_item_definitions.count(def.name) == 0)
 			m_item_definitions[def.name] = new ItemDefinition(def);
@@ -581,22 +568,24 @@ public:
 		writeU8(os, 0); // version
 		u16 count = m_item_definitions.size();
 		writeU16(os, count);
-		for(std::map<std::string, ItemDefinition*>::const_iterator
-				i = m_item_definitions.begin();
-				i != m_item_definitions.end(); i++)
-		{
-			ItemDefinition *def = i->second;
+
+		for (std::map<std::string, ItemDefinition *>::const_iterator
+				it = m_item_definitions.begin();
+				it != m_item_definitions.end(); ++it) {
+			ItemDefinition *def = it->second;
 			// Serialize ItemDefinition and write wrapped in a string
 			std::ostringstream tmp_os(std::ios::binary);
 			def->serialize(tmp_os, protocol_version);
-			os<<serializeString(tmp_os.str());
+			os << serializeString(tmp_os.str());
 		}
+
 		writeU16(os, m_aliases.size());
-		for(std::map<std::string, std::string>::const_iterator
-			i = m_aliases.begin(); i != m_aliases.end(); i++)
-		{
-			os<<serializeString(i->first);
-			os<<serializeString(i->second);
+
+		for (StringMap::const_iterator
+				it = m_aliases.begin();
+				it != m_aliases.end(); ++it) {
+			os << serializeString(it->first);
+			os << serializeString(it->second);
 		}
 	}
 	void deSerialize(std::istream &is)
@@ -643,7 +632,7 @@ private:
 	// Key is name
 	std::map<std::string, ItemDefinition*> m_item_definitions;
 	// Aliases
-	std::map<std::string, std::string> m_aliases;
+	StringMap m_aliases;
 #ifndef SERVER
 	// The id of the thread that is allowed to use irrlicht directly
 	threadid_t m_main_thread;

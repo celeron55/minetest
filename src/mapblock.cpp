@@ -38,6 +38,30 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define PP(x) "("<<(x).X<<","<<(x).Y<<","<<(x).Z<<")"
 
+static const char *modified_reason_strings[] = {
+	"initial",
+	"reallocate",
+	"setIsUnderground",
+	"setLightingExpired",
+	"setGenerated",
+	"setNode",
+	"setNodeNoCheck",
+	"setTimestamp",
+	"NodeMetaRef::reportMetadataChange",
+	"clearAllObjects",
+	"Timestamp expired (step)",
+	"addActiveObjectRaw",
+	"removeRemovedObjects/remove",
+	"removeRemovedObjects/deactivate",
+	"Stored list cleared in activateObjects due to overflow",
+	"deactivateFarObjects: Static data moved in",
+	"deactivateFarObjects: Static data moved out",
+	"deactivateFarObjects: Static data changed considerably",
+	"finishBlockMake: expireDayNightDiff",
+	"unknown",
+};
+
+
 /*
 	MapBlock
 */
@@ -45,10 +69,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 MapBlock::MapBlock(Map *parent, v3s16 pos, IGameDef *gamedef, bool dummy):
 		m_parent(parent),
 		m_pos(pos),
+		m_pos_relative(pos * MAP_BLOCKSIZE),
 		m_gamedef(gamedef),
 		m_modified(MOD_STATE_WRITE_NEEDED),
-		m_modified_reason("initial"),
-		m_modified_reason_too_long(false),
+		m_modified_reason(MOD_REASON_INITIAL),
 		is_underground(false),
 		m_lighting_expired(true),
 		m_day_night_differs(false),
@@ -109,7 +133,28 @@ MapNode MapBlock::getNodeParent(v3s16 p, bool *is_valid_position)
 	}
 	if (is_valid_position)
 		*is_valid_position = true;
-	return data[p.Z*MAP_BLOCKSIZE*MAP_BLOCKSIZE + p.Y*MAP_BLOCKSIZE + p.X];
+	return data[p.Z * zstride + p.Y * ystride + p.X];
+}
+
+std::string MapBlock::getModifiedReasonString()
+{
+	std::string reason;
+
+	const u32 ubound = MYMIN(sizeof(m_modified_reason) * CHAR_BIT,
+		ARRLEN(modified_reason_strings));
+
+	for (u32 i = 0; i != ubound; i++) {
+		if ((m_modified_reason & (1 << i)) == 0)
+			continue;
+
+		reason += modified_reason_strings[i];
+		reason += ", ";
+	}
+
+	if (reason.length() > 2)
+		reason.resize(reason.length() - 2);
+
+	return reason;
 }
 
 /*
@@ -330,47 +375,42 @@ void MapBlock::copyFrom(VoxelManipulator &dst)
 void MapBlock::actuallyUpdateDayNightDiff()
 {
 	INodeDefManager *nodemgr = m_gamedef->ndef();
+
 	// Running this function un-expires m_day_night_differs
 	m_day_night_differs_expired = false;
 
-	if(data == NULL)
-	{
+	if (data == NULL) {
 		m_day_night_differs = false;
 		return;
 	}
 
-	bool differs = false;
+	bool differs;
 
 	/*
 		Check if any lighting value differs
 	*/
-	for(u32 i=0; i<MAP_BLOCKSIZE*MAP_BLOCKSIZE*MAP_BLOCKSIZE; i++)
-	{
+	for (u32 i = 0; i < nodecount; i++) {
 		MapNode &n = data[i];
-		if(n.getLight(LIGHTBANK_DAY, nodemgr) != n.getLight(LIGHTBANK_NIGHT, nodemgr))
-		{
-			differs = true;
+
+		differs = !n.isLightDayNightEq(nodemgr);
+		if (differs)
 			break;
-		}
 	}
 
 	/*
 		If some lighting values differ, check if the whole thing is
-		just air. If it is, differ = false
+		just air. If it is just air, differs = false
 	*/
-	if(differs)
-	{
+	if (differs) {
 		bool only_air = true;
-		for(u32 i=0; i<MAP_BLOCKSIZE*MAP_BLOCKSIZE*MAP_BLOCKSIZE; i++)
-		{
+		for (u32 i = 0; i < nodecount; i++) {
 			MapNode &n = data[i];
-			if(n.getContent() != CONTENT_AIR)
-			{
+			if (n.getContent() != CONTENT_AIR) {
 				only_air = false;
 				break;
 			}
 		}
-		if(only_air)
+		if (only_air)
 			differs = false;
 	}
 
@@ -426,16 +466,15 @@ s16 MapBlock::getGroundLevel(v2s16 p2d)
 // sure we can handle all content ids. But it's absolutely worth it as it's
 // a speedup of 4 for one of the major time consuming functions on storing
 // mapblocks.
-static content_t getBlockNodeIdMapping_mapping[USHRT_MAX];
+static content_t getBlockNodeIdMapping_mapping[USHRT_MAX + 1];
 static void getBlockNodeIdMapping(NameIdMapping *nimap, MapNode *nodes,
 		INodeDefManager *nodedef)
 {
-	memset(getBlockNodeIdMapping_mapping, 0xFF, USHRT_MAX * sizeof(content_t));
+	memset(getBlockNodeIdMapping_mapping, 0xFF, (USHRT_MAX + 1) * sizeof(content_t));
 
 	std::set<content_t> unknown_contents;
 	content_t id_counter = 0;
-	for(u32 i=0; i<MAP_BLOCKSIZE*MAP_BLOCKSIZE*MAP_BLOCKSIZE; i++)
-	{
+	for (u32 i = 0; i < MapBlock::nodecount; i++) {
 		content_t global_id = nodes[i].getContent();
 		content_t id = CONTENT_IGNORE;
 
@@ -480,8 +519,7 @@ static void correctBlockNodeIds(const NameIdMapping *nimap, MapNode *nodes,
 	// correct ids.
 	std::set<content_t> unnamed_contents;
 	std::set<std::string> unallocatable_contents;
-	for(u32 i=0; i<MAP_BLOCKSIZE*MAP_BLOCKSIZE*MAP_BLOCKSIZE; i++)
-	{
+	for (u32 i = 0; i < MapBlock::nodecount; i++) {
 		content_t local_id = nodes[i].getContent();
 		std::string name;
 		bool found = nimap->getName(local_id, name);
@@ -526,7 +564,7 @@ void MapBlock::serialize(std::ostream &os, u8 version, bool disk)
 		throw SerializationError("ERROR: Not writing dummy block.");
 	}
 
-	assert(version >= SER_FMT_CLIENT_VER_LOWEST);
+	FATAL_ERROR_IF(version < SER_FMT_CLIENT_VER_LOWEST, "Serialize version error");
 
 	// First byte
 	u8 flags = 0;
@@ -544,7 +582,6 @@ void MapBlock::serialize(std::ostream &os, u8 version, bool disk)
 		Bulk node data
 	*/
 	NameIdMapping nimap;
-	u32 nodecount = MAP_BLOCKSIZE*MAP_BLOCKSIZE*MAP_BLOCKSIZE;
 	if(disk)
 	{
 		MapNode *tmp_nodes = new MapNode[nodecount];
@@ -644,7 +681,6 @@ void MapBlock::deSerialize(std::istream &is, u8 version, bool disk)
 	*/
 	TRACESTREAM(<<"MapBlock::deSerialize "<<PP(getPos())
 			<<": Bulk node data"<<std::endl);
-	u32 nodecount = MAP_BLOCKSIZE*MAP_BLOCKSIZE*MAP_BLOCKSIZE;
 	u8 content_width = readU8(is);
 	u8 params_width = readU8(is);
 	if(content_width != 1 && content_width != 2)
@@ -747,8 +783,6 @@ void MapBlock::deSerializeNetworkSpecific(std::istream &is)
 
 void MapBlock::deSerialize_pre22(std::istream &is, u8 version, bool disk)
 {
-	u32 nodecount = MAP_BLOCKSIZE*MAP_BLOCKSIZE*MAP_BLOCKSIZE;
-
 	// Initialize default flags
 	is_underground = false;
 	m_day_night_differs = false;

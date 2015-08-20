@@ -31,8 +31,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 class Settings;
 struct NoiseParams;
 
+// Global objects
+extern Settings *g_settings;
+extern std::string g_settings_path;
+
 /** function type to register a changed callback */
-typedef void (*setting_changed_callback)(const std::string, void*);
+typedef void (*setting_changed_callback)(const std::string &name, void *data);
 
 enum ValueType {
 	VALUETYPE_STRING,
@@ -202,6 +206,7 @@ public:
 	// remove a setting
 	bool remove(const std::string &name);
 	void clear();
+	void clearDefaults();
 	void updateValue(const Settings &other, const std::string &name);
 	void update(const Settings &other);
 	void registerChangedCallback(std::string name, setting_changed_callback cbf, void *userdata = NULL);
@@ -211,6 +216,7 @@ private:
 
 	void updateNoLock(const Settings &other);
 	void clearNoLock();
+	void clearDefaultsNoLock();
 
 	void doCallbacks(std::string name);
 

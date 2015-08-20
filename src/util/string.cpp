@@ -22,24 +22,186 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "numeric.h"
 #include "log.h"
 
-#include "../sha1.h"
-#include "../base64.h"
-#include "../hex.h"
+#include "hex.h"
 #include "../porting.h"
 
-#include <algorithm>
 #include <sstream>
 #include <iomanip>
 #include <map>
 
-#if defined(_WIN32)
-#include <windows.h>  // MultiByteToWideChar
+#ifndef _WIN32
+	#include <iconv.h>
+#else
+	#define _WIN32_WINNT 0x0501
+	#include <windows.h>
+#endif
+
+#if defined(_ICONV_H_) && (defined(__FreeBSD__) || defined(__NetBSD__) || \
+	defined(__OpenBSD__) || defined(__DragonFly__))
+	#define BSD_ICONV_USED
 #endif
 
 static bool parseHexColorString(const std::string &value, video::SColor &color);
 static bool parseNamedColorString(const std::string &value, video::SColor &color);
 
+#ifndef _WIN32
+
+bool convert(const char *to, const char *from, char *outbuf,
+		size_t outbuf_size, char *inbuf, size_t inbuf_size)
+{
+	iconv_t cd = iconv_open(to, from);
+
+#ifdef BSD_ICONV_USED
+	const char *inbuf_ptr = inbuf;
+#else
+	char *inbuf_ptr = inbuf;
+#endif
+
+	char *outbuf_ptr = outbuf;
+
+	size_t *inbuf_left_ptr = &inbuf_size;
+	size_t *outbuf_left_ptr = &outbuf_size;
+
+	size_t old_size = inbuf_size;
+	while (inbuf_size > 0) {
+		iconv(cd, &inbuf_ptr, inbuf_left_ptr, &outbuf_ptr, outbuf_left_ptr);
+		if (inbuf_size == old_size) {
+			iconv_close(cd);
+			return false;
+		}
+		old_size = inbuf_size;
+	}
+
+	iconv_close(cd);
+	return true;
+}
+
+std::wstring utf8_to_wide(const std::string &input)
+{
+	size_t inbuf_size = input.length() + 1;
+	// maximum possible size, every character is sizeof(wchar_t) bytes
+	size_t outbuf_size = (input.length() + 1) * sizeof(wchar_t);
+
+	char *inbuf = new char[inbuf_size];
+	memcpy(inbuf, input.c_str(), inbuf_size);
+	char *outbuf = new char[outbuf_size];
+	memset(outbuf, 0, outbuf_size);
+
+	if (!convert("WCHAR_T", "UTF-8", outbuf, outbuf_size, inbuf, inbuf_size)) {
+		infostream << "Couldn't convert UTF-8 string 0x" << hex_encode(input)
+			<< " into wstring" << std::endl;
+		delete[] inbuf;
+		delete[] outbuf;
+		return L"<invalid UTF-8 string>";
+	}
+	std::wstring out((wchar_t *)outbuf);
+
+	delete[] inbuf;
+	delete[] outbuf;
+
+	return out;
+}
+
 #ifdef __ANDROID__
+// TODO: this is an ugly fix for wide_to_utf8 somehow not working on android
+std::string wide_to_utf8(const std::wstring &input)
+{
+	return wide_to_narrow(input);
+}
+#else
+std::string wide_to_utf8(const std::wstring &input)
+{
+	size_t inbuf_size = (input.length() + 1) * sizeof(wchar_t);
+	// maximum possible size: utf-8 encodes codepoints using 1 up to 6 bytes
+	size_t outbuf_size = (input.length() + 1) * 6;
+
+	char *inbuf = new char[inbuf_size];
+	memcpy(inbuf, input.c_str(), inbuf_size);
+	char *outbuf = new char[outbuf_size];
+	memset(outbuf, 0, outbuf_size);
+
+	if (!convert("UTF-8", "WCHAR_T", outbuf, outbuf_size, inbuf, inbuf_size)) {
+		infostream << "Couldn't convert wstring 0x" << hex_encode(inbuf, inbuf_size)
+			<< " into UTF-8 string" << std::endl;
+		delete[] inbuf;
+		delete[] outbuf;
+		return "<invalid wstring>";
+	}
+	std::string out(outbuf);
+
+	delete[] inbuf;
+	delete[] outbuf;
+
+	return out;
+}
+
+#endif
+#else // _WIN32
+
+std::wstring utf8_to_wide(const std::string &input)
+{
+	size_t outbuf_size = input.size() + 1;
+	wchar_t *outbuf = new wchar_t[outbuf_size];
+	memset(outbuf, 0, outbuf_size * sizeof(wchar_t));
+	MultiByteToWideChar(CP_UTF8, 0, input.c_str(), input.size(),
+		outbuf, outbuf_size);
+	std::wstring out(outbuf);
+	delete[] outbuf;
+	return out;
+}
+
+std::string wide_to_utf8(const std::wstring &input)
+{
+	size_t outbuf_size = (input.size() + 1) * 6;
+	char *outbuf = new char[outbuf_size];
+	memset(outbuf, 0, outbuf_size);
+	WideCharToMultiByte(CP_UTF8, 0, input.c_str(), input.size(),
+		outbuf, outbuf_size, NULL, NULL);
+	std::string out(outbuf);
+	delete[] outbuf;
+	return out;
+}
+
+#endif // _WIN32
+
+wchar_t *utf8_to_wide_c(const char *str)
+{
+	std::wstring ret = utf8_to_wide(std::string(str)).c_str();
+	size_t len = ret.length();
+	wchar_t *ret_c = new wchar_t[len + 1];
+	memset(ret_c, 0, (len + 1) * sizeof(wchar_t));
+	memcpy(ret_c, ret.c_str(), len * sizeof(wchar_t));
+	return ret_c;
+}
+
+// You must free the returned string!
+// The returned string is allocated using new
+wchar_t *narrow_to_wide_c(const char *str)
+{
+	wchar_t *nstr = NULL;
+#if defined(_WIN32)
+	int nResult = MultiByteToWideChar(CP_UTF8, 0, (LPCSTR) str, -1, 0, 0);
+	if (nResult == 0) {
+		errorstream<<"gettext: MultiByteToWideChar returned null"<<std::endl;
+	} else {
+		nstr = new wchar_t[nResult];
+		MultiByteToWideChar(CP_UTF8, 0, (LPCSTR) str, -1, (WCHAR *) nstr, nResult);
+	}
+#else
+	size_t len = strlen(str);
+	nstr = new wchar_t[len + 1];
+
+	std::wstring intermediate = narrow_to_wide(str);
+	memset(nstr, 0, (len + 1) * sizeof(wchar_t));
+	memcpy(nstr, intermediate.c_str(), len * sizeof(wchar_t));
+#endif
+
+	return nstr;
+}
+
+
+#ifdef __ANDROID__
+
 const wchar_t* wide_chars =
 	L" !\"#$%&'()*+,-./0123456789:;<=>?@"
 	L"ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`"
@@ -62,78 +224,55 @@ int wctomb(char *s, wchar_t wc)
 
 int mbtowc(wchar_t *pwc, const char *s, size_t n)
 {
-	const wchar_t *tmp = narrow_to_wide_c(s);
+	std::wstring intermediate = narrow_to_wide(s);
 
 	if (tmp[0] != '\0') {
 		*pwc = tmp[0];
 		return 1;
-	} else {
+	}
+	else {
 		return -1;
 	}
 }
 
-// You must free the returned string!
-const wchar_t *narrow_to_wide_c(const char *mbs)
-{
-	size_t mbl = strlen(mbs);
-	wchar_t *wcs = new wchar_t[mbl + 1];
+std::wstring narrow_to_wide(const std::string &mbs) {
+	size_t wcl = mbs.size();
 
-	for (size_t i = 0; i < mbl; i++) {
-		if (((unsigned char) mbs[i] > 31) &&
-				((unsigned char) mbs[i] < 127)) {
-			wcs[i] = wide_chars[(unsigned char) mbs[i] - 32];
+	std::wstring retval = L"";
+
+	for (unsigned int i = 0; i < wcl; i++) {
+		if (((unsigned char) mbs[i] >31) &&
+		 ((unsigned char) mbs[i] < 127)) {
+
+			retval += wide_chars[(unsigned char) mbs[i] -32];
 		}
 		//handle newline
 		else if (mbs[i] == '\n') {
-			wcs[i] = L'\n';
+			retval += L'\n';
 		}
 	}
 
-	return wcs;
+	return retval;
 }
 
-#else
+#else // not Android
 
-// You must free the returned string!
-const wchar_t *narrow_to_wide_c(const char *mbs)
-{
-	wchar_t *wcs = NULL;
-#if defined(_WIN32)
-	int nResult = MultiByteToWideChar(CP_UTF8, 0, (LPCSTR) mbs, -1, 0, 0);
-	if (nResult == 0) {
-		errorstream << "gettext: MultiByteToWideChar returned null" << std::endl;
-	} else {
-		wcs = new wchar_t[nResult];
-		MultiByteToWideChar(CP_UTF8, 0, (LPCSTR) mbs, -1, (WCHAR *) wcs, nResult);
-	}
-#else
-	size_t wcl = mbstowcs(NULL, mbs, 0);
-	if (wcl == (size_t) -1)
-		return NULL;
-	wcs = new wchar_t[wcl + 1];
-	size_t l = mbstowcs(wcs, mbs, wcl);
-	assert(l != (size_t) -1); // Should never happen if the last call worked
-	wcs[l] = '\0';
-#endif
-
-	return wcs;
-}
-
-#endif
-
-std::wstring narrow_to_wide(const std::string& mbs)
+std::wstring narrow_to_wide(const std::string &mbs)
 {
 	size_t wcl = mbs.size();
 	Buffer<wchar_t> wcs(wcl + 1);
-	size_t l = mbstowcs(*wcs, mbs.c_str(), wcl);
-	if (l == (size_t)(-1))
+	size_t len = mbstowcs(*wcs, mbs.c_str(), wcl);
+	if (len == (size_t)(-1))
 		return L"<invalid multibyte string>";
-	wcs[l] = 0;
+	wcs[len] = 0;
 	return *wcs;
 }
 
+#endif
+
 #ifdef __ANDROID__
-std::string wide_to_narrow(const std::wstring& wcs) {
+
+std::string wide_to_narrow(const std::wstring &wcs) {
 	size_t mbl = wcs.size()*4;
 
 	std::string retval = "";
@@ -158,40 +297,22 @@ std::string wide_to_narrow(const std::wstring& wcs) {
 
 	return retval;
 }
-#else
-std::string wide_to_narrow(const std::wstring& wcs)
+
+#else // not Android
+
+std::string wide_to_narrow(const std::wstring &wcs)
 {
-	size_t mbl = wcs.size()*4;
+	size_t mbl = wcs.size() * 4;
 	SharedBuffer<char> mbs(mbl+1);
-	size_t l = wcstombs(*mbs, wcs.c_str(), mbl);
-	if(l == (size_t)(-1)) {
+	size_t len = wcstombs(*mbs, wcs.c_str(), mbl);
+	if (len == (size_t)(-1))
 		return "Character conversion failed!";
-	}
 	else
-		mbs[l] = 0;
+		mbs[len] = 0;
 	return *mbs;
 }
 
 #endif
-
-// Get an sha-1 hash of the player's name combined with
-// the password entered. That's what the server uses as
-// their password. (Exception : if the password field is
-// blank, we send a blank password - this is for backwards
-// compatibility with password-less players).
-std::string translatePassword(std::string playername, std::wstring password)
-{
-	if(password.length() == 0)
-		return "";
-
-	std::string slt = playername + wide_to_narrow(password);
-	SHA1 sha1;
-	sha1.addBytes(slt.c_str(), slt.length());
-	unsigned char *digest = sha1.getDigest();
-	std::string pwd = base64_encode(digest, 20);
-	free(digest);
-	return pwd;
-}
 
 std::string urlencode(std::string str)
 {
@@ -318,7 +439,7 @@ char *mystrtok_r(char *s, const char *sep, char **lasts)
 		}
 		t++;
 	}
-	
+
 	*lasts = t;
 	return s;
 }
@@ -327,15 +448,15 @@ u64 read_seed(const char *str)
 {
 	char *endptr;
 	u64 num;
-	
+
 	if (str[0] == '0' && str[1] == 'x')
 		num = strtoull(str, &endptr, 16);
 	else
 		num = strtoull(str, &endptr, 10);
-		
+
 	if (*endptr)
 		num = murmur_hash_64_ua(str, (int)strlen(str), 0x1337);
-		
+
 	return num;
 }
 
@@ -466,8 +587,8 @@ ColorContainer::ColorContainer()
 	colors["greenyellow"]            = 0xadff2f;
 	colors["honeydew"]               = 0xf0fff0;
 	colors["hotpink"]                = 0xff69b4;
-	colors["indianred "]             = 0xcd5c5c;
-	colors["indigo "]                = 0x4b0082;
+	colors["indianred"]              = 0xcd5c5c;
+	colors["indigo"]                 = 0x4b0082;
 	colors["ivory"]                  = 0xfffff0;
 	colors["khaki"]                  = 0xf0e68c;
 	colors["lavender"]               = 0xe6e6fa;
@@ -612,4 +733,3 @@ void str_replace(std::string &str, char from, char to)
 {
 	std::replace(str.begin(), str.end(), from, to);
 }
-

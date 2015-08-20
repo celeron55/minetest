@@ -27,7 +27,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "modalMenu.h"
 #include "guiFormSpecMenu.h"
 #include "sound.h"
-#include "tile.h"
+#include "client/tile.h"
 
 /******************************************************************************/
 /* Typedefs and macros                                                        */
@@ -73,7 +73,7 @@ public:
 	 * receive fields transmitted by guiFormSpecMenu
 	 * @param fields map containing formspec field elements currently active
 	 */
-	void gotText(std::map<std::string, std::string> fields);
+	void gotText(const StringMap &fields);
 
 	/**
 	 * receive text/events transmitted by guiFormSpecMenu

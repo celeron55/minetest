@@ -20,10 +20,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #ifndef MG_ORE_HEADER
 #define MG_ORE_HEADER
 
-#include "util/string.h"
-#include "mapgen.h"
+#include "objdef.h"
+#include "noise.h"
+#include "nodedef.h"
 
-struct NoiseParams;
 class Noise;
 class Mapgen;
 class MMVManip;
@@ -39,15 +39,15 @@ class MMVManip;
 
 
 enum OreType {
-	ORE_TYPE_SCATTER,
-	ORE_TYPE_SHEET,
-	ORE_TYPE_BLOB,
-	ORE_TYPE_VEIN,
+	ORE_SCATTER,
+	ORE_SHEET,
+	ORE_BLOB,
+	ORE_VEIN,
 };
 
 extern FlagDesc flagdesc_ore[];
 
-class Ore : public GenElement, public NodeResolver {
+class Ore : public ObjDef, public NodeResolver {
 public:
 	static const bool NEEDS_NOISE = false;
 
@@ -63,15 +63,16 @@ public:
 	float nthresh;      // threshhold for noise at which an ore is placed
 	NoiseParams np;     // noise for distribution of clusters (NULL for uniform scattering)
 	Noise *noise;
+	std::set<u8> biomes;
 
 	Ore();
 	virtual ~Ore();
 
-	virtual void resolveNodeNames(NodeResolveInfo *nri);
+	virtual void resolveNodeNames();
 
 	size_t placeOre(Mapgen *mg, u32 blockseed, v3s16 nmin, v3s16 nmax);
 	virtual void generate(MMVManip *vm, int mapseed, u32 blockseed,
-		v3s16 nmin, v3s16 nmax) = 0;
+		v3s16 nmin, v3s16 nmax, u8 *biomemap) = 0;
 };
 
 class OreScatter : public Ore {
@@ -79,7 +80,7 @@ public:
 	static const bool NEEDS_NOISE = false;
 
 	virtual void generate(MMVManip *vm, int mapseed, u32 blockseed,
-		v3s16 nmin, v3s16 nmax);
+		v3s16 nmin, v3s16 nmax, u8 *biomemap);
 };
 
 class OreSheet : public Ore {
@@ -87,7 +88,7 @@ public:
 	static const bool NEEDS_NOISE = true;
 
 	virtual void generate(MMVManip *vm, int mapseed, u32 blockseed,
-		v3s16 nmin, v3s16 nmax);
+		v3s16 nmin, v3s16 nmax, u8 *biomemap);
 };
 
 class OreBlob : public Ore {
@@ -95,7 +96,7 @@ public:
 	static const bool NEEDS_NOISE = true;
 
 	virtual void generate(MMVManip *vm, int mapseed, u32 blockseed,
-		v3s16 nmin, v3s16 nmax);
+		v3s16 nmin, v3s16 nmax, u8 *biomemap);
 };
 
 class OreVein : public Ore {
@@ -109,27 +110,29 @@ public:
 	virtual ~OreVein();
 
 	virtual void generate(MMVManip *vm, int mapseed, u32 blockseed,
-		v3s16 nmin, v3s16 nmax);
+		v3s16 nmin, v3s16 nmax, u8 *biomemap);
 };
 
-class OreManager : public GenElementManager {
+class OreManager : public ObjDefManager {
 public:
-	static const char *ELEMENT_TITLE;
-	static const size_t ELEMENT_LIMIT = 0x10000;
-
 	OreManager(IGameDef *gamedef);
-	~OreManager() {}
+	virtual ~OreManager() {}
 
-	Ore *create(int type)
+	const char *getObjectTitle() const
+	{
+		return "ore";
+	}
+
+	static Ore *create(OreType type)
 	{
 		switch (type) {
-		case ORE_TYPE_SCATTER:
+		case ORE_SCATTER:
 			return new OreScatter;
-		case ORE_TYPE_SHEET:
+		case ORE_SHEET:
 			return new OreSheet;
-		case ORE_TYPE_BLOB:
+		case ORE_BLOB:
 			return new OreBlob;
-		case ORE_TYPE_VEIN:
+		case ORE_VEIN:
 			return new OreVein;
 		default:
 			return NULL;

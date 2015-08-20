@@ -19,7 +19,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "content_cso.h"
 #include <IBillboardSceneNode.h>
-#include "tile.h"
+#include "client/tile.h"
 #include "environment.h"
 #include "gamedef.h"
 #include "log.h"
@@ -50,7 +50,7 @@ public:
 		m_spritenode = smgr->addBillboardSceneNode(
 				NULL, v2f(1,1), pos, -1);
 		m_spritenode->setMaterialTexture(0,
-				env->getGameDef()->tsrc()->getTexture("smoke_puff.png"));
+				env->getGameDef()->tsrc()->getTextureForMesh("smoke_puff.png"));
 		m_spritenode->setMaterialFlag(video::EMF_LIGHTING, false);
 		m_spritenode->setMaterialFlag(video::EMF_BILINEAR_FILTER, false);
 		//m_spritenode->setMaterialType(video::EMT_TRANSPARENT_ALPHA_CHANNEL_REF);

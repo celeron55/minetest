@@ -40,6 +40,18 @@ local function render_client_count(n)
 	end
 end
 
+local function configure_selected_world_params(idx)
+	local worldconfig = modmgr.get_worldconfig(
+		menudata.worldlist:get_list()[idx].path)
+
+	if worldconfig.creative_mode ~= nil then
+		core.setting_set("creative_mode", worldconfig.creative_mode)
+	end
+	if worldconfig.enable_damage ~= nil then
+		core.setting_set("enable_damage", worldconfig.enable_damage)
+	end
+end
+
 --------------------------------------------------------------------------------
 function image_column(tooltip, flagname)
 	return "image," ..
@@ -189,7 +201,6 @@ end
 
 --------------------------------------------------------------------------------
 function menu_handle_key_up_down(fields,textlist,settingname)
-
 	if fields["key_up"] then
 		local oldidx = core.get_textlist_index(textlist)
 
@@ -197,6 +208,8 @@ function menu_handle_key_up_down(fields,textlist,settingname)
 			local newidx = oldidx -1
 			core.setting_set(settingname,
 				menudata.worldlist:get_raw_index(newidx))
+
+			configure_selected_world_params(newidx)
 		end
 		return true
 	end
@@ -208,18 +221,26 @@ function menu_handle_key_up_down(fields,textlist,settingname)
 			local newidx = oldidx + 1
 			core.setting_set(settingname,
 				menudata.worldlist:get_raw_index(newidx))
+
+			configure_selected_world_params(newidx)
 		end
-		
+
 		return true
 	end
-	
+
 	return false
 end
 
 --------------------------------------------------------------------------------
 function asyncOnlineFavourites()
 
-	menudata.favorites = {}
+	if not menudata.public_known then
+		menudata.public_known = {{
+			name = fgettext("Loading..."),
+			description = fgettext_ne("Try reenabling public serverlist and check your internet connection.")
+		}}
+	end
+	menudata.favorites = menudata.public_known
 	core.handle_async(
 		function(param)
 			return core.get_favorites("online")
@@ -227,32 +248,36 @@ function asyncOnlineFavourites()
 		nil,
 		function(result)
 			if core.setting_getbool("public_serverlist") then
-				menudata.favorites = order_favorite_list(result)
+				local favs = order_favorite_list(result)
+				if favs[1] then
+					menudata.public_known = favs
+					menudata.favorites = menudata.public_known
+				end
 				core.event_handler("Refresh")
 			end
 		end
-		)
+	)
 end
 
 --------------------------------------------------------------------------------
 function text2textlist(xpos,ypos,width,height,tl_name,textlen,text,transparency)
 	local textlines = core.splittext(text,textlen)
-	
+
 	local retval = "textlist[" .. xpos .. "," .. ypos .. ";"
 								.. width .. "," .. height .. ";"
 								.. tl_name .. ";"
-	
+
 	for i=1, #textlines, 1 do
 		textlines[i] = textlines[i]:gsub("\r","")
 		retval = retval .. core.formspec_escape(textlines[i]) .. ","
 	end
-	
+
 	retval = retval .. ";0;"
-	
+
 	if transparency then
 		retval = retval .. "true"
 	end
-	
+
 	retval = retval .. "]"
 
 	return retval
@@ -274,4 +299,36 @@ function is_server_protocol_compat_or_error(proto_min, proto_max)
 	end
 
 	return true
+end
+--------------------------------------------------------------------------------
+function menu_worldmt(selected, setting, value)
+	local world = menudata.worldlist:get_list()[selected]
+	if world then
+		local filename = world.path .. DIR_DELIM .. "world.mt"
+		local world_conf = Settings(filename)
+
+		if value ~= nil then
+			if not world_conf:write() then
+				core.log("error", "Failed to write world config file")
+			end
+			world_conf:set(setting, value)
+			world_conf:write()
+		else
+			return world_conf:get(setting)
+		end
+	else
+		return nil
+	end
+end
+
+function menu_worldmt_legacy(selected)
+	local modes_names = {"creative_mode", "enable_damage", "server_announce"}
+	for _, mode_name in pairs(modes_names) do
+		local mode_val = menu_worldmt(selected, mode_name)
+		if mode_val ~= nil then
+			core.setting_set(mode_name, mode_val)
+		else
+			menu_worldmt(selected, mode_name, core.setting_get(mode_name))
+		end
+	end
 end

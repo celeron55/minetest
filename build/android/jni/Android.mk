@@ -25,6 +25,11 @@ LOCAL_SRC_FILES := deps/freetype2-android/Android/obj/local/$(TARGET_ARCH_ABI)/l
 include $(PREBUILT_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
+LOCAL_MODULE := iconv
+LOCAL_SRC_FILES := deps/libiconv/lib/.libs/libiconv.so
+include $(PREBUILT_SHARED_LIBRARY)
+
+include $(CLEAR_VARS)
 LOCAL_MODULE := openal
 LOCAL_SRC_FILES := deps/openal-soft/libs/$(TARGET_LIBDIR)/libopenal.so
 include $(PREBUILT_SHARED_LIBRARY)
@@ -40,6 +45,11 @@ LOCAL_SRC_FILES := deps/libvorbis-libogg-android/libs/$(TARGET_LIBDIR)/libvorbis
 include $(PREBUILT_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
+LOCAL_MODULE := gmp
+LOCAL_SRC_FILES := deps/gmp/usr/lib/libgmp.so
+include $(PREBUILT_SHARED_LIBRARY)
+
+include $(CLEAR_VARS)
 LOCAL_MODULE := ssl
 LOCAL_SRC_FILES := deps/openssl/libssl.a
 include $(PREBUILT_STATIC_LIBRARY)
@@ -48,7 +58,6 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := crypto
 LOCAL_SRC_FILES := deps/openssl/libcrypto.a
 include $(PREBUILT_STATIC_LIBRARY)
-
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := minetest
@@ -93,16 +102,18 @@ LOCAL_C_INCLUDES :=                               \
 		jni/src/json                              \
 		jni/src/cguittfont                        \
 		deps/irrlicht/include                     \
+		deps/libiconv/include                     \
 		deps/freetype2-android/include            \
 		deps/curl/include                         \
 		deps/openal-soft/jni/OpenAL/include       \
 		deps/libvorbis-libogg-android/jni/include \
+		deps/gmp/usr/include                      \
 		deps/leveldb/include                      \
 		deps/sqlite/
 
 LOCAL_SRC_FILES :=                                \
+		jni/src/areastore.cpp                     \
 		jni/src/ban.cpp                           \
-		jni/src/base64.cpp                        \
 		jni/src/camera.cpp                        \
 		jni/src/cavegen.cpp                       \
 		jni/src/chat.cpp                          \
@@ -113,7 +124,6 @@ LOCAL_SRC_FILES :=                                \
 		jni/src/clientobject.cpp                  \
 		jni/src/clouds.cpp                        \
 		jni/src/collision.cpp                     \
-		jni/src/connection.cpp                    \
 		jni/src/content_abm.cpp                   \
 		jni/src/content_cao.cpp                   \
 		jni/src/content_cso.cpp                   \
@@ -145,9 +155,12 @@ LOCAL_SRC_FILES :=                                \
 		jni/src/guiKeyChangeMenu.cpp              \
 		jni/src/guiPasswordChange.cpp             \
 		jni/src/guiTable.cpp                      \
+		jni/src/guiscalingfilter.cpp              \
 		jni/src/guiVolumeChange.cpp               \
 		jni/src/httpfetch.cpp                     \
 		jni/src/hud.cpp                           \
+		jni/src/imagefilters.cpp                  \
+		jni/src/intlGUIEditBox.cpp                \
 		jni/src/inventory.cpp                     \
 		jni/src/inventorymanager.cpp              \
 		jni/src/itemdef.cpp                       \
@@ -171,18 +184,21 @@ LOCAL_SRC_FILES :=                                \
 		jni/src/mg_decoration.cpp                 \
 		jni/src/mg_ore.cpp                        \
 		jni/src/mg_schematic.cpp                  \
+		jni/src/minimap.cpp                       \
 		jni/src/mods.cpp                          \
 		jni/src/nameidmapping.cpp                 \
 		jni/src/nodedef.cpp                       \
 		jni/src/nodemetadata.cpp                  \
 		jni/src/nodetimer.cpp                     \
 		jni/src/noise.cpp                         \
+		jni/src/objdef.cpp                        \
 		jni/src/object_properties.cpp             \
 		jni/src/particles.cpp                     \
 		jni/src/pathfinder.cpp                    \
 		jni/src/player.cpp                        \
 		jni/src/porting_android.cpp               \
 		jni/src/porting.cpp                       \
+		jni/src/profiler.cpp                      \
 		jni/src/quicktune.cpp                     \
 		jni/src/rollback.cpp                      \
 		jni/src/rollback_interface.cpp            \
@@ -190,7 +206,6 @@ LOCAL_SRC_FILES :=                                \
 		jni/src/server.cpp                        \
 		jni/src/serverlist.cpp                    \
 		jni/src/serverobject.cpp                  \
-		jni/src/sha1.cpp                          \
 		jni/src/shader.cpp                        \
 		jni/src/sky.cpp                           \
 		jni/src/socket.cpp                        \
@@ -198,23 +213,58 @@ LOCAL_SRC_FILES :=                                \
 		jni/src/sound_openal.cpp                  \
 		jni/src/staticobject.cpp                  \
 		jni/src/subgame.cpp                       \
-		jni/src/test.cpp                          \
-		jni/src/tile.cpp                          \
 		jni/src/tool.cpp                          \
 		jni/src/treegen.cpp                       \
 		jni/src/version.cpp                       \
 		jni/src/voxel.cpp                         \
 		jni/src/voxelalgorithms.cpp               \
+		jni/src/util/auth.cpp                     \
+		jni/src/util/base64.cpp                   \
 		jni/src/util/directiontables.cpp          \
 		jni/src/util/numeric.cpp                  \
 		jni/src/util/pointedthing.cpp             \
 		jni/src/util/serialize.cpp                \
+		jni/src/util/sha1.cpp                     \
 		jni/src/util/string.cpp                   \
+		jni/src/util/srp.cpp                      \
 		jni/src/util/timetaker.cpp                \
+		jni/src/unittest/test.cpp                 \
+		jni/src/unittest/test_collision.cpp       \
+		jni/src/unittest/test_compression.cpp     \
+		jni/src/unittest/test_connection.cpp      \
+		jni/src/unittest/test_filepath.cpp        \
+		jni/src/unittest/test_inventory.cpp       \
+		jni/src/unittest/test_mapnode.cpp         \
+		jni/src/unittest/test_nodedef.cpp         \
+		jni/src/unittest/test_noderesolver.cpp    \
+		jni/src/unittest/test_noise.cpp           \
+		jni/src/unittest/test_objdef.cpp          \
+		jni/src/unittest/test_profiler.cpp        \
+		jni/src/unittest/test_random.cpp          \
+		jni/src/unittest/test_schematic.cpp       \
+		jni/src/unittest/test_serialization.cpp   \
+		jni/src/unittest/test_settings.cpp        \
+		jni/src/unittest/test_socket.cpp          \
+		jni/src/unittest/test_utilities.cpp       \
+		jni/src/unittest/test_voxelalgorithms.cpp \
+		jni/src/unittest/test_voxelmanipulator.cpp \
 		jni/src/touchscreengui.cpp                \
 		jni/src/database-leveldb.cpp              \
 		jni/src/settings.cpp                      \
-		jni/src/wieldmesh.cpp
+		jni/src/wieldmesh.cpp                     \
+		jni/src/client/clientlauncher.cpp         \
+		jni/src/client/tile.cpp
+
+# intentionally kept out (we already build openssl itself): jni/src/util/sha256.c
+
+# Network
+LOCAL_SRC_FILES +=                                \
+		jni/src/network/connection.cpp            \
+		jni/src/network/networkpacket.cpp         \
+		jni/src/network/clientopcodes.cpp         \
+		jni/src/network/clientpackethandler.cpp   \
+		jni/src/network/serveropcodes.cpp         \
+		jni/src/network/serverpackethandler.cpp   \
 
 # lua api
 LOCAL_SRC_FILES +=                                \
@@ -222,6 +272,7 @@ LOCAL_SRC_FILES +=                                \
 		jni/src/script/common/c_converter.cpp     \
 		jni/src/script/common/c_internal.cpp      \
 		jni/src/script/common/c_types.cpp         \
+		jni/src/script/cpp_api/s_async.cpp        \
 		jni/src/script/cpp_api/s_base.cpp         \
 		jni/src/script/cpp_api/s_entity.cpp       \
 		jni/src/script/cpp_api/s_env.cpp          \
@@ -231,8 +282,9 @@ LOCAL_SRC_FILES +=                                \
 		jni/src/script/cpp_api/s_node.cpp         \
 		jni/src/script/cpp_api/s_nodemeta.cpp     \
 		jni/src/script/cpp_api/s_player.cpp       \
+		jni/src/script/cpp_api/s_security.cpp     \
 		jni/src/script/cpp_api/s_server.cpp       \
-		jni/src/script/cpp_api/s_async.cpp        \
+		jni/src/script/lua_api/l_areastore.cpp    \
 		jni/src/script/lua_api/l_base.cpp         \
 		jni/src/script/lua_api/l_craft.cpp        \
 		jni/src/script/lua_api/l_env.cpp          \
@@ -252,7 +304,7 @@ LOCAL_SRC_FILES +=                                \
 		jni/src/script/lua_api/l_vmanip.cpp       \
 		jni/src/script/scripting_game.cpp         \
 		jni/src/script/scripting_mainmenu.cpp
-		
+
 #freetype2 support
 LOCAL_SRC_FILES +=                                \
 		jni/src/cguittfont/xCGUITTFont.cpp
@@ -303,7 +355,7 @@ LOCAL_SRC_FILES +=                                \
 # json
 LOCAL_SRC_FILES += jni/src/json/jsoncpp.cpp
 
-LOCAL_SHARED_LIBRARIES := openal ogg vorbis
+LOCAL_SHARED_LIBRARIES := iconv openal ogg vorbis gmp
 LOCAL_STATIC_LIBRARIES := Irrlicht freetype curl ssl crypto android_native_app_glue $(PROFILER_LIBS)
 
 ifeq ($(HAVE_LEVELDB), 1)

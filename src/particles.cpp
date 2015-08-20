@@ -20,9 +20,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "particles.h"
 #include "constants.h"
 #include "debug.h"
-#include "main.h" // For g_profiler and g_settings
 #include "settings.h"
-#include "tile.h"
+#include "client/tile.h"
 #include "gamedef.h"
 #include "collision.h"
 #include <stdlib.h>
@@ -107,20 +106,13 @@ Particle::~Particle()
 void Particle::OnRegisterSceneNode()
 {
 	if (IsVisible)
-	{
-		SceneManager->registerNodeForRendering
-				(this, scene::ESNRP_TRANSPARENT);
-		SceneManager->registerNodeForRendering
-				(this, scene::ESNRP_SOLID);
-	}
+		SceneManager->registerNodeForRendering(this, scene::ESNRP_TRANSPARENT_EFFECT);
 
 	ISceneNode::OnRegisterSceneNode();
 }
 
 void Particle::render()
 {
-	// TODO: Render particles in front of water and the selectionbox
-
 	video::IVideoDriver* driver = SceneManager->getVideoDriver();
 	driver->setMaterial(m_material);
 	driver->setTransform(video::ETS_WORLD, AbsoluteTransformation);
@@ -316,7 +308,7 @@ void ParticleSpawner::step(float dtime, ClientEnvironment* env)
 						*(m_maxsize-m_minsize)
 						+m_minsize;
 
-				new Particle(
+				Particle* toadd = new Particle(
 					m_gamedef,
 					m_smgr,
 					m_player,
@@ -331,6 +323,7 @@ void ParticleSpawner::step(float dtime, ClientEnvironment* env)
 					m_texture,
 					v2f(0.0, 0.0),
 					v2f(1.0, 1.0));
+				m_particlemanager->addParticle(toadd);
 			}
 		}
 	}
@@ -441,7 +434,7 @@ void ParticleManager::handleParticleEvent(ClientEvent *event, IGameDef *gamedef,
 			}
 		}
 		video::ITexture *texture =
-			gamedef->tsrc()->getTexture(*(event->add_particlespawner.texture));
+			gamedef->tsrc()->getTextureForMesh(*(event->add_particlespawner.texture));
 
 		ParticleSpawner* toadd = new ParticleSpawner(gamedef, smgr, player,
 				event->add_particlespawner.amount,
@@ -484,7 +477,7 @@ void ParticleManager::handleParticleEvent(ClientEvent *event, IGameDef *gamedef,
 
 	if (event->type == CE_SPAWN_PARTICLE) {
 		video::ITexture *texture =
-			gamedef->tsrc()->getTexture(*(event->spawn_particle.texture));
+			gamedef->tsrc()->getTextureForMesh(*(event->spawn_particle.texture));
 
 		Particle* toadd = new Particle(gamedef, smgr, player, m_env,
 				*event->spawn_particle.pos,

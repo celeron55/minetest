@@ -20,7 +20,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #ifndef CLIENT_HEADER
 #define CLIENT_HEADER
 
-#include "connection.h"
+#include "network/connection.h"
 #include "environment.h"
 #include "irrlichttypes_extrabloated.h"
 #include "jthread/jmutex.h"
@@ -34,6 +34,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "localplayer.h"
 #include "hud.h"
 #include "particles.h"
+#include "network/networkpacket.h"
 
 struct MeshMakeData;
 class MapBlockMesh;
@@ -47,7 +48,8 @@ struct MapDrawControl;
 class MtEventManager;
 struct PointedThing;
 class Database;
-class Server;
+class Mapper;
+struct MinimapMapblock;
 
 struct QueuedMeshUpdate
 {
@@ -111,22 +113,26 @@ struct MeshUpdateResult
 	}
 };
 
-class MeshUpdateThread : public JThread
+class MeshUpdateThread : public UpdateThread
 {
+private:
+	MeshUpdateQueue m_queue_in;
+
+protected:
+	const char *getName()
+	{ return "MeshUpdateThread"; }
+	virtual void doUpdate();
+
 public:
 
-	MeshUpdateThread(IGameDef *gamedef):
-		m_gamedef(gamedef)
+	MeshUpdateThread()
 	{
 	}
 
-	void * Thread();
-
-	MeshUpdateQueue m_queue_in;
+	void enqueueUpdate(v3s16 p, MeshMakeData *data,
+			bool ack_block_to_server, bool urgent);
 
 	MutexedQueue<MeshUpdateResult> m_queue_out;
-
-	IGameDef *m_gamedef;
 
 	v3s16 m_camera_offset;
 };
@@ -341,22 +347,77 @@ public:
 	*/
 	void step(float dtime);
 
-	void ProcessData(u8 *data, u32 datasize, u16 sender_peer_id);
+	/*
+	 * Command Handlers
+	 */
+
+	void handleCommand(NetworkPacket* pkt);
+
+	void handleCommand_Null(NetworkPacket* pkt) {};
+	void handleCommand_Deprecated(NetworkPacket* pkt);
+	void handleCommand_Hello(NetworkPacket* pkt);
+	void handleCommand_AuthAccept(NetworkPacket* pkt);
+	void handleCommand_AcceptSudoMode(NetworkPacket* pkt);
+	void handleCommand_DenySudoMode(NetworkPacket* pkt);
+	void handleCommand_InitLegacy(NetworkPacket* pkt);
+	void handleCommand_AccessDenied(NetworkPacket* pkt);
+	void handleCommand_RemoveNode(NetworkPacket* pkt);
+	void handleCommand_AddNode(NetworkPacket* pkt);
+	void handleCommand_BlockData(NetworkPacket* pkt);
+	void handleCommand_Inventory(NetworkPacket* pkt);
+	void handleCommand_TimeOfDay(NetworkPacket* pkt);
+	void handleCommand_ChatMessage(NetworkPacket* pkt);
+	void handleCommand_ActiveObjectRemoveAdd(NetworkPacket* pkt);
+	void handleCommand_ActiveObjectMessages(NetworkPacket* pkt);
+	void handleCommand_Movement(NetworkPacket* pkt);
+	void handleCommand_HP(NetworkPacket* pkt);
+	void handleCommand_Breath(NetworkPacket* pkt);
+	void handleCommand_MovePlayer(NetworkPacket* pkt);
+	void handleCommand_PlayerItem(NetworkPacket* pkt);
+	void handleCommand_DeathScreen(NetworkPacket* pkt);
+	void handleCommand_AnnounceMedia(NetworkPacket* pkt);
+	void handleCommand_Media(NetworkPacket* pkt);
+	void handleCommand_ToolDef(NetworkPacket* pkt);
+	void handleCommand_NodeDef(NetworkPacket* pkt);
+	void handleCommand_CraftItemDef(NetworkPacket* pkt);
+	void handleCommand_ItemDef(NetworkPacket* pkt);
+	void handleCommand_PlaySound(NetworkPacket* pkt);
+	void handleCommand_StopSound(NetworkPacket* pkt);
+	void handleCommand_Privileges(NetworkPacket* pkt);
+	void handleCommand_InventoryFormSpec(NetworkPacket* pkt);
+	void handleCommand_DetachedInventory(NetworkPacket* pkt);
+	void handleCommand_ShowFormSpec(NetworkPacket* pkt);
+	void handleCommand_SpawnParticle(NetworkPacket* pkt);
+	void handleCommand_AddParticleSpawner(NetworkPacket* pkt);
+	void handleCommand_DeleteParticleSpawner(NetworkPacket* pkt);
+	void handleCommand_HudAdd(NetworkPacket* pkt);
+	void handleCommand_HudRemove(NetworkPacket* pkt);
+	void handleCommand_HudChange(NetworkPacket* pkt);
+	void handleCommand_HudSetFlags(NetworkPacket* pkt);
+	void handleCommand_HudSetParam(NetworkPacket* pkt);
+	void handleCommand_HudSetSky(NetworkPacket* pkt);
+	void handleCommand_OverrideDayNightRatio(NetworkPacket* pkt);
+	void handleCommand_LocalPlayerAnimations(NetworkPacket* pkt);
+	void handleCommand_EyeOffset(NetworkPacket* pkt);
+	void handleCommand_SrpBytesSandB(NetworkPacket* pkt);
+
+	void ProcessData(NetworkPacket *pkt);
+
 	// Returns true if something was received
 	bool AsyncProcessPacket();
 	bool AsyncProcessData();
-	void Send(u16 channelnum, SharedBuffer<u8> data, bool reliable);
+	void Send(NetworkPacket* pkt);
 
 	void interact(u8 action, const PointedThing& pointed);
 
 	void sendNodemetaFields(v3s16 p, const std::string &formname,
-			const std::map<std::string, std::string> &fields);
+		const StringMap &fields);
 	void sendInventoryFields(const std::string &formname,
-			const std::map<std::string, std::string> &fields);
+		const StringMap &fields);
 	void sendInventoryAction(InventoryAction *a);
 	void sendChatMessage(const std::wstring &message);
-	void sendChangePassword(const std::wstring &oldpassword,
-	                        const std::wstring &newpassword);
+	void sendChangePassword(const std::string &oldpassword,
+		const std::string &newpassword);
 	void sendDamage(u8 damage);
 	void sendBreath(u16 breath);
 	void sendRespawn();
@@ -428,7 +489,9 @@ public:
 	bool accessDenied()
 	{ return m_access_denied; }
 
-	std::wstring accessDeniedReason()
+	bool reconnectRequested() { return m_access_denied_reconnect; }
+
+	std::string accessDeniedReason()
 	{ return m_access_denied_reason; }
 
 	bool itemdefReceived()
@@ -438,13 +501,19 @@ public:
 	bool mediaReceived()
 	{ return m_media_downloader == NULL; }
 
+	u8 getProtoVersion()
+	{ return m_proto_ver; }
+
 	float mediaReceiveProgress();
 
-	void afterContentReceived(IrrlichtDevice *device, gui::IGUIFont* font);
+	void afterContentReceived(IrrlichtDevice *device);
 
 	float getRTT(void);
 	float getCurRate(void);
 	float getAvgRate(void);
+
+	Mapper* getMapper ()
+	{ return m_mapper; }
 
 	// IGameDef interface
 	virtual IItemDefManager* getItemDefManager();
@@ -465,7 +534,7 @@ public:
 	// Insert a media file appropriately into the appropriate manager
 	bool loadMedia(const std::string &data, const std::string &filename);
 	// Send a request for conventional media transfer
-	void request_media(const std::list<std::string> &file_requests);
+	void request_media(const std::vector<std::string> &file_requests);
 	// Send a notification that no conventional media transfer is needed
 	void received_media();
 
@@ -490,6 +559,21 @@ private:
 	// Send the item number 'item' as player item to the server
 	void sendPlayerItem(u16 item);
 
+	void deleteAuthData();
+	// helper method shared with clientpackethandler
+	static AuthMechanism choseAuthMech(const u32 mechs);
+
+	void sendLegacyInit(const char* playerName, const char* playerPassword);
+	void sendInit(const std::string &playerName);
+	void startAuth(AuthMechanism chosen_auth_mechanism);
+	void sendDeletedBlocks(std::vector<v3s16> &blocks);
+	void sendGotBlocks(v3s16 block);
+	void sendRemovedSounds(std::vector<s32> &soundList);
+
+	// Helper function
+	inline std::string getPlayerName()
+	{ return m_env.getLocalPlayer()->getName(); }
+
 	float m_packetcounter_timer;
 	float m_connection_reinit_timer;
 	float m_avg_rtt_timer;
@@ -510,13 +594,21 @@ private:
 	ParticleManager m_particle_manager;
 	con::Connection m_con;
 	IrrlichtDevice *m_device;
+	Mapper *m_mapper;
 	// Server serialization version
 	u8 m_server_ser_ver;
+
+	// Used version of the protocol with server
+	// Values smaller than 25 only mean they are smaller than 25,
+	// and aren't accurate. We simply just don't know, because
+	// the server didn't send the version back then.
+	// If 0, server init hasn't been received yet.
+	u8 m_proto_ver;
+
 	u16 m_playeritem;
 	bool m_inventory_updated;
 	Inventory *m_inventory_from_server;
 	float m_inventory_from_server_age;
-	std::set<v3s16> m_active_blocks;
 	PacketCounter m_packetcounter;
 	bool m_show_highlighted;
 	// Block mesh animation parameters
@@ -527,13 +619,28 @@ private:
 	// 0 <= m_daynight_i < DAYNIGHT_CACHE_COUNT
 	//s32 m_daynight_i;
 	//u32 m_daynight_ratio;
-	Queue<std::wstring> m_chat_queue;
+	std::queue<std::wstring> m_chat_queue;
+
+	// The authentication methods we can use to enter sudo mode (=change password)
+	u32 m_sudo_auth_methods;
+
 	// The seed returned by the server in TOCLIENT_INIT is stored here
 	u64 m_map_seed;
+
+	// Auth data
+	std::string m_playername;
 	std::string m_password;
+	// If set, this will be sent (and cleared) upon a TOCLIENT_ACCEPT_SUDO_MODE
+	std::string m_new_password;
+	// Usable by auth mechanisms.
+	AuthMechanism m_chosen_auth_mech;
+	void * m_auth_data;
+
+
 	bool m_access_denied;
-	std::wstring m_access_denied_reason;
-	Queue<ClientEvent> m_client_event_queue;
+	bool m_access_denied_reconnect;
+	std::string m_access_denied_reason;
+	std::queue<ClientEvent> m_client_event_queue;
 	bool m_itemdef_received;
 	bool m_nodedef_received;
 	ClientMediaDownloader *m_media_downloader;
@@ -563,18 +670,19 @@ private:
 	std::map<std::string, Inventory*> m_detached_inventories;
 
 	// Storage for mesh data for creating multiple instances of the same mesh
-	std::map<std::string, std::string> m_mesh_data;
+	StringMap m_mesh_data;
 
 	// own state
 	LocalClientState m_state;
 
 	// Used for saving server map to disk client-side
-	Database *localdb;
-	Server *localserver;
+	Database *m_localdb;
+	IntervalLimiter m_localdb_save_interval;
+	u16 m_cache_save_interval;
 
-	// TODO: Add callback to update this when g_settings changes
+	// TODO: Add callback to update these when g_settings changes
 	bool m_cache_smooth_lighting;
+	bool m_cache_enable_shaders;
 };
 
 #endif // !CLIENT_HEADER
-

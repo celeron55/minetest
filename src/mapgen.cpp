@@ -1,6 +1,7 @@
 /*
 Minetest
-Copyright (C) 2010-2013 celeron55, Perttu Ahola <celeron55@gmail.com>
+Copyright (C) 2010-2015 kwolekr, Ryan Kwolek <kwolekr@minetest.net>
+Copyright (C) 2010-2015 celeron55, Perttu Ahola <celeron55@gmail.com>
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
@@ -30,16 +31,15 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "emerge.h"
 #include "content_mapnode.h" // For content_mapnode_get_new_name
 #include "voxelalgorithms.h"
+#include "porting.h"
 #include "profiler.h"
-#include "settings.h" // For g_settings
-#include "main.h" // For g_profiler
+#include "settings.h"
 #include "treegen.h"
 #include "serialization.h"
 #include "util/serialize.h"
+#include "util/numeric.h"
 #include "filesys.h"
 #include "log.h"
-
-const char *GenElementManager::ELEMENT_TITLE = "element";
 
 FlagDesc flagdesc_mapgen[] = {
 	{"trees",    MG_TREES},
@@ -64,35 +64,40 @@ FlagDesc flagdesc_gennotify[] = {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+
 Mapgen::Mapgen()
 {
-	generating    = false;
-	id            = -1;
-	seed          = 0;
-	water_level   = 0;
-	flags         = 0;
+	generating  = false;
+	id          = -1;
+	seed        = 0;
+	water_level = 0;
+	flags       = 0;
 
-	vm          = NULL;
-	ndef        = NULL;
-	heightmap   = NULL;
-	biomemap    = NULL;
+	vm        = NULL;
+	ndef      = NULL;
+	heightmap = NULL;
+	biomemap  = NULL;
+	heatmap   = NULL;
+	humidmap  = NULL;
 }
 
 
 Mapgen::Mapgen(int mapgenid, MapgenParams *params, EmergeManager *emerge) :
 	gennotify(emerge->gen_notify_on, &emerge->gen_notify_on_deco_ids)
 {
-	generating    = false;
-	id            = mapgenid;
-	seed          = (int)params->seed;
-	water_level   = params->water_level;
-	flags         = params->flags;
-	csize         = v3s16(1, 1, 1) * (params->chunksize * MAP_BLOCKSIZE);
+	generating  = false;
+	id          = mapgenid;
+	seed        = (int)params->seed;
+	water_level = params->water_level;
+	flags       = params->flags;
+	csize       = v3s16(1, 1, 1) * (params->chunksize * MAP_BLOCKSIZE);
 
 	vm        = NULL;
 	ndef      = NULL;
 	heightmap = NULL;
 	biomemap  = NULL;
+	heatmap   = NULL;
+	humidmap  = NULL;
 }
 
 
@@ -138,6 +143,7 @@ s16 Mapgen::findGroundLevelFull(v2s16 p2d)
 }
 
 
+// Returns -MAX_MAP_GENERATION_LIMIT if not found
 s16 Mapgen::findGroundLevel(v2s16 p2d, s16 ymin, s16 ymax)
 {
 	v3s16 em = vm->m_area.getExtent();
@@ -151,7 +157,7 @@ s16 Mapgen::findGroundLevel(v2s16 p2d, s16 ymin, s16 ymax)
 
 		vm->m_area.add_y(em, i, -1);
 	}
-	return y;
+	return (y >= ymin) ? y : -MAX_MAP_GENERATION_LIMIT;
 }
 
 
@@ -165,12 +171,6 @@ void Mapgen::updateHeightmap(v3s16 nmin, v3s16 nmax)
 	for (s16 z = nmin.Z; z <= nmax.Z; z++) {
 		for (s16 x = nmin.X; x <= nmax.X; x++, index++) {
 			s16 y = findGroundLevel(v2s16(x, z), nmin.Y, nmax.Y);
-
-			// if the values found are out of range, trust the old heightmap
-			if (y == nmax.Y && heightmap[index] > nmax.Y)
-				continue;
-			if (y == nmin.Y - 1 && heightmap[index] < nmin.Y)
-				continue;
 
 			heightmap[index] = y;
 		}
@@ -342,30 +342,6 @@ void Mapgen::spreadLight(v3s16 nmin, v3s16 nmax)
 
 
 
-void Mapgen::calcLightingOld(v3s16 nmin, v3s16 nmax)
-{
-	enum LightBank banks[2] = {LIGHTBANK_DAY, LIGHTBANK_NIGHT};
-	VoxelArea a(nmin, nmax);
-	bool block_is_underground = (water_level > nmax.Y);
-	bool sunlight = !block_is_underground;
-
-	ScopeProfiler sp(g_profiler, "EmergeThread: mapgen lighting update", SPT_AVG);
-
-	for (int i = 0; i < 2; i++) {
-		enum LightBank bank = banks[i];
-		std::set<v3s16> light_sources;
-		std::map<v3s16, u8> unlight_from;
-
-		voxalgo::clearLightAndCollectSources(*vm, a, bank, ndef,
-			light_sources, unlight_from);
-		voxalgo::propagateSunlight(*vm, a, sunlight, light_sources, ndef);
-
-		vm->unspreadLight(bank, unlight_from, light_sources, ndef);
-		vm->spreadLight(bank, light_sources, ndef);
-	}
-}
-
-
 ///////////////////////////////////////////////////////////////////////////////
 
 GenerateNotifier::GenerateNotifier()
@@ -432,84 +408,46 @@ void GenerateNotifier::getEvents(
 		m_notify_events.clear();
 }
 
-
 ///////////////////////////////////////////////////////////////////////////////
 
-
-GenElementManager::GenElementManager(IGameDef *gamedef)
+void MapgenParams::load(const Settings &settings)
 {
-	m_ndef = gamedef->getNodeDefManager();
+	std::string seed_str;
+	const char *seed_name = (&settings == g_settings) ? "fixed_map_seed" : "seed";
+
+	if (settings.getNoEx(seed_name, seed_str) && !seed_str.empty())
+		seed = read_seed(seed_str.c_str());
+	else
+		myrand_bytes(&seed, sizeof(seed));
+
+	settings.getNoEx("mg_name", mg_name);
+	settings.getS16NoEx("water_level", water_level);
+	settings.getS16NoEx("chunksize", chunksize);
+	settings.getFlagStrNoEx("mg_flags", flags, flagdesc_mapgen);
+	settings.getNoiseParams("mg_biome_np_heat", np_biome_heat);
+	settings.getNoiseParams("mg_biome_np_heat_blend", np_biome_heat_blend);
+	settings.getNoiseParams("mg_biome_np_humidity", np_biome_humidity);
+	settings.getNoiseParams("mg_biome_np_humidity_blend", np_biome_humidity_blend);
+
+	delete sparams;
+	sparams = EmergeManager::createMapgenParams(mg_name);
+	if (sparams)
+		sparams->readParams(&settings);
 }
 
 
-GenElementManager::~GenElementManager()
+void MapgenParams::save(Settings &settings) const
 {
-	for (size_t i = 0; i != m_elements.size(); i++)
-		delete m_elements[i];
-}
+	settings.set("mg_name", mg_name);
+	settings.setU64("seed", seed);
+	settings.setS16("water_level", water_level);
+	settings.setS16("chunksize", chunksize);
+	settings.setFlagStr("mg_flags", flags, flagdesc_mapgen, (u32)-1);
+	settings.setNoiseParams("mg_biome_np_heat", np_biome_heat);
+	settings.setNoiseParams("mg_biome_np_heat_blend", np_biome_heat_blend);
+	settings.setNoiseParams("mg_biome_np_humidity", np_biome_humidity);
+	settings.setNoiseParams("mg_biome_np_humidity_blend", np_biome_humidity_blend);
 
-
-u32 GenElementManager::add(GenElement *elem)
-{
-	size_t nelem = m_elements.size();
-
-	for (size_t i = 0; i != nelem; i++) {
-		if (m_elements[i] == NULL) {
-			elem->id = i;
-			m_elements[i] = elem;
-			return i;
-		}
-	}
-
-	if (nelem >= this->ELEMENT_LIMIT)
-		return -1;
-
-	elem->id = nelem;
-	m_elements.push_back(elem);
-
-	verbosestream << "GenElementManager: added " << this->ELEMENT_TITLE
-		<< " element '" << elem->name << "'" << std::endl;
-
-	return nelem;
-}
-
-
-GenElement *GenElementManager::get(u32 id)
-{
-	return (id < m_elements.size()) ? m_elements[id] : NULL;
-}
-
-
-GenElement *GenElementManager::getByName(const std::string &name)
-{
-	for (size_t i = 0; i != m_elements.size(); i++) {
-		GenElement *elem = m_elements[i];
-		if (elem && name == elem->name)
-			return elem;
-	}
-
-	return NULL;
-}
-
-
-GenElement *GenElementManager::update(u32 id, GenElement *elem)
-{
-	if (id >= m_elements.size())
-		return NULL;
-
-	GenElement *old_elem = m_elements[id];
-	m_elements[id] = elem;
-	return old_elem;
-}
-
-
-GenElement *GenElementManager::remove(u32 id)
-{
-	return update(id, NULL);
-}
-
-
-void GenElementManager::clear()
-{
-	m_elements.clear();
+	if (sparams)
+		sparams->writeParams(&settings);
 }

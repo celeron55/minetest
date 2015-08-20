@@ -21,13 +21,15 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "porting.h"
 #include "filesys.h"
 #include "settings.h"
-#include "main.h"
 #include "log.h"
 #include "strfnd.h"
-#ifndef SERVER
-#include "tile.h" // getImagePath
-#endif
+#include "defaultsettings.h"  // for override_default_settings
+#include "mapgen.h"  // for MapgenParams
 #include "util/string.h"
+
+#ifndef SERVER
+	#include "client/tile.h" // getImagePath
+#endif
 
 bool getGameMinetestConfig(const std::string &game_path, Settings &conf)
 {
@@ -264,8 +266,18 @@ std::vector<WorldSpec> getAvailableWorlds()
 	return worlds;
 }
 
-bool initializeWorld(const std::string &path, const std::string &gameid)
+bool loadGameConfAndInitWorld(const std::string &path, const SubgameSpec &gamespec)
 {
+	// Override defaults with those provided by the game.
+	// We clear and reload the defaults because the defaults
+	// might have been overridden by other subgame config
+	// files that were loaded before.
+	g_settings->clearDefaults();
+	set_default_settings(g_settings);
+	Settings game_defaults;
+	getGameMinetestConfig(gamespec.path, game_defaults);
+	override_default_settings(g_settings, &game_defaults);
+
 	infostream << "Initializing world at " << path << std::endl;
 
 	fs::CreateAllDirs(path);
@@ -274,7 +286,11 @@ bool initializeWorld(const std::string &path, const std::string &gameid)
 	std::string worldmt_path = path + DIR_DELIM "world.mt";
 	if (!fs::PathExists(worldmt_path)) {
 		std::ostringstream ss(std::ios_base::binary);
-		ss << "gameid = " << gameid << "\nbackend = sqlite3\n";
+		ss << "gameid = " << gamespec.id
+			<< "\nbackend = sqlite3"
+			<< "\ncreative_mode = " << g_settings->get("creative_mode")
+			<< "\nenable_damage = " << g_settings->get("enable_damage")
+			<< "\n";
 		if (!fs::safeWriteToFile(worldmt_path, ss.str()))
 			return false;
 
@@ -282,21 +298,22 @@ bool initializeWorld(const std::string &path, const std::string &gameid)
 	}
 
 	// Create map_meta.txt if does not already exist
-	std::string mapmeta_path = path + DIR_DELIM "map_meta.txt";
-	if (!fs::PathExists(mapmeta_path)) {
-		std::ostringstream ss(std::ios_base::binary);
-		ss
-			<< "mg_name = "       << g_settings->get("mg_name")
-			<< "\nseed = "        << g_settings->get("fixed_map_seed")
-			<< "\nchunksize = "   << g_settings->get("chunksize")
-			<< "\nwater_level = " << g_settings->get("water_level")
-			<< "\nmg_flags = "    << g_settings->get("mg_flags")
-			<< "\n[end_of_params]\n";
-		if (!fs::safeWriteToFile(mapmeta_path, ss.str()))
-			return false;
+	std::string map_meta_path = path + DIR_DELIM + "map_meta.txt";
+	if (!fs::PathExists(map_meta_path)){
+		verbosestream << "Creating map_meta.txt (" << map_meta_path << ")" << std::endl;
+		fs::CreateAllDirs(path);
+		std::ostringstream oss(std::ios_base::binary);
 
-		infostream << "Wrote map_meta.txt (" << mapmeta_path << ")" << std::endl;
+		Settings conf;
+		MapgenParams params;
+
+		params.load(*g_settings);
+		params.save(conf);
+		conf.writeLines(oss);
+		oss << "[end_of_params]\n";
+
+		fs::safeWriteToFile(map_meta_path, oss.str());
 	}
-
 	return true;
 }
+

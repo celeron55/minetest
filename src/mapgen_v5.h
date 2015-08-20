@@ -22,8 +22,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "mapgen.h"
 
-/////////////////// Mapgen V5 flags
-#define MGV5_BLOBS 0x01
+#define LARGE_CAVE_DEPTH -256
+
+class BiomeManager;
 
 extern FlagDesc flagdesc_mapgen_v5[];
 
@@ -36,14 +37,12 @@ struct MapgenV5Params : public MapgenSpecificParams {
 	NoiseParams np_cave1;
 	NoiseParams np_cave2;
 	NoiseParams np_ground;
-	NoiseParams np_crumble;
-	NoiseParams np_wetness;
 
 	MapgenV5Params();
 	~MapgenV5Params() {}
 
-	void readParams(Settings *settings);
-	void writeParams(Settings *settings);
+	void readParams(const Settings *settings);
+	void writeParams(Settings *settings) const;
 };
 
 
@@ -67,26 +66,24 @@ public:
 	Noise *noise_cave1;
 	Noise *noise_cave2;
 	Noise *noise_ground;
-	Noise *noise_crumble;
-	Noise *noise_wetness;
+
 	Noise *noise_heat;
 	Noise *noise_humidity;
+	Noise *noise_heat_blend;
+	Noise *noise_humidity_blend;
 
 	content_t c_stone;
-	content_t c_dirt;
-	content_t c_dirt_with_grass;
-	content_t c_sand;
 	content_t c_water_source;
 	content_t c_lava_source;
-	content_t c_ice;
-	content_t c_gravel;
-	content_t c_cobble;
-	content_t c_desert_sand;
 	content_t c_desert_stone;
-	content_t c_mossycobble;
-	content_t c_sandbrick;
+	content_t c_ice;
+	content_t c_sandstone;
+
+	content_t c_cobble;
 	content_t c_stair_cobble;
-	content_t c_stair_sandstone;
+	content_t c_mossycobble;
+	content_t c_sandstonebrick;
+	content_t c_stair_sandstonebrick;
 
 	MapgenV5(int mapgenid, MapgenParams *params, EmergeManager *emerge);
 	~MapgenV5();
@@ -95,9 +92,8 @@ public:
 	int getGroundLevelAtPoint(v2s16 p);
 	void calculateNoise();
 	int generateBaseTerrain();
-	void generateBiomes();
-	void generateCaves();
-	void generateBlobs();
+	MgStoneType generateBiomes(float *heat_map, float *humidity_map);
+	void generateCaves(int max_stone_y);
 	void dustTopNodes();
 };
 

@@ -17,18 +17,18 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
+#include <fstream>
 #include <iostream>
 #include <sstream>
 #include <algorithm>
 
 #include "version.h"
-#include "main.h" // for g_settings
 #include "settings.h"
 #include "serverlist.h"
 #include "filesys.h"
 #include "porting.h"
 #include "log.h"
-#include "clientserver.h"
+#include "network/networkprotocol.h"
 #include "json/json.h"
 #include "convert_json.h"
 #include "httpfetch.h"
@@ -212,7 +212,7 @@ void sendAnnounce(const std::string &action,
 		bool strict_checking = g_settings->getBool("strict_protocol_version_checking");
 		server["name"]         = g_settings->get("server_name");
 		server["description"]  = g_settings->get("server_description");
-		server["version"]      = minetest_version_simple;
+		server["version"]      = g_version_string;
 		server["proto_min"]    = strict_checking ? LATEST_PROTOCOL_VERSION : SERVER_PROTOCOL_VERSION_MIN;
 		server["proto_max"]    = strict_checking ? LATEST_PROTOCOL_VERSION : SERVER_PROTOCOL_VERSION_MAX;
 		server["url"]          = g_settings->get("server_url");

@@ -28,14 +28,14 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <IGUIScrollBar.h>
 #include "debug.h"
 #include "log.h"
-#include "tile.h"
+#include "client/tile.h"
 #include "gettime.h"
 #include "util/string.h"
 #include "util/numeric.h"
 #include "util/string.h" // for parseColorString()
-#include "main.h"
 #include "settings.h" // for settings
 #include "porting.h" // for dpi
+#include "guiscalingfilter.h"
 
 /*
 	GUITable
@@ -929,7 +929,7 @@ s32 GUITable::allocString(const std::string &text)
 	std::map<std::string, s32>::iterator it = m_alloc_strings.find(text);
 	if (it == m_alloc_strings.end()) {
 		s32 id = m_strings.size();
-		std::wstring wtext = narrow_to_wide(text);
+		std::wstring wtext = utf8_to_wide(text);
 		m_strings.push_back(core::stringw(wtext.c_str()));
 		m_alloc_strings.insert(std::make_pair(text, id));
 		return id;

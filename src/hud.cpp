@@ -20,18 +20,18 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include "hud.h"
-#include "main.h"
 #include "settings.h"
 #include "util/numeric.h"
 #include "log.h"
 #include "gamedef.h"
 #include "itemdef.h"
 #include "inventory.h"
-#include "tile.h"
+#include "client/tile.h"
 #include "localplayer.h"
 #include "camera.h"
 #include "porting.h"
 #include "fontengine.h"
+#include "guiscalingfilter.h"
 #include <IGUIStaticText.h>
 
 #ifdef HAVE_TOUCHSCREENGUI
@@ -94,7 +94,7 @@ void Hud::drawItem(const ItemStack &item, const core::rect<s32>& rect, bool sele
 				imgrect2.LowerRightCorner.Y += (m_padding*2);
 					video::ITexture *texture = tsrc->getTexture(hotbar_selected_image);
 					core::dimension2di imgsize(texture->getOriginalSize());
-				driver->draw2DImage(texture, imgrect2,
+				draw2DImageFilterScaled(driver, texture, imgrect2,
 						core::rect<s32>(core::position2d<s32>(0,0), imgsize),
 						NULL, hbar_colors, true);
 			} else {
@@ -200,7 +200,7 @@ void Hud::drawItems(v2s32 upperleftpos, s32 itemcount, s32 offset,
 		core::rect<s32> rect2 = imgrect2 + pos;
 		video::ITexture *texture = tsrc->getTexture(hotbar_image);
 		core::dimension2di imgsize(texture->getOriginalSize());
-		driver->draw2DImage(texture, rect2,
+		draw2DImageFilterScaled(driver, texture, rect2,
 			core::rect<s32>(core::position2d<s32>(0,0), imgsize),
 			NULL, hbar_colors, true);
 	}
@@ -266,7 +266,7 @@ void Hud::drawLuaElements(v3s16 camera_offset) {
 				             (e->align.Y - 1.0) * dstsize.Y / 2);
 				core::rect<s32> rect(0, 0, dstsize.X, dstsize.Y);
 				rect += pos + offset + v2s32(e->offset.X, e->offset.Y);
-				driver->draw2DImage(texture, rect,
+				draw2DImageFilterScaled(driver, texture, rect,
 					core::rect<s32>(core::position2d<s32>(0,0), imgsize),
 					NULL, colors, true);
 				break; }
@@ -275,7 +275,7 @@ void Hud::drawLuaElements(v3s16 camera_offset) {
 										 (e->number >> 8)  & 0xFF,
 										 (e->number >> 0)  & 0xFF);
 				core::rect<s32> size(0, 0, e->scale.X, text_height * e->scale.Y);
-				std::wstring text = narrow_to_wide(e->text);
+				std::wstring text = utf8_to_wide(e->text);
 				core::dimension2d<u32> textsize = font->getDimension(text.c_str());
 				v2s32 offset((e->align.X - 1.0) * (textsize.Width / 2),
 				             (e->align.Y - 1.0) * (textsize.Height / 2));
@@ -310,11 +310,11 @@ void Hud::drawLuaElements(v3s16 camera_offset) {
 										 (e->number >> 8)  & 0xFF,
 										 (e->number >> 0)  & 0xFF);
 				core::rect<s32> size(0, 0, 200, 2 * text_height);
-				std::wstring text = narrow_to_wide(e->name);
+				std::wstring text = utf8_to_wide(e->name);
 				font->draw(text.c_str(), size + pos, color);
 				std::ostringstream os;
-				os<<distance<<e->text;
-				text = narrow_to_wide(os.str());
+				os << distance << e->text;
+				text = utf8_to_wide(os.str());
 				pos.Y += text_height;
 				font->draw(text.c_str(), size + pos, color);
 				break; }
@@ -378,7 +378,7 @@ void Hud::drawStatbar(v2s32 pos, u16 corner, u16 drawdir, std::string texture,
 		core::rect<s32> dstrect(0,0, dstd.Width, dstd.Height);
 
 		dstrect += p;
-		driver->draw2DImage(stat_texture, dstrect, srcrect, NULL, colors, true);
+		draw2DImageFilterScaled(driver, stat_texture, dstrect, srcrect, NULL, colors, true);
 		p += steppos;
 	}
 
@@ -388,7 +388,7 @@ void Hud::drawStatbar(v2s32 pos, u16 corner, u16 drawdir, std::string texture,
 		core::rect<s32> dstrect(0,0, dstd.Width / 2, dstd.Height);
 
 		dstrect += p;
-		driver->draw2DImage(stat_texture, dstrect, srcrect, NULL, colors, true);
+		draw2DImageFilterScaled(driver, stat_texture, dstrect, srcrect, NULL, colors, true);
 	}
 }
 
@@ -502,7 +502,7 @@ void drawItemStack(video::IVideoDriver *driver,
 	{
 		const video::SColor color(255,255,255,255);
 		const video::SColor colors[] = {color,color,color,color};
-		driver->draw2DImage(texture, rect,
+		draw2DImageFilterScaled(driver, texture, rect,
 			core::rect<s32>(core::position2d<s32>(0,0),
 			core::dimension2di(texture->getOriginalSize())),
 			clip, colors, true);
@@ -552,7 +552,7 @@ void drawItemStack(video::IVideoDriver *driver,
 	{
 		// Get the item count as a string
 		std::string text = itos(item.count);
-		v2u32 dim = font->getDimension(narrow_to_wide(text).c_str());
+		v2u32 dim = font->getDimension(utf8_to_wide(text).c_str());
 		v2s32 sdim(dim.X,dim.Y);
 
 		core::rect<s32> rect2(

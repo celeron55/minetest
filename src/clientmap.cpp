@@ -24,12 +24,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <matrix4.h>
 #include "log.h"
 #include "mapsector.h"
-#include "main.h" // dout_client, g_settings
 #include "nodedef.h"
 #include "mapblock.h"
 #include "profiler.h"
 #include "settings.h"
-#include "camera.h" // CameraModes
+#include "camera.h"               // CameraModes
 #include "util/mathconstants.h"
 #include <algorithm>
 
@@ -102,34 +101,6 @@ MapSector * ClientMap::emergeSector(v2s16 p2d)
 	return sector;
 }
 
-#if 0
-void ClientMap::deSerializeSector(v2s16 p2d, std::istream &is)
-{
-	DSTACK(__FUNCTION_NAME);
-	ClientMapSector *sector = NULL;
-
-	//JMutexAutoLock lock(m_sector_mutex); // Bulk comment-out
-
-	core::map<v2s16, MapSector*>::Node *n = m_sectors.find(p2d);
-
-	if(n != NULL)
-	{
-		sector = (ClientMapSector*)n->getValue();
-		assert(sector->getId() == MAPSECTOR_CLIENT);
-	}
-	else
-	{
-		sector = new ClientMapSector(this, p2d);
-		{
-			//JMutexAutoLock lock(m_sector_mutex); // Bulk comment-out
-			m_sectors.insert(p2d, sector);
-		}
-	}
-
-	sector->deSerialize(is);
-}
-#endif
-
 void ClientMap::OnRegisterSceneNode()
 {
 	if(IsVisible)
@@ -161,9 +132,9 @@ static bool isOccluded(Map *map, v3s16 p0, v3s16 p1, float step, float stepfac,
 		else
 			is_transparent = (f.solidness != 2);
 		if(!is_transparent){
-			count++;
-			if(count >= needed_count)
+			if(count == needed_count)
 				return true;
+			count++;
 		}
 		step *= stepfac;
 	}
@@ -247,7 +218,7 @@ void ClientMap::updateDrawList(video::IVideoDriver* driver)
 				continue;
 		}
 
-		std::list< MapBlock * > sectorblocks;
+		MapBlockVect sectorblocks;
 		sector->getBlocks(sectorblocks);
 
 		/*
@@ -256,8 +227,8 @@ void ClientMap::updateDrawList(video::IVideoDriver* driver)
 
 		u32 sector_blocks_drawn = 0;
 
-		std::list< MapBlock * >::iterator i;
-		for(i=sectorblocks.begin(); i!=sectorblocks.end(); i++)
+		for(MapBlockVect::iterator i = sectorblocks.begin();
+				i != sectorblocks.end(); i++)
 		{
 			MapBlock *block = *i;
 
@@ -391,12 +362,12 @@ void ClientMap::updateDrawList(video::IVideoDriver* driver)
 struct MeshBufList
 {
 	video::SMaterial m;
-	std::list<scene::IMeshBuffer*> bufs;
+	std::vector<scene::IMeshBuffer*> bufs;
 };
 
 struct MeshBufListList
 {
-	std::list<MeshBufList> lists;
+	std::vector<MeshBufList> lists;
 
 	void clear()
 	{
@@ -405,7 +376,7 @@ struct MeshBufListList
 
 	void add(scene::IMeshBuffer *buf)
 	{
-		for(std::list<MeshBufList>::iterator i = lists.begin();
+		for(std::vector<MeshBufList>::iterator i = lists.begin();
 				i != lists.end(); ++i){
 			MeshBufList &l = *i;
 			video::SMaterial &m = buf->getMaterial();
@@ -568,7 +539,7 @@ void ClientMap::renderMap(video::IVideoDriver* driver, s32 pass)
 			MapBlockMesh *mapBlockMesh = block->mesh;
 			assert(mapBlockMesh);
 
-			scene::SMesh *mesh = mapBlockMesh->getMesh();
+			scene::IMesh *mesh = mapBlockMesh->getMesh();
 			assert(mesh);
 
 			u32 c = mesh->getMeshBufferCount();
@@ -595,25 +566,20 @@ void ClientMap::renderMap(video::IVideoDriver* driver, s32 pass)
 		}
 	}
 
-	std::list<MeshBufList> &lists = drawbufs.lists;
+	std::vector<MeshBufList> &lists = drawbufs.lists;
 
 	int timecheck_counter = 0;
-	for(std::list<MeshBufList>::iterator i = lists.begin();
-			i != lists.end(); ++i)
-	{
-		{
-			timecheck_counter++;
-			if(timecheck_counter > 50)
-			{
-				timecheck_counter = 0;
-				int time2 = time(0);
-				if(time2 > time1 + 4)
-				{
-					infostream<<"ClientMap::renderMap(): "
-						"Rendering takes ages, returning."
-						<<std::endl;
-					return;
-				}
+	for(std::vector<MeshBufList>::iterator i = lists.begin();
+			i != lists.end(); ++i) {
+		timecheck_counter++;
+		if(timecheck_counter > 50) {
+			timecheck_counter = 0;
+			int time2 = time(0);
+			if(time2 > time1 + 4) {
+				infostream << "ClientMap::renderMap(): "
+					"Rendering takes ages, returning."
+					<< std::endl;
+				return;
 			}
 		}
 
@@ -621,60 +587,14 @@ void ClientMap::renderMap(video::IVideoDriver* driver, s32 pass)
 
 		driver->setMaterial(list.m);
 
-		for(std::list<scene::IMeshBuffer*>::iterator j = list.bufs.begin();
-				j != list.bufs.end(); ++j)
-		{
+		for(std::vector<scene::IMeshBuffer*>::iterator j = list.bufs.begin();
+				j != list.bufs.end(); ++j) {
 			scene::IMeshBuffer *buf = *j;
 			driver->drawMeshBuffer(buf);
 			vertex_count += buf->getVertexCount();
 			meshbuffer_count++;
 		}
-#if 0
-		/*
-			Draw the faces of the block
-		*/
-		{
-			//JMutexAutoLock lock(block->mesh_mutex);
 
-			MapBlockMesh *mapBlockMesh = block->mesh;
-			assert(mapBlockMesh);
-
-			scene::SMesh *mesh = mapBlockMesh->getMesh();
-			assert(mesh);
-
-			u32 c = mesh->getMeshBufferCount();
-			bool stuff_actually_drawn = false;
-			for(u32 i=0; i<c; i++)
-			{
-				scene::IMeshBuffer *buf = mesh->getMeshBuffer(i);
-				const video::SMaterial& material = buf->getMaterial();
-				video::IMaterialRenderer* rnd =
-						driver->getMaterialRenderer(material.MaterialType);
-				bool transparent = (rnd && rnd->isTransparent());
-				// Render transparent on transparent pass and likewise.
-				if(transparent == is_transparent_pass)
-				{
-					if(buf->getVertexCount() == 0)
-						errorstream<<"Block ["<<analyze_block(block)
-								<<"] contains an empty meshbuf"<<std::endl;
-					/*
-						This *shouldn't* hurt too much because Irrlicht
-						doesn't change opengl textures if the old
-						material has the same texture.
-					*/
-					driver->setMaterial(buf->getMaterial());
-					driver->drawMeshBuffer(buf);
-					vertex_count += buf->getVertexCount();
-					meshbuffer_count++;
-					stuff_actually_drawn = true;
-				}
-			}
-			if(stuff_actually_drawn)
-				blocks_had_pass_meshbuf++;
-			else
-				blocks_without_stuff++;
-		}
-#endif
 	}
 	} // ScopeProfiler
 

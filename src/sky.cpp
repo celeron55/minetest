@@ -3,14 +3,13 @@
 #include "ISceneManager.h"
 #include "ICameraSceneNode.h"
 #include "S3DVertex.h"
-#include "tile.h"
-#include "noise.h" // easeCurve
-#include "main.h" // g_profiler
+#include "client/tile.h"
+#include "noise.h"            // easeCurve
 #include "profiler.h"
-#include "util/numeric.h" // MYMIN
+#include "util/numeric.h"
 #include <cmath>
 #include "settings.h"
-#include "camera.h" // CameraModes
+#include "camera.h"           // CameraModes
 
 //! constructor
 Sky::Sky(scene::ISceneNode* parent, scene::ISceneManager* mgr, s32 id,
@@ -47,14 +46,14 @@ Sky::Sky(scene::ISceneNode* parent, scene::ISceneManager* mgr, s32 id,
 	m_materials[1].MaterialType = video::EMT_TRANSPARENT_ALPHA_CHANNEL;
 
 	m_materials[2] = mat;
-	m_materials[2].setTexture(0, tsrc->getTexture("sunrisebg.png"));
+	m_materials[2].setTexture(0, tsrc->getTextureForMesh("sunrisebg.png"));
 	m_materials[2].MaterialType = video::EMT_TRANSPARENT_ALPHA_CHANNEL;
 	//m_materials[2].MaterialType = video::EMT_TRANSPARENT_ADD_COLOR;
 
 	m_sun_texture = tsrc->isKnownSourceImage("sun.png") ?
-		tsrc->getTexture("sun.png") : NULL;
+		tsrc->getTextureForMesh("sun.png") : NULL;
 	m_moon_texture = tsrc->isKnownSourceImage("moon.png") ?
-		tsrc->getTexture("moon.png") : NULL;
+		tsrc->getTextureForMesh("moon.png") : NULL;
 	m_sun_tonemap = tsrc->isKnownSourceImage("sun_tonemap.png") ?
 		tsrc->getTexture("sun_tonemap.png") : NULL;
 	m_moon_tonemap = tsrc->isKnownSourceImage("moon_tonemap.png") ?

@@ -70,6 +70,11 @@ public:
 	SerializationError(const std::string &s): BaseException(s) {}
 };
 
+class PacketError : public BaseException {
+public:
+	PacketError(const std::string &s): BaseException(s) {}
+};
+
 class LoadError : public BaseException {
 public:
 	LoadError(const std::string &s): BaseException(s) {}
@@ -113,6 +118,11 @@ public:
 class ClientStateError : public BaseException {
 public:
 	ClientStateError(std::string s): BaseException(s) {}
+};
+
+class PrngException : public BaseException {
+public:
+	PrngException(std::string s): BaseException(s) {}
 };
 
 /*

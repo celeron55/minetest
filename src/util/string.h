@@ -25,23 +25,40 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <string>
 #include <cstring>
 #include <vector>
+#include <map>
 #include <sstream>
 #include <cctype>
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
 
+// Checks whether a byte is an inner byte for an utf-8 multibyte sequence
+#define IS_UTF8_MULTB_INNER(x) (((unsigned char)x >= 0x80) && ((unsigned char)x < 0xc0))
+
+typedef std::map<std::string, std::string> StringMap;
+
 struct FlagDesc {
 	const char *name;
 	u32 flag;
 };
 
-// You must free the returned string!
-const wchar_t *narrow_to_wide_c(const char *mbs);
+// try not to convert between wide/utf8 encodings; this can result in data loss
+// try to only convert between them when you need to input/output stuff via Irrlicht
+std::wstring utf8_to_wide(const std::string &input);
+std::string wide_to_utf8(const std::wstring &input);
 
-std::wstring narrow_to_wide(const std::string& mbs);
-std::string wide_to_narrow(const std::wstring& wcs);
-std::string translatePassword(std::string playername, std::wstring password);
+wchar_t *utf8_to_wide_c(const char *str);
+
+// NEVER use those two functions unless you have a VERY GOOD reason to
+// they just convert between wide and multibyte encoding
+// multibyte encoding depends on current locale, this is no good, especially on Windows
+
+// You must free the returned string!
+// The returned string is allocated using new
+wchar_t *narrow_to_wide_c(const char *str);
+std::wstring narrow_to_wide(const std::string &mbs);
+std::string wide_to_narrow(const std::wstring &wcs);
+
 std::string urlencode(std::string str);
 std::string urldecode(std::string str);
 u32 readFlagString(std::string str, const FlagDesc *flagdesc, u32 *flagmask);
@@ -148,6 +165,24 @@ inline bool str_starts_with(const std::basic_string<T> &str,
 	return true;
 }
 
+/**
+ * Check whether \p str begins with the string prefix. If \p case_insensitive
+ * is true then the check is case insensitve (default is false; i.e. case is
+ * significant).
+ *
+ * @param str
+ * @param prefix
+ * @param case_insensitive
+ * @return true if the str begins with prefix
+ */
+template <typename T>
+inline bool str_starts_with(const std::basic_string<T> &str,
+		const T *prefix,
+		bool case_insensitive = false)
+{
+	return str_starts_with(str, std::basic_string<T>(prefix),
+			case_insensitive);
+}
 
 /**
  * Splits a string into its component parts separated by the character
@@ -381,7 +416,10 @@ inline bool string_allowed_blacklist(const std::string &str,
  *	every \p row_len characters whether it breaks a word or not.  It is
  *	intended to be used for, for example, showing paths in the GUI.
  *
- * @param from The string to be wrapped into rows.
+ * @note This function doesn't wrap inside utf-8 multibyte sequences and also
+ * 	counts multibyte sequences correcly as single characters.
+ *
+ * @param from The (utf-8) string to be wrapped into rows.
  * @param row_len The row length (in characters).
  * @return A new string with the wrapping applied.
  */
@@ -390,9 +428,14 @@ inline std::string wrap_rows(const std::string &from,
 {
 	std::string to;
 
+	size_t character_idx = 0;
 	for (size_t i = 0; i < from.size(); i++) {
-		if (i != 0 && i % row_len == 0)
-			to += '\n';
+		if (!IS_UTF8_MULTB_INNER(from[i])) {
+			// Wrap string after last inner byte of char
+			if (character_idx > 0 && character_idx % row_len == 0)
+				to += '\n';
+			character_idx++;
+		}
 		to += from[i];
 	}
 

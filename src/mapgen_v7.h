@@ -48,8 +48,8 @@ struct MapgenV7Params : public MapgenSpecificParams {
 	MapgenV7Params();
 	~MapgenV7Params() {}
 
-	void readParams(Settings *settings);
-	void writeParams(Settings *settings);
+	void readParams(const Settings *settings);
+	void writeParams(Settings *settings) const;
 };
 
 class MapgenV7 : public Mapgen {
@@ -82,18 +82,21 @@ public:
 
 	Noise *noise_heat;
 	Noise *noise_humidity;
+	Noise *noise_heat_blend;
+	Noise *noise_humidity_blend;
 
 	content_t c_stone;
-	content_t c_dirt;
-	content_t c_dirt_with_grass;
-	content_t c_sand;
 	content_t c_water_source;
 	content_t c_lava_source;
-	content_t c_ice;
-	content_t c_gravel;
-	content_t c_cobble;
-	content_t c_desert_sand;
 	content_t c_desert_stone;
+	content_t c_ice;
+	content_t c_sandstone;
+
+	content_t c_cobble;
+	content_t c_stair_cobble;
+	content_t c_mossycobble;
+	content_t c_sandstonebrick;
+	content_t c_stair_sandstonebrick;
 
 	MapgenV7(int mapgenid, MapgenParams *params, EmergeManager *emerge);
 	~MapgenV7();
@@ -102,24 +105,24 @@ public:
 	int getGroundLevelAtPoint(v2s16 p);
 	Biome *getBiomeAtPoint(v3s16 p);
 
-	float baseTerrainLevelAtPoint(int x, int z);
+	float baseTerrainLevelAtPoint(s16 x, s16 z);
 	float baseTerrainLevelFromMap(int index);
-	bool getMountainTerrainAtPoint(int x, int y, int z);
-	bool getMountainTerrainFromMap(int idx_xyz, int idx_xz, int y);
+	bool getMountainTerrainAtPoint(s16 x, s16 y, s16 z);
+	bool getMountainTerrainFromMap(int idx_xyz, int idx_xz, s16 y);
 
 	void calculateNoise();
 
 	virtual int generateTerrain();
-	int generateBaseTerrain();
-	int generateMountainTerrain(int ymax);
+	void generateBaseTerrain(s16 *stone_surface_min_y, s16 *stone_surface_max_y);
+	int generateMountainTerrain(s16 ymax);
 	void generateRidgeTerrain();
 
-	void generateBiomes();
+	MgStoneType generateBiomes(float *heat_map, float *humidity_map);
 	void dustTopNodes();
 
 	//void addTopNodes();
 
-	void generateCaves(int max_stone_y);
+	void generateCaves(s16 max_stone_y);
 };
 
 struct MapgenFactoryV7 : public MapgenFactory {

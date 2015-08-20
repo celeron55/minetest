@@ -70,6 +70,13 @@ enum GenNotifyType {
 	NUM_GENNOTIFY_TYPES
 };
 
+// TODO(hmmmm/paramat): make stone type selection dynamic
+enum MgStoneType {
+	STONE,
+	DESERT_STONE,
+	SANDSTONE,
+};
+
 struct GenNotifyEvent {
 	GenNotifyType type;
 	v3s16 pos;
@@ -95,8 +102,8 @@ private:
 };
 
 struct MapgenSpecificParams {
-	virtual void readParams(Settings *settings) = 0;
-	virtual void writeParams(Settings *settings) = 0;
+	virtual void readParams(const Settings *settings) = 0;
+	virtual void writeParams(Settings *settings) const = 0;
 	virtual ~MapgenSpecificParams() {}
 };
 
@@ -108,21 +115,27 @@ struct MapgenParams {
 	u32 flags;
 
 	NoiseParams np_biome_heat;
+	NoiseParams np_biome_heat_blend;
 	NoiseParams np_biome_humidity;
+	NoiseParams np_biome_humidity_blend;
 
 	MapgenSpecificParams *sparams;
 
-	MapgenParams()
-	{
-		mg_name     = DEFAULT_MAPGEN;
-		seed        = 0;
-		water_level = 1;
-		chunksize   = 5;
-		flags       = MG_TREES | MG_CAVES | MG_LIGHT;
-		sparams     = NULL;
-		np_biome_heat     = NoiseParams(50, 50, v3f(500.0, 500.0, 500.0), 5349, 3, 0.5, 2.0);
-		np_biome_humidity = NoiseParams(50, 50, v3f(500.0, 500.0, 500.0), 842, 3, 0.5, 2.0);
-	}
+	MapgenParams() :
+		mg_name(DEFAULT_MAPGEN),
+		chunksize(5),
+		seed(0),
+		water_level(1),
+		flags(MG_TREES | MG_CAVES | MG_LIGHT),
+		np_biome_heat(NoiseParams(50, 50, v3f(1000.0, 1000.0, 1000.0), 5349, 3, 0.5, 2.0)),
+		np_biome_heat_blend(NoiseParams(0, 1.5, v3f(8.0, 8.0, 8.0), 13, 2, 1.0, 2.0)),
+		np_biome_humidity(NoiseParams(50, 50, v3f(1000.0, 1000.0, 1000.0), 842, 3, 0.5, 2.0)),
+		np_biome_humidity_blend(NoiseParams(0, 1.5, v3f(8.0, 8.0, 8.0), 90003, 2, 1.0, 2.0)),
+		sparams(NULL)
+	{}
+
+	void load(const Settings &settings);
+	void save(Settings &settings) const;
 };
 
 class Mapgen {
@@ -139,6 +152,8 @@ public:
 	u32 blockseed;
 	s16 *heightmap;
 	u8 *biomemap;
+	float *heatmap;
+	float *humidmap;
 	v3s16 csize;
 
 	GenerateNotifier gennotify;
@@ -164,8 +179,6 @@ public:
 	void propagateSunlight(v3s16 nmin, v3s16 nmax);
 	void spreadLight(v3s16 nmin, v3s16 nmax);
 
-	void calcLightingOld(v3s16 nmin, v3s16 nmax);
-
 	virtual void makeChunk(BlockMakeData *data) {}
 	virtual int getGroundLevelAtPoint(v2s16 p) { return 0; }
 };
@@ -175,36 +188,6 @@ struct MapgenFactory {
 		EmergeManager *emerge) = 0;
 	virtual MapgenSpecificParams *createMapgenParams() = 0;
 	virtual ~MapgenFactory() {}
-};
-
-class GenElement {
-public:
-	virtual ~GenElement() {}
-	u32 id;
-	std::string name;
-};
-
-class GenElementManager {
-public:
-	static const char *ELEMENT_TITLE;
-	static const size_t ELEMENT_LIMIT = -1;
-
-	GenElementManager(IGameDef *gamedef);
-	virtual ~GenElementManager();
-
-	virtual GenElement *create(int type) = 0;
-
-	virtual u32 add(GenElement *elem);
-	virtual GenElement *get(u32 id);
-	virtual GenElement *update(u32 id, GenElement *elem);
-	virtual GenElement *remove(u32 id);
-	virtual void clear();
-
-	virtual GenElement *getByName(const std::string &name);
-
-protected:
-	INodeDefManager *m_ndef;
-	std::vector<GenElement *> m_elements;
 };
 
 #endif
