@@ -2034,12 +2034,57 @@ void Server::handleCommand_SrpBytesM(NetworkPacket* pkt)
 	acceptAuth(pkt->getPeerId(), wantSudo);
 }
 
-void Server::handleCommand_GetFarBlocks(NetworkPacket* pkt)
+void Server::handleCommand_GetFarBlocks(NetworkPacket* pkt_in)
 {
 	// TODO
 	infostream << "Server::handleCommand_GetFarBlocks: TODO" << std::endl;
 
-	//RemoteClient* client = getClient(pkt->getPeerId(), CS_Invalid);
-	//ClientState cstate = client->getState();
+	v3s16 area_offset;
+	v3s16 area_size;
+	v3s16 main_point;
+	v3s16 preferred_block_div_at_main_point;
+	v3s16 preferred_block_div_at_edge;
+	*pkt_in >> area_offset;
+	*pkt_in >> area_size;
+	*pkt_in >> main_point;
+	*pkt_in >> preferred_block_div_at_main_point;
+	*pkt_in >> preferred_block_div_at_edge;
+
+	NetworkPacket pkt(TOCLIENT_FAR_BLOCKS_RESULT, 0);
+	/*
+		u32 num_results
+		for each result:
+			v3s16 area_offset
+			v3s16 area_size
+			v3s16 block_div
+			TODO: Compress
+			for each block:
+				u8 flags // 0x1: If 0, data is not included
+				for each division:
+					u16 node_id
+					u8 light
+	*/
+	pkt << (u32) 1;
+
+	pkt << area_offset;
+	pkt << area_size;
+	pkt << preferred_block_div_at_edge;
+
+	v3s16 p;
+	for (u16 p.Y=area_offset.Y; p.Y<area_offset.Y+area_size.Y;  p.Y++)
+	for (u16 p.X=area_offset.X; p.X<area_offset.X+area_size.X;  p.X++)
+	for (u16 p.Z=area_offset.Z; p.Z<area_offset.Z+area_size.Z;  p.Z++) {
+		pkt << (u8) 0x01; // bit 1: Block included in result
+		
+		v3s16 pd;
+		for (u16 pd.Y=0; pd.Y<preferred_block_div_at_edge.Y;  pd.Y++)
+		for (u16 pd.X=0; pd.X<preferred_block_div_at_edge.X;  pd.X++)
+		for (u16 pd.Z=0; pd.Z<preferred_block_div_at_edge.Z;  pd.Z++) {
+			pkt << (u16) 0; // node_id
+			pkt << (u18) 0; // light
+		}
+	}
+
+	Send(&pkt);
 }
 
