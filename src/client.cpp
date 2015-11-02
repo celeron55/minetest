@@ -664,6 +664,35 @@ void Client::step(float dtime)
 		m_localdb->endSave();
 		m_localdb->beginSave();
 	}
+
+	/*
+		Request far blocks
+	*/
+	if(m_far_blocks_request_interval.step(dtime, 5.0))
+	{
+		verbosestream<<"Client: Requesting far blocks"<<std::endl;
+
+		v3s16 player_p;
+		Player *player = m_env.getLocalPlayer();
+		if(player)
+			player_p = floatToInt(player->getPosition(), BS);
+
+		v3s16 area_size(64, 16, 64);
+		v3s16 area_offset = area_size/2 + getNodeBlockPos(player_p);
+		v3s16 preferred_block_div(2, 2, 2);
+
+		NetworkPacket pkt(TOSERVER_GET_FAR_BLOCKS, 0);
+		/*
+			v3s16 area_offset
+			v3s16 area_size
+			v3s16 preferred_block_div
+		*/
+		pkt << area_offset;
+		pkt << area_size;
+		pkt << preferred_block_div;
+
+		Send(&pkt);
+	}
 }
 
 bool Client::loadMedia(const std::string &data, const std::string &filename)

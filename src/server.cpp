@@ -2224,6 +2224,11 @@ void Server::SendBlocks(float dtime)
 		total_sending++;
 	}
 	m_clients.unlock();
+
+	// TODO
+	/*m_clients.lock();
+	NetworkPacket pkt(TOCLIENT_FARBLOCKS, 0, peer_id);
+	m_clients.unlock();*/
 }
 
 void Server::fillMediaCache()

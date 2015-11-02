@@ -1221,3 +1221,10 @@ void Client::handleCommand_SrpBytesSandB(NetworkPacket* pkt)
 	resp_pkt << std::string(bytes_M, len_M);
 	Send(&resp_pkt);
 }
+
+void Client::handleCommand_FarBlocksResult(NetworkPacket* pkt)
+{
+	// TODO
+	infostream << "Client::handleCommand_FarBlocksResult: TODO" << std::endl;
+}
+

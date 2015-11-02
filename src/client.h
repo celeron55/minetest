@@ -395,6 +395,7 @@ public:
 	void handleCommand_LocalPlayerAnimations(NetworkPacket* pkt);
 	void handleCommand_EyeOffset(NetworkPacket* pkt);
 	void handleCommand_SrpBytesSandB(NetworkPacket* pkt);
+	void handleCommand_FarBlocksResult(NetworkPacket* pkt);
 
 	void ProcessData(NetworkPacket *pkt);
 
@@ -682,6 +683,8 @@ private:
 	// TODO: Add callback to update these when g_settings changes
 	bool m_cache_smooth_lighting;
 	bool m_cache_enable_shaders;
+
+	IntervalLimiter m_far_blocks_request_interval;
 
 	DISABLE_CLASS_COPY(Client);
 };

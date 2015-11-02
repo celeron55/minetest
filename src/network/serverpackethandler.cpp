@@ -2033,3 +2033,13 @@ void Server::handleCommand_SrpBytesM(NetworkPacket* pkt)
 
 	acceptAuth(pkt->getPeerId(), wantSudo);
 }
+
+void Server::handleCommand_GetFarBlocks(NetworkPacket* pkt)
+{
+	// TODO
+	infostream << "Server::handleCommand_GetFarBlocks: TODO" << std::endl;
+
+	//RemoteClient* client = getClient(pkt->getPeerId(), CS_Invalid);
+	//ClientState cstate = client->getState();
+}
+

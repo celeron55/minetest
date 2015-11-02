@@ -584,6 +584,18 @@ enum ToClientCommand
 		u32 id
 	*/
 
+	TOCLIENT_FAR_BLOCKS_RESULT = 0x54,
+	/*
+		v3s16 area_offset
+		v3s16 area_size
+		v3s16 block_div
+		TODO: Compress
+		for each block:
+			for each division:
+				u16 node_id
+				u8 light
+	*/
+
 	TOCLIENT_SRP_BYTES_S_B = 0x60,
 	/*
 		Belonging to AUTH_MECHANISM_LEGACY_PASSWORD and AUTH_MECHANISM_SRP.
@@ -862,7 +874,14 @@ enum ToServerCommand
 		std::string bytes_M
 	*/
 
-	TOSERVER_NUM_MSG_TYPES = 0x53,
+	TOSERVER_GET_FAR_BLOCKS = 0x54,
+	/*
+		v3s16 area_offset
+		v3s16 area_size
+		v3s16 preferred_block_div
+	*/
+
+	TOSERVER_NUM_MSG_TYPES = 0x55,
 };
 
 enum AuthMechanism
