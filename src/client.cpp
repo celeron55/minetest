@@ -1,6 +1,6 @@
 /*
 Minetest
-Copyright (C) 2013 celeron55, Perttu Ahola <celeron55@gmail.com>
+Copyright (C) 2013-2015 celeron55, Perttu Ahola <celeron55@gmail.com>
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
@@ -47,6 +47,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "guiscalingfilter.h"
 #include "script/clientscripting.h"
 #include "game.h"
+#include "network/wms_priority.h"
 
 extern gui::IGUIEnvironment* guienv;
 
@@ -358,12 +359,14 @@ void Client::step(float dtime)
 	*/
 	const float map_timer_and_unload_dtime = 5.25;
 	if(m_map_timer_and_unload_interval.step(dtime, map_timer_and_unload_dtime)) {
-		ScopeProfiler sp(g_profiler, "Client: map timer and unload");
+		ScopeProfiler sp(g_profiler, "Client: Unloading blocks (time)");
 		std::vector<v3s16> deleted_blocks;
 		m_env.getMap().timerUpdate(map_timer_and_unload_dtime,
 			g_settings->getFloat("client_unload_unused_data_timeout"),
-			g_settings->getS32("client_mapblock_limit"),
+			calculateReasonableMapblockLimit(),
 			&deleted_blocks);
+
+		g_profiler->add("Client: Blocks: Unloaded (avg #)", deleted_blocks.size());
 
 		/*
 			Send info to server
@@ -503,12 +506,9 @@ void Client::step(float dtime)
 				m_minimap->addBlock(r.p, minimap_mapblock);
 
 			if (r.ack_block_to_server) {
-				/*
-					Acknowledge block
-					[0] u8 count
-					[1] v3s16 pos_0
-				*/
-				sendGotBlocks(r.p);
+				// Acknowledgement is done after mesh generation in order to
+				// optimally throttle the transfer rate of MapBlocks.
+				sendGotMapBlock(r.p);
 			}
 		}
 
@@ -612,6 +612,102 @@ void Client::step(float dtime)
 			m_cache_save_interval)) {
 		m_localdb->endSave();
 		m_localdb->beginSave();
+	}
+
+	/*
+		Request blocks
+	*/
+	static const float fmr_interval_s = 2.0f; // TODO: Configurable
+	if(m_blocks_request_interval.step(dtime, fmr_interval_s))
+	{
+		//infostream<<"Client: Requesting blocks"<<std::endl;
+
+		ClientMap *map = &m_env.getClientMap();
+
+		std::vector<WantedMapSend> wanted_map_send_queue;
+
+#if 0
+		// Get player position (used for prioritizing requests)
+		v3s16 player_p;
+		Player *player = m_env.getLocalPlayer();
+		if(player)
+			player_p = floatToInt(player->getPosition(), BS);
+
+#if 0
+		// Figure out maximum number for queued MapBlocks
+		static const s32 max_mut_queue_size = 20;
+		static const s32 max_suggested_mbs = 50;
+		s32 num_suggested_mbs = max_suggested_mbs;
+		s32 mesh_queue_size = m_mesh_update_thread.queueSize();
+		if (mesh_queue_size > max_mut_queue_size) {
+			float mesh_queue_fill = (float)mesh_queue_size / max_mut_queue_size;
+			num_suggested_mbs = max_suggested_mbs * mesh_queue_fill;
+		}
+
+		// Get suggested MapBlock positions
+		std::vector<v3s16> suggested_mbs = map->suggestMapBlocksToFetch(
+				player_p, num_suggested_mbs);
+		for (size_t i=0; i<suggested_mbs.size(); i++) {
+			v3s16 mb = suggested_mbs[i];
+			wanted_map_send_queue.push_back(WantedMapSend(WMST_MAPBLOCK, mb));
+		}
+#endif
+
+		// Prioritize
+		std::sort(wanted_map_send_queue.begin(), wanted_map_send_queue.end(),
+				WMSPriority(player_p, far_weight));
+#endif
+
+		s32 client_mapblock_limit = calculateReasonableMapblockLimit();
+		g_profiler->avg("Client: Blocks: Actual limit (#)", client_mapblock_limit);
+
+		// Parameters for autosend
+		s16 autosend_radius_map = map->suggestAutosendMapblocksRadius();
+		s16 autosend_radius_far = 0;
+		float autosend_far_weight = 0;
+		float autosend_fov = map->suggestAutosendFov();
+		u32 autosend_max_total_mapblocks =
+				client_mapblock_limit != -1 ? client_mapblock_limit : U32_MAX;
+		u32 autosend_max_total_farblocks = 0;
+
+		if (autosend_max_total_mapblocks != U32_MAX) {
+			// The maximum-number-of-blocks value told to the server is floated
+			// up by this value so that the server can send required blocks
+			// regardless of how filled up this client is. Once the server sends
+			// them, the client will hopefully delete less relevant blocks and
+			// not the ones the server just sent.
+			autosend_max_total_mapblocks += getEnv().getClientMap().getMapDrawControl().
+					num_blocks_dont_exist_but_probably_should_be_requested_from_server;
+		}
+
+		NetworkPacket pkt(TOSERVER_SET_WANTED_MAP_SEND_QUEUE, 0);
+		/*
+			Autosend parameters:
+			s16 radius_map
+			s16 radius_far
+			f1000 far_weight
+			f1000 fov
+			u32 max_total_mapblocks
+			u32 max_total_farblocks
+			Manual requests:
+			u32 len
+			for len:
+				u8 type // 1=MapBlock, 2=FarBlock
+				v3s16 p
+		*/
+		pkt << (s16) autosend_radius_map;
+		pkt << (s16) autosend_radius_far;
+		pkt << (float) autosend_far_weight;
+		pkt << (float) autosend_fov;
+		pkt << (u32) autosend_max_total_mapblocks;
+		pkt << (u32) autosend_max_total_farblocks;
+		pkt << (u32) wanted_map_send_queue.size();
+		for (size_t i=0; i<wanted_map_send_queue.size(); i++) {
+			const WantedMapSend &wms = wanted_map_send_queue[i];
+			pkt << (u8) wms.type;
+			pkt << (v3s16) wms.p;
+		}
+		Send(&pkt);
 	}
 }
 
@@ -1081,10 +1177,12 @@ void Client::sendDeletedBlocks(std::vector<v3s16> &blocks)
 	Send(&pkt);
 }
 
-void Client::sendGotBlocks(v3s16 block)
+void Client::sendGotMapBlock(v3s16 block)
 {
-	NetworkPacket pkt(TOSERVER_GOTBLOCKS, 1 + 6);
-	pkt << (u8) 1 << block;
+	NetworkPacket pkt(TOSERVER_GOTBLOCKS, 1 + 6 + 1);
+	pkt << (u8) 1;
+	pkt << block;
+	pkt << (u8) 0;
 	Send(&pkt);
 }
 
@@ -1599,6 +1697,11 @@ void Client::addUpdateMeshTaskForNode(v3s16 nodepos, bool ack_to_server, bool ur
 	}
 }
 
+void Client::updateCameraOffset(v3s16 camera_offset)
+{
+	m_mesh_update_thread.m_camera_offset = camera_offset;
+}
+
 ClientEvent Client::getClientEvent()
 {
 	ClientEvent event;
@@ -1731,6 +1834,28 @@ float Client::getCurRate()
 {
 	return ( m_con.getLocalStat(con::CUR_INC_RATE) +
 			m_con.getLocalStat(con::CUR_DL_RATE));
+}
+
+s32 Client::calculateReasonableMapblockLimit()
+{
+	// client_mapblock_limit is used as a minimum value
+	s32 mapblock_limit = g_settings->getS32("client_mapblock_limit");
+
+	// Calculate how many MapBlocks are required for rendering the current
+	// wanted range (corresponds to the viewing_range setting)
+	s32 render_range_nodes = getEnv().getClientMap().getMapDrawControl().wanted_range;
+	s32 render_range_mapblocks_1d = render_range_nodes / MAP_BLOCKSIZE + 1;
+	// Use volume of sphere
+	s32 render_range_mapblocks_3d = 4.0 / 3.0 * M_PI * render_range_mapblocks_1d *
+			render_range_mapblocks_1d * render_range_mapblocks_1d;
+	s32 limit_required_for_rendering = render_range_mapblocks_3d * 1;
+
+	// Increase mapblock_limit to a large enough value to allow rendering that
+	// far
+	if (mapblock_limit < limit_required_for_rendering)
+		mapblock_limit = limit_required_for_rendering;
+
+	return mapblock_limit;
 }
 
 void Client::makeScreenshot(IrrlichtDevice *device)

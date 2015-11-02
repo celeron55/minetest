@@ -360,7 +360,7 @@ void final_color_blend(video::SColor *result,
 /*
 	vertex_dirs: v3s16[4]
 */
-static void getNodeVertexDirs(v3s16 dir, v3s16 *vertex_dirs)
+void getNodeVertexDirs(v3s16 dir, v3s16 *vertex_dirs)
 {
 	/*
 		If looked from outside the node towards the face, the corners are:

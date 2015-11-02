@@ -32,6 +32,319 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "util/basic_macros.h"
 #include <algorithm>
 
+#define PP(x) "("<<(x).X<<","<<(x).Y<<","<<(x).Z<<")"
+
+struct DrawListUpdate
+{
+	ClientMap *cmap;
+	video::IVideoDriver* driver;
+
+	std::vector<v2s16> sector_positions;
+	size_t next_sector_i;
+
+	v3f camera_position;
+	v3f camera_direction;
+	f32 camera_fov;
+
+	v3s16 cam_pos_nodes;
+	v3s16 p_blocks_min;
+	v3s16 p_blocks_max;
+	v3s16 p_blocks_crit_min;
+	v3s16 p_blocks_crit_max;
+
+	// BlockAreaBitmap<bool> for calculating
+	// num_blocks_dont_exist_but_probably_should_be_requested_from_server
+	VoxelArea missing_b_area;
+	BlockAreaBitmap<bool> missing_blocks;
+
+	// Number of blocks in rendering range
+	u32 blocks_in_range;
+	// Number of blocks occlusion culled
+	u32 blocks_occlusion_culled;
+	// Number of blocks in rendering range but don't have a mesh
+	u32 blocks_in_range_without_mesh;
+	// Blocks that had mesh that would have been drawn according to
+	// rendering range (if max blocks limit didn't kick in)
+	u32 blocks_would_have_drawn;
+	// Blocks that were drawn and had a mesh
+	u32 blocks_drawn;
+	// Blocks which had a corresponding meshbuffer for this pass
+	//u32 blocks_had_pass_meshbuf;
+	// Blocks from which stuff was actually drawn
+	//u32 blocks_without_stuff;
+	// Distance to farthest drawn block
+	float farthest_drawn;
+
+	// Result is collected into here
+	std::map<v3s16, MapBlock*> drawlist;
+	bool is_finished;
+
+	DrawListUpdate(ClientMap *cmap, video::IVideoDriver* driver);
+	void process(u32 max_us, u32 max_frames_per_update);
+};
+
+DrawListUpdate::DrawListUpdate(ClientMap *cmap, video::IVideoDriver* driver):
+	cmap(cmap),
+	driver(driver),
+	next_sector_i(0),
+	blocks_in_range(0),
+	blocks_occlusion_culled(0),
+	blocks_in_range_without_mesh(0),
+	blocks_would_have_drawn(0),
+	blocks_drawn(0),
+	farthest_drawn(0),
+	is_finished(false)
+{
+	g_profiler->add("CM: DrawListUpdate count", 1);
+	ScopeProfiler sp(g_profiler, "CM: DrawListUpdate processing", SPT_AVG);
+
+	camera_position = cmap->m_camera_position;
+	camera_direction = cmap->m_camera_direction;
+	camera_fov = cmap->m_camera_fov;
+
+	// Use a higher fov to accomodate faster camera movements.
+	// Blocks are cropped better when they are drawn.
+	// Or maybe they aren't? Well whatever.
+	camera_fov *= 1.2;
+
+	cam_pos_nodes = floatToInt(camera_position, BS);
+	cmap->getBlocksInViewRange(cam_pos_nodes, &p_blocks_min, &p_blocks_max);
+
+	// BlockAreaBitmap<bool> for calculating
+	// num_blocks_dont_exist_but_probably_should_be_requested_from_server
+	// TODO: Probably slightly smaller area would work better; scraping the
+	//       absolute edges probably causes unnecessary processing
+	cmap->getBlocksInCriticalViewRange(cam_pos_nodes, &p_blocks_crit_min, &p_blocks_crit_max);
+	missing_b_area = VoxelArea(p_blocks_crit_min, p_blocks_crit_max);
+	missing_blocks.reset(missing_b_area, true);
+
+	// Sectors might be deleted and created while creating the new drawlist so
+	// collect the keys of the current ones into this vector
+	sector_positions.reserve(cmap->m_sectors.size());
+	for (std::map<v2s16, MapSector*>::iterator si = cmap->m_sectors.begin();
+			si != cmap->m_sectors.end(); ++si) {
+		sector_positions.push_back(si->first);
+	}
+}
+
+void DrawListUpdate::process(u32 max_us, u32 max_frames_per_update)
+{
+	if (is_finished)
+		return;
+
+	ScopeProfiler sp(g_profiler, "CM: DrawListUpdate processing", SPT_AVG);
+
+	INodeDefManager *nodemgr = cmap->m_gamedef->ndef();
+
+	// Always get the most recent camera position and direction; this way we
+	// halve the amount of occlusion culling glitches when the camera is moving
+	// fast
+	camera_position = cmap->m_camera_position;
+	camera_direction = cmap->m_camera_direction;
+
+	const u32 t0_us = getTime(PRECISION_MICRO);
+	const u32 t1_us_max = t0_us + max_us; // Limit amount of processing per call
+
+	for (u32 num_sectors_processed = 0; ; num_sectors_processed++) {
+		//dstream<<"DrawListUpdate next_sector_i="<<next_sector_i<<std::endl;
+
+		if (next_sector_i >= sector_positions.size()) {
+			is_finished = true;
+			break;
+		}
+
+		// Allow processing limits when we have managed to process a reasonable
+		// amount of sectors. This ensures that the draw list update does not
+		// take too many frames to complete.
+		if (num_sectors_processed >= sector_positions.size() / max_frames_per_update) {
+			// Limit amount of processing per call
+			const u32 t1_us = getTime(PRECISION_MICRO);
+			if (t1_us >= t1_us_max)
+				break;
+		}
+
+		v2s16 sp = sector_positions[next_sector_i++];
+		std::map<v2s16, MapSector*>::iterator si = cmap->m_sectors.find(sp);
+		if (si == cmap->m_sectors.end())
+			continue;
+		MapSector *sector = si->second;
+
+		if (cmap->m_control.range_all == false) {
+			if (sp.X < p_blocks_min.X || sp.X > p_blocks_max.X ||
+					sp.Y < p_blocks_min.Z || sp.Y > p_blocks_max.Z)
+				continue;
+		}
+
+		MapBlockVect sectorblocks;
+		sector->getBlocks(sectorblocks);
+
+		/*
+			Loop through blocks in sector
+		*/
+
+		u32 sector_blocks_drawn = 0;
+
+		for (MapBlockVect::iterator i = sectorblocks.begin();
+				i != sectorblocks.end(); ++i) {
+			MapBlock *block = *i;
+
+			// Reset usage timer right here, because if we were more clever
+			// about it and deleted the block because it is behind something or
+			// whatever, the server would continuously re-send it because it is
+			// close enough. Increment the timer by 1 second just to keep it
+			// less prioritized than the ones that are rendered.
+			block->resetUsageTimer();
+			block->incrementUsageTimer(1.0f);
+
+			// This block is clearly not missing because we have it here now.
+			missing_blocks.set(block->getPos(), false);
+
+			/*
+				Compare block position to camera position, skip
+				if not seen on display
+			*/
+
+			if (block->mesh != NULL)
+				block->mesh->updateCameraOffset(cmap->m_camera_offset);
+
+			float range = 100000 * BS;
+			if (cmap->m_control.range_all == false)
+				range = cmap->m_control.wanted_range * BS;
+
+			// TODO: On large view ranges don't use occlusion culling or even frustum
+			//       culling on nearby MapBlocks because drawlist updates are slower
+
+			float d = 0.0;
+			if (!isBlockInSight(block->getPos(), camera_position,
+					camera_direction, camera_fov, range, &d))
+				continue;
+
+			// This is ugly (spherical distance limit?)
+			/*if(cmap->m_control.range_all == false &&
+					d - 0.5*BS*MAP_BLOCKSIZE > range)
+				continue;*/
+
+			blocks_in_range++;
+
+			/*
+				Ignore if mesh doesn't exist
+			*/
+			{
+				//MutexAutoLock lock(block->mesh_mutex);
+
+				if (block->mesh == NULL) {
+					blocks_in_range_without_mesh++;
+					continue;
+				}
+			}
+
+			/*
+				Occlusion culling
+			*/
+
+			// No occlusion culling when free_move is on and camera is
+			// inside ground
+			bool occlusion_culling_enabled = true;
+			if (g_settings->getBool("free_move")) {
+				MapNode n = cmap->getNodeNoEx(cam_pos_nodes);
+				if (n.getContent() == CONTENT_IGNORE ||
+						nodemgr->get(n).solidness == 2)
+					occlusion_culling_enabled = false;
+			}
+
+			v3s16 cpn = block->getPos() * MAP_BLOCKSIZE;
+			cpn += v3s16(MAP_BLOCKSIZE / 2, MAP_BLOCKSIZE / 2, MAP_BLOCKSIZE / 2);
+			float step = BS * 1;
+			float stepfac = 1.1;
+			float startoff = BS * 1;
+			float endoff = -BS*MAP_BLOCKSIZE * 1.42 * 1.42;
+			v3s16 spn = cam_pos_nodes + v3s16(0, 0, 0);
+			s16 bs2 = MAP_BLOCKSIZE / 2 + 1;
+			u32 needed_count = 1;
+			if (occlusion_culling_enabled &&
+					cmap->isOccluded(spn, cpn + v3s16(0, 0, 0),
+						step, stepfac, startoff, endoff, needed_count) &&
+					cmap->isOccluded(spn, cpn + v3s16(bs2,bs2,bs2),
+						step, stepfac, startoff, endoff, needed_count) &&
+					cmap->isOccluded(spn, cpn + v3s16(bs2,bs2,-bs2),
+						step, stepfac, startoff, endoff, needed_count) &&
+					cmap->isOccluded(spn, cpn + v3s16(bs2,-bs2,bs2),
+						step, stepfac, startoff, endoff, needed_count) &&
+					cmap->isOccluded(spn, cpn + v3s16(bs2,-bs2,-bs2),
+						step, stepfac, startoff, endoff, needed_count) &&
+					cmap->isOccluded(spn, cpn + v3s16(-bs2,bs2,bs2),
+						step, stepfac, startoff, endoff, needed_count) &&
+					cmap->isOccluded(spn, cpn + v3s16(-bs2,bs2,-bs2),
+						step, stepfac, startoff, endoff, needed_count) &&
+					cmap->isOccluded(spn, cpn + v3s16(-bs2,-bs2,bs2),
+						step, stepfac, startoff, endoff, needed_count) &&
+					cmap->isOccluded(spn, cpn + v3s16(-bs2,-bs2,-bs2),
+						step, stepfac, startoff, endoff, needed_count)) {
+				blocks_occlusion_culled++;
+				continue;
+			}
+
+			// Fully reset usage timer; rendered blocks take priority over
+			// in-range ones that aren't rendered
+			block->resetUsageTimer();
+
+			// Limit block count in case of a sudden increase
+			blocks_would_have_drawn++;
+			if (blocks_drawn >= cmap->m_control.wanted_max_blocks &&
+					!cmap->m_control.range_all &&
+					d > cmap->m_control.wanted_range * BS)
+				continue;
+
+			// Add to set
+			block->refGrab();
+			drawlist[block->getPos()] = block;
+
+			sector_blocks_drawn++;
+			blocks_drawn++;
+			if (d / BS > farthest_drawn)
+				farthest_drawn = d / BS;
+
+		} // foreach sectorblocks
+	}
+
+	if (!is_finished)
+		return;
+
+	//dstream<<"DrawListUpdate finished"<<std::endl;
+
+	// Dereference MapBlocks on old drawlist
+	for (std::map<v3s16, MapBlock*>::iterator i = cmap->m_drawlist.begin();
+			i != cmap->m_drawlist.end(); ++i) {
+		MapBlock *block = i->second;
+		block->refDrop();
+	}
+
+	// Set new drawlist
+	cmap->m_drawlist = drawlist;
+
+	// The maximum-number-of-blocks value told to the server is floated up by
+	// this value so that new areas can be received
+	u32 num_blocks_dont_exist_but_probably_should_be_requested_from_server =
+			missing_blocks.count(true);
+	g_profiler->avg("CM: blocks probably should be req.",
+			num_blocks_dont_exist_but_probably_should_be_requested_from_server);
+
+	cmap->m_control.blocks_would_have_drawn = blocks_would_have_drawn;
+	cmap->m_control.blocks_drawn = blocks_drawn;
+	cmap->m_control.farthest_drawn = farthest_drawn;
+	cmap->m_control.num_blocks_dont_exist_but_probably_should_be_requested_from_server =
+			num_blocks_dont_exist_but_probably_should_be_requested_from_server;
+
+	g_profiler->avg("CM: blocks in range", blocks_in_range);
+	g_profiler->avg("CM: blocks occlusion culled", blocks_occlusion_culled);
+	if (blocks_in_range != 0)
+		g_profiler->avg("CM: blocks in range without mesh (frac)",
+				(float)blocks_in_range_without_mesh / blocks_in_range);
+	g_profiler->avg("CM: blocks drawn", blocks_drawn);
+	g_profiler->avg("CM: farthest drawn", farthest_drawn);
+	g_profiler->avg("CM: wanted max blocks", cmap->m_control.wanted_max_blocks);
+}
+
 ClientMap::ClientMap(
 		Client *client,
 		MapDrawControl &control,
@@ -45,7 +358,10 @@ ClientMap::ClientMap(
 	m_control(control),
 	m_camera_position(0,0,0),
 	m_camera_direction(0,0,1),
-	m_camera_fov(M_PI)
+	m_camera_fov(M_PI),
+	m_update(NULL),
+	m_mapblocks_exist_up_to_d(0),
+	m_mapblocks_exist_up_to_d_reset_counter(0)
 {
 	m_box = aabb3f(-BS*1000000,-BS*1000000,-BS*1000000,
 			BS*1000000,BS*1000000,BS*1000000);
@@ -62,7 +378,6 @@ ClientMap::ClientMap(
 	m_cache_trilinear_filter  = g_settings->getBool("trilinear_filter");
 	m_cache_bilinear_filter   = g_settings->getBool("bilinear_filter");
 	m_cache_anistropic_filter = g_settings->getBool("anisotropic_filter");
-
 }
 
 ClientMap::~ClientMap()
@@ -74,6 +389,8 @@ ClientMap::~ClientMap()
 		mesh->drop();
 		mesh = NULL;
 	}*/
+
+	delete m_update;
 }
 
 MapSector * ClientMap::emergeSector(v2s16 p2d)
@@ -126,6 +443,7 @@ void ClientMap::getBlocksInViewRange(v3s16 cam_pos_nodes,
 		cam_pos_nodes.Z + box_nodes_d.Z);
 	// Take a fair amount as we will be dropping more out later
 	// Umm... these additions are a bit strange but they are needed.
+	// TODO: Maybe use getContainerPos32to16
 	*p_blocks_min = v3s16(
 			p_nodes_min.X / MAP_BLOCKSIZE - 3,
 			p_nodes_min.Y / MAP_BLOCKSIZE - 3,
@@ -136,156 +454,74 @@ void ClientMap::getBlocksInViewRange(v3s16 cam_pos_nodes,
 			p_nodes_max.Z / MAP_BLOCKSIZE + 1);
 }
 
+void ClientMap::getBlocksInCriticalViewRange(v3s16 cam_pos_nodes, 
+		v3s16 *p_blocks_min, v3s16 *p_blocks_max)
+{
+	// This has to be very conservative in order to not cause the server to send
+	// blocks that the client will immediately unload again.
+	s16 d = m_control.wanted_range / 2;
+	if (d < 20)
+		d = 20;
+	v3s16 box_nodes_d = d * v3s16(1, 1, 1);
+	// Define p_nodes_min/max as v3s32 because 'cam_pos_nodes -/+ box_nodes_d'
+	// can exceed the range of v3s16 when a large view range is used near the
+	// world edges.
+	v3s32 p_nodes_min(
+		cam_pos_nodes.X - box_nodes_d.X,
+		cam_pos_nodes.Y - box_nodes_d.Y,
+		cam_pos_nodes.Z - box_nodes_d.Z);
+	v3s32 p_nodes_max(
+		cam_pos_nodes.X + box_nodes_d.X,
+		cam_pos_nodes.Y + box_nodes_d.Y,
+		cam_pos_nodes.Z + box_nodes_d.Z);
+	*p_blocks_min = getContainerPos32to16(p_nodes_min, MAP_BLOCKSIZE);
+	*p_blocks_max = getContainerPos32to16(p_nodes_max, MAP_BLOCKSIZE);
+}
+
 void ClientMap::updateDrawList(video::IVideoDriver* driver)
 {
-	ScopeProfiler sp(g_profiler, "CM::updateDrawList()", SPT_AVG);
-	g_profiler->add("CM::updateDrawList() count", 1);
+	if (m_update == NULL) {
+		m_update = new DrawListUpdate(this, driver);
+	}
 
+	m_update->process(1000, 6);
+
+	if (m_update->is_finished) {
+		delete m_update;
+		m_update = NULL;
+	}
+}
+
+void ClientMap::updateDrawListImmediately(video::IVideoDriver* driver)
+{
+	// This can be called when the camera offset changes, in which case we have
+	// to start over and do a full drawlist update right now; otherwise
+	// completely wrong things will be rendered.
+
+	// Cancel and delete old update
+	if (m_update) {
+		// Dereference MapBlocks collected by old update
+		for (std::map<v3s16, MapBlock*>::iterator i = m_update->drawlist.begin();
+				i != m_update->drawlist.end(); ++i) {
+			MapBlock *block = i->second;
+			block->refDrop();
+		}
+		delete m_update;
+		m_update = NULL;
+	}
+
+	// Dereference MapBlocks on old drawlist
 	for (std::map<v3s16, MapBlock*>::iterator i = m_drawlist.begin();
 			i != m_drawlist.end(); ++i) {
 		MapBlock *block = i->second;
 		block->refDrop();
 	}
-	m_drawlist.clear();
 
-	v3f camera_position = m_camera_position;
-	v3f camera_direction = m_camera_direction;
-	f32 camera_fov = m_camera_fov;
-
-	// Use a higher fov to accomodate faster camera movements.
-	// Blocks are cropped better when they are drawn.
-	// Or maybe they aren't? Well whatever.
-	camera_fov *= 1.2;
-
-	v3s16 cam_pos_nodes = floatToInt(camera_position, BS);
-	v3s16 p_blocks_min;
-	v3s16 p_blocks_max;
-	getBlocksInViewRange(cam_pos_nodes, &p_blocks_min, &p_blocks_max);
-
-	// Number of blocks in rendering range
-	u32 blocks_in_range = 0;
-	// Number of blocks occlusion culled
-	u32 blocks_occlusion_culled = 0;
-	// Number of blocks in rendering range but don't have a mesh
-	u32 blocks_in_range_without_mesh = 0;
-	// Blocks that had mesh that would have been drawn according to
-	// rendering range (if max blocks limit didn't kick in)
-	u32 blocks_would_have_drawn = 0;
-	// Blocks that were drawn and had a mesh
-	u32 blocks_drawn = 0;
-	// Blocks which had a corresponding meshbuffer for this pass
-	//u32 blocks_had_pass_meshbuf = 0;
-	// Blocks from which stuff was actually drawn
-	//u32 blocks_without_stuff = 0;
-	// Distance to farthest drawn block
-	float farthest_drawn = 0;
-
-	// No occlusion culling when free_move is on and camera is
-	// inside ground
-	bool occlusion_culling_enabled = true;
-	if (g_settings->getBool("free_move")) {
-		MapNode n = getNodeNoEx(cam_pos_nodes);
-		if (n.getContent() == CONTENT_IGNORE ||
-				m_nodedef->get(n).solidness == 2)
-			occlusion_culling_enabled = false;
+	// Do full new update
+	m_update = new DrawListUpdate(this, driver);
+	while (!m_update->is_finished) {
+		m_update->process(0, 1);
 	}
-
-	for (std::map<v2s16, MapSector*>::iterator si = m_sectors.begin();
-			si != m_sectors.end(); ++si) {
-		MapSector *sector = si->second;
-		v2s16 sp = sector->getPos();
-
-		if (m_control.range_all == false) {
-			if (sp.X < p_blocks_min.X || sp.X > p_blocks_max.X ||
-					sp.Y < p_blocks_min.Z || sp.Y > p_blocks_max.Z)
-				continue;
-		}
-
-		MapBlockVect sectorblocks;
-		sector->getBlocks(sectorblocks);
-
-		/*
-			Loop through blocks in sector
-		*/
-
-		u32 sector_blocks_drawn = 0;
-
-		for (MapBlockVect::iterator i = sectorblocks.begin();
-				i != sectorblocks.end(); ++i) {
-			MapBlock *block = *i;
-
-			/*
-				Compare block position to camera position, skip
-				if not seen on display
-			*/
-
-			if (block->mesh != NULL)
-				block->mesh->updateCameraOffset(m_camera_offset);
-
-			float range = 100000 * BS;
-			if (m_control.range_all == false)
-				range = m_control.wanted_range * BS;
-
-			float d = 0.0;
-			if (!isBlockInSight(block->getPos(), camera_position,
-					camera_direction, camera_fov, range, &d))
-				continue;
-
-			blocks_in_range++;
-
-			/*
-				Ignore if mesh doesn't exist
-			*/
-			if (block->mesh == NULL) {
-				blocks_in_range_without_mesh++;
-				continue;
-			}
-
-			/*
-				Occlusion culling
-			*/
-			if (occlusion_culling_enabled && isBlockOccluded(block, cam_pos_nodes)) {
-				blocks_occlusion_culled++;
-				continue;
-			}
-
-			// This block is in range. Reset usage timer.
-			block->resetUsageTimer();
-
-			// Limit block count in case of a sudden increase
-			blocks_would_have_drawn++;
-			if (blocks_drawn >= m_control.wanted_max_blocks &&
-					!m_control.range_all &&
-					d > m_control.wanted_range * BS)
-				continue;
-
-			// Add to set
-			block->refGrab();
-			m_drawlist[block->getPos()] = block;
-
-			sector_blocks_drawn++;
-			blocks_drawn++;
-			if (d / BS > farthest_drawn)
-				farthest_drawn = d / BS;
-
-		} // foreach sectorblocks
-
-		if (sector_blocks_drawn != 0)
-			m_last_drawn_sectors.insert(sp);
-	}
-
-	m_control.blocks_would_have_drawn = blocks_would_have_drawn;
-	m_control.blocks_drawn = blocks_drawn;
-	m_control.farthest_drawn = farthest_drawn;
-
-	g_profiler->avg("CM: blocks in range", blocks_in_range);
-	g_profiler->avg("CM: blocks occlusion culled", blocks_occlusion_culled);
-	if (blocks_in_range != 0)
-		g_profiler->avg("CM: blocks in range without mesh (frac)",
-				(float)blocks_in_range_without_mesh / blocks_in_range);
-	g_profiler->avg("CM: blocks drawn", blocks_drawn);
-	g_profiler->avg("CM: farthest drawn", farthest_drawn);
-	g_profiler->avg("CM: wanted max blocks", m_control.wanted_max_blocks);
 }
 
 struct MeshBufList
@@ -338,12 +574,6 @@ void ClientMap::renderMap(video::IVideoDriver* driver, s32 pass)
 		prefix = "CM: solid: ";
 	else
 		prefix = "CM: transparent: ";
-
-	/*
-		This is called two times per frame, reset on the non-transparent one
-	*/
-	if (pass == scene::ESNRP_SOLID)
-		m_last_drawn_sectors.clear();
 
 	/*
 		Get time for measuring timeout.
@@ -720,4 +950,86 @@ void ClientMap::PrintInfo(std::ostream &out)
 	out<<"ClientMap: ";
 }
 
+
+std::vector<v3s16> ClientMap::suggestMapBlocksToFetch(v3s16 camera_p,
+		size_t wanted_num_results)
+{
+	std::vector<v3s16> suggested_mbs;
+
+	// TODO: Add some prediction based on player's current speed so that we are
+	//       getting stuff from the correct location compared to where the
+	//       player will be after a while?
+
+	v3s16 center_mb = getContainerPos(camera_p, MAP_BLOCKSIZE);
+
+	s16 fetch_distance_nodes = m_control.wanted_range;
+	s16 fetch_distance_mapblocks =
+			roundf((float)fetch_distance_nodes / MAP_BLOCKSIZE);
+
+	// Avoid running the algorithm through all the close MapBlocks that probably
+	// have already been fetched, except once in a while to catch up with
+	// possible missed MapBlocks due to player movement or whatever.
+	// TODO: Lower this according to the distance the player has moved since
+	//       last time this was called
+	s16 start_d = m_mapblocks_exist_up_to_d; // Start one lower than have to
+	if (++m_mapblocks_exist_up_to_d_reset_counter >= 10) {
+		m_mapblocks_exist_up_to_d_reset_counter = 0;
+		start_d = 0;
+	}
+	m_mapblocks_exist_up_to_d = -1; // Reset and recalculate
+	if (start_d < 0)
+		start_d = 0;
+
+	for (s16 d = start_d; d <= fetch_distance_mapblocks; d++) {
+		std::vector<v3s16> ps = FacePositionCache::getFacePositions(d);
+		for (size_t i=0; i<ps.size(); i++) {
+			v3s16 p = center_mb + ps[i];
+
+			v3s16 blockpos_nodes = p * MAP_BLOCKSIZE;
+			v3s16 blockpos_center(
+					blockpos_nodes.X + MAP_BLOCKSIZE/2,
+					blockpos_nodes.Y + MAP_BLOCKSIZE/2,
+					blockpos_nodes.Z + MAP_BLOCKSIZE/2
+			);
+			v3s16 blockpos_relative = blockpos_center - camera_p;
+			f32 distance = blockpos_relative.getLength();
+			// Limit fetched MapBlocks to a ball radius instead of a square
+			// because that is how they are limited when drawing too
+			if (distance > fetch_distance_nodes)
+				continue; // Not in range
+
+			MapBlock *b = getBlockNoCreateNoEx(p);
+
+			// TODO: Not sure if this conditional is exactly correct
+			if (b != NULL && !b->isDummy())
+				continue; // Exists
+
+			if (m_mapblocks_exist_up_to_d == -1)
+				m_mapblocks_exist_up_to_d = d - 1;
+
+			// TODO: Frustum culling?
+			// TODO: Occlusion culling?
+
+			suggested_mbs.push_back(p);
+			if (suggested_mbs.size() >= wanted_num_results)
+				goto done;
+		}
+	}
+done:
+
+	infostream << "suggested_mbs.size()=" << suggested_mbs.size() << std::endl;
+	return suggested_mbs;
+}
+
+s16 ClientMap::suggestAutosendMapblocksRadius()
+{
+	s16 radius_nodes = m_control.wanted_range;
+	s16 radius_mapblocks = roundf((float)radius_nodes / MAP_BLOCKSIZE);
+	return radius_mapblocks;
+}
+
+float ClientMap::suggestAutosendFov()
+{
+	return m_camera_fov;
+}
 

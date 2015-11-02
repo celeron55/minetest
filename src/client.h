@@ -338,6 +338,7 @@ public:
 	void handleCommand_LocalPlayerAnimations(NetworkPacket* pkt);
 	void handleCommand_EyeOffset(NetworkPacket* pkt);
 	void handleCommand_SrpBytesSandB(NetworkPacket* pkt);
+	void handleCommand_FarBlocksResult(NetworkPacket* pkt);
 
 	void ProcessData(NetworkPacket *pkt);
 
@@ -414,8 +415,7 @@ public:
 	void addUpdateMeshTaskWithEdge(v3s16 blockpos, bool ack_to_server=false, bool urgent=false);
 	void addUpdateMeshTaskForNode(v3s16 nodepos, bool ack_to_server=false, bool urgent=false);
 
-	void updateCameraOffset(v3s16 camera_offset)
-	{ m_mesh_update_thread.m_camera_offset = camera_offset; }
+	void updateCameraOffset(v3s16 camera_offset);
 
 	// Get event from queue. CE_NONE is returned if queue is empty.
 	ClientEvent getClientEvent();
@@ -461,6 +461,8 @@ public:
 	{ return m_camera; }
 
 	bool shouldShowMinimap() const;
+
+	s32 calculateReasonableMapblockLimit();
 
 	// IGameDef interface
 	virtual IItemDefManager* getItemDefManager();
@@ -539,7 +541,7 @@ private:
 	void sendInit(const std::string &playerName);
 	void startAuth(AuthMechanism chosen_auth_mechanism);
 	void sendDeletedBlocks(std::vector<v3s16> &blocks);
-	void sendGotBlocks(v3s16 block);
+	void sendGotMapBlock(v3s16 block);
 	void sendRemovedSounds(std::vector<s32> &soundList);
 
 	// Helper function
@@ -659,6 +661,9 @@ private:
 	GameUIFlags *m_game_ui_flags;
 
 	bool m_shutdown;
+
+	IntervalLimiter m_blocks_request_interval;
+
 	DISABLE_CLASS_COPY(Client);
 };
 

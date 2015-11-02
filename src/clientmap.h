@@ -35,7 +35,8 @@ struct MapDrawControl
 		show_wireframe(false),
 		blocks_drawn(0),
 		blocks_would_have_drawn(0),
-		farthest_drawn(0)
+		farthest_drawn(0),
+		num_blocks_dont_exist_but_probably_should_be_requested_from_server(0)
 	{
 	}
 	// Overrides limits by drawing everything
@@ -52,10 +53,15 @@ struct MapDrawControl
 	u32 blocks_would_have_drawn;
 	// Distance to the farthest block drawn
 	float farthest_drawn;
+	// The maximum-number-of-blocks value told to the server is floated up by
+	// this value so that new areas can be received
+	u32 num_blocks_dont_exist_but_probably_should_be_requested_from_server;
 };
 
 class Client;
 class ITextureSource;
+
+struct DrawListUpdate;
 
 /*
 	ClientMap
@@ -94,6 +100,11 @@ public:
 		m_camera_offset = offset;
 	}
 
+	const MapDrawControl& getMapDrawControl()
+	{
+		return m_control;
+	}
+
 	/*
 		Forcefully get a sector from somewhere
 	*/
@@ -121,7 +132,12 @@ public:
 
 	void getBlocksInViewRange(v3s16 cam_pos_nodes,
 		v3s16 *p_blocks_min, v3s16 *p_blocks_max);
+	void getBlocksInCriticalViewRange(v3s16 cam_pos_nodes, 
+		v3s16 *p_blocks_min, v3s16 *p_blocks_max);
+
 	void updateDrawList(video::IVideoDriver* driver);
+	void updateDrawListImmediately(video::IVideoDriver* driver);
+
 	void renderMap(video::IVideoDriver* driver, s32 pass);
 
 	int getBackgroundBrightness(float max_d, u32 daylight_factor,
@@ -134,6 +150,12 @@ public:
 
 	const MapDrawControl & getControl() const { return m_control; }
 	f32 getCameraFov() const { return m_camera_fov; }
+	
+	std::vector<v3s16> suggestMapBlocksToFetch(v3s16 camera_p,
+			size_t wanted_num_results);
+	s16 suggestAutosendMapblocksRadius(); // Result in MapBlocks
+	float suggestAutosendFov();
+
 private:
 	Client *m_client;
 
@@ -146,13 +168,19 @@ private:
 	f32 m_camera_fov;
 	v3s16 m_camera_offset;
 
-	std::map<v3s16, MapBlock*> m_drawlist;
+	DrawListUpdate *m_update;
 
-	std::set<v2s16> m_last_drawn_sectors;
+	std::map<v3s16, MapBlock*> m_drawlist;
 
 	bool m_cache_trilinear_filter;
 	bool m_cache_bilinear_filter;
 	bool m_cache_anistropic_filter;
+
+	// Fetch suggestion algorithm
+	s16 m_mapblocks_exist_up_to_d;
+	s16 m_mapblocks_exist_up_to_d_reset_counter;
+
+	friend struct DrawListUpdate;
 };
 
 #endif

@@ -31,6 +31,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "util/strfnd.h"
 #include "network/clientopcodes.h"
 #include "script/clientscripting.h"
+#include "profiler.h"
 #include "util/serialize.h"
 #include "util/srp.h"
 #include "tileanimation.h"
@@ -1251,3 +1252,23 @@ void Client::handleCommand_SrpBytesSandB(NetworkPacket* pkt)
 	resp_pkt << std::string(bytes_M, len_M);
 	Send(&resp_pkt);
 }
+
+void Client::handleCommand_FarBlocksResult(NetworkPacket* pkt_in)
+{
+	infostream << "Client: Received FAR_BLOCKS_RESULT" << std::endl;
+
+	/*
+		v3s16 p (position in farblocks)
+		u8 status
+		u8 flags
+		v3s16 divs_per_mb (amount of divisions per mapblock)
+		u32 data_len
+		Zlib-compressed:
+			for each FarNode (indexed by VoxelArea):
+				u16 node_id
+				u8 light (both lightbanks; raw value)
+	*/
+
+	// Not supported, but packet reserved for future versions.
+}
+
