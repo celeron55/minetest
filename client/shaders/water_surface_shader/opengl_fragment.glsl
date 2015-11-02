@@ -4,6 +4,7 @@ uniform sampler2D textureFlags;
 
 uniform vec4 skyBgColor;
 uniform float fogDistance;
+uniform float fogDistanceStart;
 uniform vec3 eyePosition;
 
 varying vec3 vPosition;
@@ -121,7 +122,7 @@ vec4 base = texture2D(baseTexture, uv).rgba;
 	vec4 col = vec4(color.rgb, alpha);
 	col *= gl_Color;
 	if(fogDistance != 0.0){
-		float d = max(0.0, min(vPosition.z / fogDistance * 1.5 - 0.6, 1.0));
+		float d = max(0.0, min((vPosition.z - fogDistanceStart) / fogDistance, 1.0));
 		alpha = mix(alpha, 0.0, d);
 	}
 	gl_FragColor = vec4(col.rgb, alpha);
@@ -129,7 +130,7 @@ vec4 base = texture2D(baseTexture, uv).rgba;
 	vec4 col = vec4(color.rgb, base.a);
 	col *= gl_Color;
 	if(fogDistance != 0.0){
-		float d = max(0.0, min(vPosition.z / fogDistance * 1.5 - 0.6, 1.0));
+		float d = max(0.0, min((vPosition.z - fogDistanceStart) / fogDistance, 1.0));
 		col = mix(col, skyBgColor, d);
 	}
 	gl_FragColor = vec4(col.rgb, base.a);
