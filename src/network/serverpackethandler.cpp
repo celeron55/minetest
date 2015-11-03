@@ -2053,14 +2053,16 @@ void Server::handleCommand_GetFarBlocks(NetworkPacket* pkt_in)
 			area_size.Y * block_div.Y,
 			area_size.Z * block_div.Z);
 
+	size_t total_size_n = total_size.X * total_size.Y * total_size.Z;
+
 	std::vector<u16> node_ids;
-	node_ids.resize(total_size.X * total_size.Y * total_size.Z);
+	node_ids.resize(total_size_n);
 
 	std::vector<u8> lights_day;
-	lights_day.resize(total_size.X * total_size.Y * total_size.Z);
+	lights_day.resize(total_size_n);
 
 	std::vector<u8> lights_night;
-	lights_night.resize(total_size.X * total_size.Y * total_size.Z);
+	lights_night.resize(total_size_n);
 
 	v3s16 bp;
 	for (bp.Y=area_offset.Y; bp.Y<area_offset.Y+area_size.Y; bp.Y++)

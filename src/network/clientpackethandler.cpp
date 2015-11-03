@@ -1226,5 +1226,95 @@ void Client::handleCommand_FarBlocksResult(NetworkPacket* pkt)
 {
 	// TODO
 	infostream << "Client::handleCommand_FarBlocksResult: TODO" << std::endl;
+
+	/*
+		v3s16 area_offset (blocks)
+		v3s16 area_size (blocks)
+		v3s16 block_div (amount of divisions per block)
+		TODO: Compress
+		for each division (for(Y) for(X) for(Z)):
+			u16 node_id
+		for each division (for(Y) for(X) for(Z)):
+			u8 light_day
+		for each division (for(Y) for(X) for(Z)):
+			u8 light_night
+	*/
+	v3s16 area_offset;
+	v3s16 area_size;
+	v3s16 block_div;
+	*pkt_in >> area_offset;
+	*pkt_in >> area_size;
+	*pkt_in >> block_div;
+
+	v3s16 total_size(
+			area_size.X * block_div.X,
+			area_size.Y * block_div.Y,
+			area_size.Z * block_div.Z);
+
+	size_t total_size_n = total_size.X * total_size.Y * total_size.Z;
+
+	std::vector<u16> node_ids;
+	node_ids.resize(total_size_n);
+
+	std::vector<u8> lights_day;
+	lights_day.resize(total_size_n);
+
+	std::vector<u8> lights_night;
+	lights_night.resize(total_size_n);
+
+	for(size_t i=0; i<total_size_n; i++)
+		*pkt_in >> (u16) node_ids[i];
+	for(size_t i=0; i<total_size_n; i++)
+		*pkt_in >> (u8) lights_day[i];
+	for(size_t i=0; i<total_size_n; i++)
+		*pkt_in >> (u8) lights_night[i];
+
+	// TODO: Shove the data somewhere to be rendered efficiently
+
+	// Create MapBlocks according to the received data
+	v3s16 bp;
+	for (bp.Y=area_offset.Y; bp.Y<area_offset.Y+area_size.Y; bp.Y++)
+	for (bp.X=area_offset.X; bp.X<area_offset.X+area_size.X; bp.X++)
+	for (bp.Z=area_offset.Z; bp.Z<area_offset.Z+area_size.Z; bp.Z++) {
+		v2s16 p2d(bp.X, bp.Z);
+		MapSector *sector = m_env.getMap().emergeSector(p2d);
+
+		MapBlock *block = sector->getBlockNoCreateNoEx(p.Y);
+		if(block){
+			// Don't edit existing block
+			block = NULL;
+		} else {
+			// Create new block and edit it
+			block = new MapBlock(&m_env.getMap(), p, this);
+			sector->insertBlock(block);
+		}
+
+		v3s16 dp;
+		for (dp.Y=0; dp.Y<block_div.Y; dp.Y++)
+		for (dp.X=0; dp.X<block_div.X; dp.X++)
+		for (dp.Z=0; dp.Z<block_div.Z; dp.Z++) {
+			v3s16 dp0 = dp;
+			dp0.X += (bp.X - area_offset.X) * block_div.X;
+			dp0.Y += (bp.Y - area_offset.Y) * block_div.Y;
+			dp0.Z += (bp.Z - area_offset.Z) * block_div.Z;
+
+			size_t i = dp0.Y * total_size.X * total_size.Z +
+					dp0.X * total_size.Z + dp0.Z;
+
+			if(block){
+				u16 node_id = node_ids[i];
+				u8 light_day = lights_day[i];
+				u8 light_night = lights_night[i];
+				v3s16 np(
+					dp.X * block_div.X + block_div.X/2,
+					dp.Y * block_div.Y + block_div.Y/2,
+					dp.Z * block_div.Z + block_div.Z/2);
+				MapNode n(node_id);
+				n->setLight(LIGHTBANK_DAY, light_day, getNodeDefManager());
+				n->setLight(LIGHTBANK_NIGHT, light_night, getNodeDefManager());
+				b->setNodeNoEx(np, n);
+			}
+		}
+	}
 }
 
