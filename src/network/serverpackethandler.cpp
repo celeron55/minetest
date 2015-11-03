@@ -2083,7 +2083,7 @@ void Server::handleCommand_GetFarBlocks(NetworkPacket* pkt_in)
 			u16 node_id = 0;
 			u8 light_day = 0;
 			u8 light_night = 0;
-			// TODO
+
 			if(b){
 				v3s16 np(
 					dp.X * block_div.X + block_div.X/2,
