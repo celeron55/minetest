@@ -2041,49 +2041,88 @@ void Server::handleCommand_GetFarBlocks(NetworkPacket* pkt_in)
 
 	v3s16 area_offset;
 	v3s16 area_size;
-	v3s16 main_point;
-	v3s16 preferred_block_div_at_main_point;
-	v3s16 preferred_block_div_at_edge;
+	v3s16 preferred_block_div;
 	*pkt_in >> area_offset;
 	*pkt_in >> area_size;
-	*pkt_in >> main_point;
-	*pkt_in >> preferred_block_div_at_main_point;
-	*pkt_in >> preferred_block_div_at_edge;
+	*pkt_in >> preferred_block_div;
 
-	NetworkPacket pkt(TOCLIENT_FAR_BLOCKS_RESULT, 0);
+	v3s16 block_div = preferred_block_div;
+
+	v3s16 total_size(
+			area_size.X * block_div.X,
+			area_size.Y * block_div.Y,
+			area_size.Z * block_div.Z);
+
+	std::vector<u16> node_ids;
+	node_ids.resize(total_size.X * total_size.Y * total_size.Z);
+
+	std::vector<u8> lights_day;
+	lights_day.resize(total_size.X * total_size.Y * total_size.Z);
+
+	std::vector<u8> lights_night;
+	lights_night.resize(total_size.X * total_size.Y * total_size.Z);
+
+	v3s16 bp;
+	for (bp.Y=area_offset.Y; bp.Y<area_offset.Y+area_size.Y; bp.Y++)
+	for (bp.X=area_offset.X; bp.X<area_offset.X+area_size.X; bp.X++)
+	for (bp.Z=area_offset.Z; bp.Z<area_offset.Z+area_size.Z; bp.Z++) {
+		MapBlock *b = m_env->getMap().getBlockNoCreateNoEx(bp);
+
+		v3s16 dp;
+		for (dp.Y=0; dp.Y<block_div.Y; dp.Y++)
+		for (dp.X=0; dp.X<block_div.X; dp.X++)
+		for (dp.Z=0; dp.Z<block_div.Z; dp.Z++) {
+			v3s16 dp0 = dp;
+			dp0.X += (bp.X - area_offset.X) * block_div.X;
+			dp0.Y += (bp.Y - area_offset.Y) * block_div.Y;
+			dp0.Z += (bp.Z - area_offset.Z) * block_div.Z;
+
+			size_t i = dp0.Y * total_size.X * total_size.Z +
+					dp0.X * total_size.Z + dp0.Z;
+
+			u16 node_id = 0;
+			u8 light_day = 0;
+			u8 light_night = 0;
+			// TODO
+			if(b){
+				v3s16 np(
+					dp.X * block_div.X + block_div.X/2,
+					dp.Y * block_div.Y + block_div.Y/2,
+					dp.Z * block_div.Z + block_div.Z/2);
+				MapNode n = b->getNodeNoEx(np);
+				node_id = n.getContent();
+				n.getLightBanks(light_day, light_night, getNodeDefManager());
+			}
+
+			node_ids[i] = node_id;
+			lights_day[i] = light_day;
+			lights_night[i] = light_night;
+		}
+	}
+
+	NetworkPacket pkt(TOCLIENT_FAR_BLOCKS_RESULT, 0, pkt_in->getPeerId());
 	/*
-		u32 num_results
-		for each result:
-			v3s16 area_offset
-			v3s16 area_size
-			v3s16 block_div
-			TODO: Compress
-			for each block:
-				u8 flags // 0x1: If 0, data is not included
-				for each division:
-					u16 node_id
-					u8 light
+		v3s16 area_offset (blocks)
+		v3s16 area_size (blocks)
+		v3s16 block_div (amount of divisions per block)
+		TODO: Compress
+		for each division (for(Y) for(X) for(Z)):
+			u16 node_id
+		for each division (for(Y) for(X) for(Z)):
+			u8 light_day
+		for each division (for(Y) for(X) for(Z)):
+			u8 light_night
 	*/
-	pkt << (u32) 1;
 
 	pkt << area_offset;
 	pkt << area_size;
-	pkt << preferred_block_div_at_edge;
-
-	v3s16 p;
-	for (u16 p.Y=area_offset.Y; p.Y<area_offset.Y+area_size.Y;  p.Y++)
-	for (u16 p.X=area_offset.X; p.X<area_offset.X+area_size.X;  p.X++)
-	for (u16 p.Z=area_offset.Z; p.Z<area_offset.Z+area_size.Z;  p.Z++) {
-		pkt << (u8) 0x01; // bit 1: Block included in result
-		
-		v3s16 pd;
-		for (u16 pd.Y=0; pd.Y<preferred_block_div_at_edge.Y;  pd.Y++)
-		for (u16 pd.X=0; pd.X<preferred_block_div_at_edge.X;  pd.X++)
-		for (u16 pd.Z=0; pd.Z<preferred_block_div_at_edge.Z;  pd.Z++) {
-			pkt << (u16) 0; // node_id
-			pkt << (u18) 0; // light
-		}
-	}
+	pkt << block_div;
+	for(size_t i=0; i<node_ids.size(); i++)
+		pkt << (u16) node_ids[i];
+	for(size_t i=0; i<lights_day.size(); i++)
+		pkt << (u8) lights_day[i];
+	for(size_t i=0; i<lights_night.size(); i++)
+		pkt << (u8) lights_night[i];
 
 	Send(&pkt);
 }

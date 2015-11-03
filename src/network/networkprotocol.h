@@ -586,17 +586,16 @@ enum ToClientCommand
 
 	TOCLIENT_FAR_BLOCKS_RESULT = 0x54,
 	/*
-		u32 num_results
-		for each result:
-			v3s16 area_offset
-			v3s16 area_size
-			v3s16 block_div
-			TODO: Compress
-			for each block:
-				u8 flags // 0x1: If 0, data is not included
-				for each division:
-					u16 node_id
-					u8 light
+		v3s16 area_offset (blocks)
+		v3s16 area_size (blocks)
+		v3s16 block_div (amount of divisions per block)
+		TODO: Compress
+		for each division (for(Y) for(X) for(Z)):
+			u16 node_id
+		for each division (for(Y) for(X) for(Z)):
+			u8 light_day
+		for each division (for(Y) for(X) for(Z)):
+			u8 light_night
 	*/
 
 	TOCLIENT_SRP_BYTES_S_B = 0x60,
@@ -881,9 +880,7 @@ enum ToServerCommand
 	/*
 		v3s16 area_offset
 		v3s16 area_size
-		v3s16 main_point
-		v3s16 preferred_block_div_at_main_point
-		v3s16 preferred_block_div_at_edge
+		v3s16 preferred_block_div
 	*/
 
 	TOSERVER_NUM_MSG_TYPES = 0x55,

@@ -679,23 +679,17 @@ void Client::step(float dtime)
 
 		v3s16 area_size(64, 16, 64);
 		v3s16 area_offset = area_size/2 + getNodeBlockPos(player_p);
-		v3s16 main_point = getNodeBlockPos(player_p);
-		v3s16 preferred_block_div_at_main_point(2, 2, 2);
-		v3s16 preferred_block_div_at_edge(2, 2, 2);
+		v3s16 preferred_block_div(2, 2, 2);
 
 		NetworkPacket pkt(TOSERVER_GET_FAR_BLOCKS, 0);
 		/*
 			v3s16 area_offset
 			v3s16 area_size
-			v3s16 main_point
-			v3s16 preferred_block_div_at_main_point
-			v3s16 preferred_block_div_at_edge
+			v3s16 preferred_block_div
 		*/
 		pkt << area_offset;
 		pkt << area_size;
-		pkt << main_point;
-		pkt << preferred_block_div_at_main_point;
-		pkt << preferred_block_div_at_edge;
+		pkt << preferred_block_div;
 
 		Send(&pkt);
 	}
