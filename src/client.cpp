@@ -677,8 +677,14 @@ void Client::step(float dtime)
 		if(player)
 			player_p = floatToInt(player->getPosition(), BS);
 
-		v3s16 area_size(64, 16, 64);
-		v3s16 area_offset = area_size/2 + getNodeBlockPos(player_p);
+		//v3s16 area_size(64, 16, 64);
+		//v3s16 area_size(32, 4, 32);
+		v3s16 area_size(48, 4, 48);
+		v3s16 area_offset = getNodeBlockPos(player_p);
+		// NOTE: I have no idea why area_offset - area_size / 2 doesn't work
+		area_offset.X -= area_size.X / 2;
+		area_offset.Y -= area_size.Y / 2;
+		area_offset.Z -= area_size.Z / 2;
 		v3s16 preferred_block_div(2, 2, 2);
 
 		NetworkPacket pkt(TOSERVER_GET_FAR_BLOCKS, 0);
