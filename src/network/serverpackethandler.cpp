@@ -2066,7 +2066,8 @@ void Server::handleCommand_GetFarBlocks(NetworkPacket* pkt_in)
 	for (bp.Y=area_offset.Y; bp.Y<area_offset.Y+area_size.Y; bp.Y++)
 	for (bp.X=area_offset.X; bp.X<area_offset.X+area_size.X; bp.X++)
 	for (bp.Z=area_offset.Z; bp.Z<area_offset.Z+area_size.Z; bp.Z++) {
-		MapBlock *b = m_env->getMap().getBlockNoCreateNoEx(bp);
+		//MapBlock *b = m_env->getMap().getBlockNoCreateNoEx(bp);
+		MapBlock *b = m_env->getMap().emergeBlock(bp, false);
 
 		v3s16 dp;
 		for (dp.Y=0; dp.Y<block_div.Y; dp.Y++)
@@ -2123,6 +2124,8 @@ void Server::handleCommand_GetFarBlocks(NetworkPacket* pkt_in)
 		pkt << (u8) lights_day[i];
 	for(size_t i=0; i<lights_night.size(); i++)
 		pkt << (u8) lights_night[i];
+
+	infostream << "FAR_BLOCKS_RESULT packet size: " << pkt.getSize() << std::endl;
 
 	Send(&pkt);
 }
