@@ -677,6 +677,7 @@ void Client::step(float dtime)
 		if(player)
 			player_p = floatToInt(player->getPosition(), BS);
 
+		// TODO: This shouldn't be hardcoded in this way probably
 		//v3s16 area_size(64, 16, 64);
 		//v3s16 area_size(32, 4, 32);
 		v3s16 area_size(48, 4, 48);

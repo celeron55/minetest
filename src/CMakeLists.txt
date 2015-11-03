@@ -484,6 +484,7 @@ set(client_SRCS
 	shader.cpp
 	sky.cpp
 	wieldmesh.cpp
+	far_map.cpp
 	${client_SCRIPT_SRCS}
 )
 list(SORT client_SRCS)
