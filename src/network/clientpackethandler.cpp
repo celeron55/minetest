@@ -1235,7 +1235,7 @@ void Client::handleCommand_FarBlocksResult(NetworkPacket* pkt_in)
 		for each division (for(Y) for(X) for(Z)):
 			u16 node_id
 		for each division (for(Y) for(X) for(Z)):
-			u8 light_day
+			u8 light
 		for each division (for(Y) for(X) for(Z)):
 			u8 light_night
 	*/
@@ -1256,18 +1256,13 @@ void Client::handleCommand_FarBlocksResult(NetworkPacket* pkt_in)
 	std::vector<u16> node_ids;
 	node_ids.resize(total_size_n);
 
-	std::vector<u8> lights_day;
-	lights_day.resize(total_size_n);
-
-	std::vector<u8> lights_night;
-	lights_night.resize(total_size_n);
+	std::vector<u8> lights;
+	lights.resize(total_size_n);
 
 	for(size_t i=0; i<total_size_n; i++)
 		*pkt_in >> node_ids[i];
 	for(size_t i=0; i<total_size_n; i++)
-		*pkt_in >> lights_day[i];
-	for(size_t i=0; i<total_size_n; i++)
-		*pkt_in >> lights_night[i];
+		*pkt_in >> lights[i];
 
 	// TODO: Shove the data somewhere to be rendered efficiently
 
@@ -1334,16 +1329,18 @@ void Client::handleCommand_FarBlocksResult(NetworkPacket* pkt_in)
 					dp0.X * total_size.Z + dp0.Z;
 
 			u16 node_id = node_ids[i];
-			u8 light_day = lights_day[i];
-			u8 light_night = lights_night[i];
+			u8 light = lights[i];
 			v3s16 np(
 				dp.X * block_div.X + block_div.X/2,
 				dp.Y * block_div.Y + block_div.Y/2,
 				dp.Z * block_div.Z + block_div.Z/2);
 			MapNode n(node_id);
-			n.setLight(LIGHTBANK_DAY, light_day, getNodeDefManager());
-			n.setLight(LIGHTBANK_NIGHT, light_night, getNodeDefManager());
+			const ContentFeatures &f = getNodeDefManager()->get(node_id);
+			if (!f.name.empty() && f.param_type == CPT_LIGHT) {
+				n.param1 = light;
+			}
 			// TODO: Set every node in the division
+			// TODO: Remove this whole thing
 			block->setNode(np, n);
 		}
 

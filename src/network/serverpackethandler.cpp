@@ -2058,11 +2058,8 @@ void Server::handleCommand_GetFarBlocks(NetworkPacket* pkt_in)
 	std::vector<u16> node_ids;
 	node_ids.resize(total_size_n);
 
-	std::vector<u8> lights_day;
-	lights_day.resize(total_size_n);
-
-	std::vector<u8> lights_night;
-	lights_night.resize(total_size_n);
+	std::vector<u8> lights;
+	lights.resize(total_size_n);
 
 	v3s16 bp;
 	for (bp.Y=area_offset.Y; bp.Y<area_offset.Y+area_size.Y; bp.Y++)
@@ -2084,8 +2081,7 @@ void Server::handleCommand_GetFarBlocks(NetworkPacket* pkt_in)
 					dp0.X * total_size.Z + dp0.Z;
 
 			u16 node_id = 0;
-			u8 light_day = 0;
-			u8 light_night = 0;
+			u8 light = 0;
 
 			if(b){
 				v3s16 np(
@@ -2094,12 +2090,17 @@ void Server::handleCommand_GetFarBlocks(NetworkPacket* pkt_in)
 					dp.Z * block_div.Z + block_div.Z/2);
 				MapNode n = b->getNodeNoEx(np);
 				node_id = n.getContent();
-				n.getLightBanks(light_day, light_night, getNodeDefManager());
+				const ContentFeatures &f = getNodeDefManager()->get(n);
+				if (!f.name.empty() && f.param_type == CPT_LIGHT) {
+					light = n.param1;
+				} else {
+					// TODO: Get light of a nearby node; something that defines
+					//       how brightly this division should be rendered
+				}
 			}
 
 			node_ids[i] = node_id;
-			lights_day[i] = light_day;
-			lights_night[i] = light_night;
+			lights[i] = light;
 		}
 	}
 
@@ -2112,9 +2113,7 @@ void Server::handleCommand_GetFarBlocks(NetworkPacket* pkt_in)
 		for each division (for(Y) for(X) for(Z)):
 			u16 node_id
 		for each division (for(Y) for(X) for(Z)):
-			u8 light_day
-		for each division (for(Y) for(X) for(Z)):
-			u8 light_night
+			u8 light (both lightbanks; raw value)
 	*/
 
 	pkt << area_offset;
@@ -2122,10 +2121,8 @@ void Server::handleCommand_GetFarBlocks(NetworkPacket* pkt_in)
 	pkt << block_div;
 	for(size_t i=0; i<node_ids.size(); i++)
 		pkt << (u16) node_ids[i];
-	for(size_t i=0; i<lights_day.size(); i++)
-		pkt << (u8) lights_day[i];
-	for(size_t i=0; i<lights_night.size(); i++)
-		pkt << (u8) lights_night[i];
+	for(size_t i=0; i<lights.size(); i++)
+		pkt << (u8) lights[i];
 
 	infostream << "FAR_BLOCKS_RESULT packet size: " << pkt.getSize() << std::endl;
 

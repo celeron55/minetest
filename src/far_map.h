@@ -21,9 +21,35 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "irrlichttypes_bloated.h"
 #include <ISceneNode.h>
+#include <vector>
+#include <map>
 
 class Client;
 //class ITextureSource;
+
+// FarMapBlock size in MapBlocks in every dimension
+#define FMP_SCALE 8
+
+struct FarMapNode
+{
+	u16 id;
+	u8 light;
+};
+
+struct FarMapBlock
+{
+	// In how many pieces MapBlocks have been divided per dimension
+	v3s16 block_div;
+
+	std::vector<FarMapNode> content;
+};
+
+struct FarMapSector
+{
+	std::map<s16, FarMapBlock*> blocks;
+
+	~FarMapSector();
+};
 
 class FarMap: public scene::ISceneNode
 {
@@ -36,6 +62,9 @@ public:
 	);
 	~FarMap();
 
+	void insertData(v3s16 area_offset, v3s16 area_size, v3s16 block_div,
+			const std::vector<u16> &node_ids, const std::vector<u8> &lights);
+
 	// ISceneNode methods
 	void OnRegisterSceneNode();
 	void render();
@@ -43,8 +72,12 @@ public:
 
 private:
 	Client *m_client;
-	
-	core::aabbox3d<f32> m_box;
+
+	// Source data
+	std::map<v2s16, FarMapSector*> m_sectors;
+
+	// Rendering stuff
+	core::aabbox3d<f32> m_bounding_box;
 };
 
 #endif

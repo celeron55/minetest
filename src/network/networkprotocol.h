@@ -593,9 +593,7 @@ enum ToClientCommand
 		for each division (for(Y) for(X) for(Z)):
 			u16 node_id
 		for each division (for(Y) for(X) for(Z)):
-			u8 light_day
-		for each division (for(Y) for(X) for(Z)):
-			u8 light_night
+			u8 light (both lightbanks; raw value)
 	*/
 
 	TOCLIENT_SRP_BYTES_S_B = 0x60,

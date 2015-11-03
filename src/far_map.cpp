@@ -22,6 +22,14 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "irrlichttypes_extrabloated.h"
 #include <IMaterialRenderer.h>
 
+FarMapSector::~FarMapSector()
+{
+	for (std::map<s16, FarMapBlock*>::iterator i = blocks.begin();
+			i != blocks.end(); i++) {
+		delete i->second;
+	}
+}
+
 FarMap::FarMap(
 		Client *client,
 		scene::ISceneNode* parent,
@@ -31,12 +39,22 @@ FarMap::FarMap(
 	scene::ISceneNode(parent, mgr, id),
 	m_client(client)
 {
-	m_box = core::aabbox3d<f32>(-BS*1000000,-BS*1000000,-BS*1000000,
+	m_bounding_box = core::aabbox3d<f32>(-BS*1000000,-BS*1000000,-BS*1000000,
 			BS*1000000,BS*1000000,BS*1000000);
 }
 
 FarMap::~FarMap()
 {
+	for (std::map<v2s16, FarMapSector*>::iterator i = m_sectors.begin();
+			i != m_sectors.end(); i++) {
+		delete i->second;
+	}
+}
+
+void FarMap::insertData(v3s16 area_offset, v3s16 area_size, v3s16 block_div,
+		const std::vector<u16> &node_ids, const std::vector<u8> &lights)
+{
+	// TODO
 }
 
 void FarMap::render()
@@ -60,5 +78,5 @@ void FarMap::OnRegisterSceneNode()
 
 const core::aabbox3d<f32>& FarMap::getBoundingBox() const
 {
-	return m_box;
+	return m_bounding_box;
 }
