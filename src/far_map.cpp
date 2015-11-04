@@ -115,10 +115,116 @@ FarMapBlockMeshGenerateTask::~FarMapBlockMeshGenerateTask()
 		mesh->drop();
 }
 
+static void add_face(MeshCollector *collector,
+		const v3f base_pf, const FarMapNode &n,
+		const v3s16 &p, s16 dir_x, s16 dir_y, s16 dir_z,
+		const std::vector<FarMapNode> &data,
+		const VoxelArea &data_area,
+		const v3s16 &block_div,
+		const FarMap *far_map)
+{
+	ITextureSource *tsrc = far_map->client->getTextureSource();
+	//IShaderSource *ssrc = far_map->client->getShaderSource();
+	//INodeDefManager *ndef = far_map->client->getNodeDefManager();
+
+	static const u16 indices[] = {0,1,2,2,3,0};
+
+	v3s16 dir(dir_x, dir_y, dir_z);
+	v3s16 vertex_dirs[4];
+	getNodeVertexDirs(dir, vertex_dirs);
+
+	// This is the size of one FarMapNode (without BS being factored in)
+	v3f scale(
+		MAP_BLOCKSIZE / block_div.X,
+		MAP_BLOCKSIZE / block_div.Y,
+		MAP_BLOCKSIZE / block_div.Z
+	);
+
+	v3f pf = base_pf;
+	pf += v3f(
+		scale.X * p.X * BS,
+		scale.Y * p.Y * BS,
+		scale.Z * p.Z * BS
+	);
+
+	v3f vertex_pos[4];
+	for(u16 i=0; i<4; i++)
+	{
+		vertex_pos[i] = v3f(
+				BS/2*vertex_dirs[i].X,
+				BS/2*vertex_dirs[i].Y,
+				BS/2*vertex_dirs[i].Z
+		);
+		vertex_pos[i].X *= scale.X;
+		vertex_pos[i].Y *= scale.Y;
+		vertex_pos[i].Z *= scale.Z;
+		vertex_pos[i] += pf;
+	}
+
+	v3f normal(dir.X, dir.Y, dir.Z);
+
+	u8 alpha = 255;
+
+	// As produced by getFaceLight (day | (night << 8))
+	u16 light_encoded = (255) | (255<<8);
+	// Light produced by the node itself
+	u8 light_source = 0;
+
+	// Some kind of texture coordinate aspect stretch thing
+	f32 abs_scale = 1.0;
+	if     (scale.X < 0.999 || scale.X > 1.001) abs_scale = scale.X;
+	else if(scale.Y < 0.999 || scale.Y > 1.001) abs_scale = scale.Y;
+	else if(scale.Z < 0.999 || scale.Z > 1.001) abs_scale = scale.Z;
+
+	// Texture coordinates
+	float x0 = 0.0;
+	float y0 = 0.0;
+	float w = 1.0;
+	float h = 1.0;
+
+	video::S3DVertex vertices[4];
+	vertices[0] = video::S3DVertex(vertex_pos[0], normal,
+			MapBlock_LightColor(alpha, light_encoded, light_source),
+			core::vector2d<f32>(x0+w*abs_scale, y0+h));
+	vertices[1] = video::S3DVertex(vertex_pos[1], normal,
+			MapBlock_LightColor(alpha, light_encoded, light_source),
+			core::vector2d<f32>(x0, y0+h));
+	vertices[2] = video::S3DVertex(vertex_pos[2], normal,
+			MapBlock_LightColor(alpha, light_encoded, light_source),
+			core::vector2d<f32>(x0, y0));
+	vertices[3] = video::S3DVertex(vertex_pos[3], normal,
+			MapBlock_LightColor(alpha, light_encoded, light_source),
+			core::vector2d<f32>(x0+w*abs_scale, y0));
+
+	// TODO: Don't do this; use a special texture atlas
+	//std::string tile_name = "default_grass.png";
+	std::string tile_name = "unknown_node.png";
+
+	TileSpec t;
+	t.texture_id = tsrc->getTextureId(tile_name);
+	t.texture = tsrc->getTexture(t.texture_id);
+	t.alpha = alpha;
+	t.material_type = TILE_MATERIAL_BASIC;
+	t.material_flags &= ~MATERIAL_FLAG_BACKFACE_CULLING;
+
+	infostream<<"FarMapBlockMeshGenerate: enable_shaders="
+			<<(far_map->config_enable_shaders?"true":"false")<<std::endl;
+
+	if (far_map->config_enable_shaders) {
+		t.shader_id = far_map->farblock_shader_id;
+		bool normalmap_present = false;
+		t.flags_texture = tsrc->getShaderFlagsTexture(normalmap_present);
+	}
+
+	collector->append(t, vertices, 4, indices, 6);
+}
+
 static void extract_faces(MeshCollector *collector,
+		const v3f base_pf,
 		const std::vector<FarMapNode> &data,
 		const VoxelArea &data_area, const VoxelArea &gen_area,
-		const INodeDefManager *ndef)
+		const v3s16 &block_div,
+		const FarMap *far_map)
 {
 	// At least one extra node at each edge is required. This enables speed
 	// optimization of lookups in this algorithm.
@@ -129,6 +235,8 @@ static void extract_faces(MeshCollector *collector,
 	assert(data_area.MaxEdge.Y >= gen_area.MaxEdge.Y + 1);
 	assert(data_area.MaxEdge.Z >= gen_area.MaxEdge.Z + 1);
 
+	INodeDefManager *ndef = far_map->client->getNodeDefManager();
+
 	v3s16 data_extent = data_area.getExtent();
 
 	v3s16 p000;
@@ -137,15 +245,15 @@ static void extract_faces(MeshCollector *collector,
 	for (p000.Z=gen_area.MinEdge.Z; p000.Z<=gen_area.MaxEdge.Z; p000.Z++)
 	{
 		size_t i000 = data_area.index(p000);
-		const FarMapNode &m000 = data[i000];
-		const FarMapNode &m001 = data[data_area.added_z(data_extent, i000, 1)];
-		const FarMapNode &m010 = data[data_area.added_y(data_extent, i000, 1)];
-		const FarMapNode &m100 = data[data_area.added_x(data_extent, i000, 1)];
-		const ContentFeatures &f000 = ndef->get(m000.id);
-		const ContentFeatures &f001 = ndef->get(m001.id);
-		const ContentFeatures &f010 = ndef->get(m010.id);
-		const ContentFeatures &f100 = ndef->get(m100.id);
-		int s000 = f000.solidness || f000.visual_solidness;
+		const FarMapNode &n000 = data[i000];
+		const FarMapNode &n001 = data[data_area.added_z(data_extent, i000, 1)];
+		const FarMapNode &n010 = data[data_area.added_y(data_extent, i000, 1)];
+		const FarMapNode &n100 = data[data_area.added_x(data_extent, i000, 1)];
+		const ContentFeatures &f000 = ndef->get(n000.id);
+		const ContentFeatures &f001 = ndef->get(n001.id);
+		const ContentFeatures &f010 = ndef->get(n010.id);
+		const ContentFeatures &f100 = ndef->get(n100.id);
+		int s000 = f000.solidness ?: f000.visual_solidness;
 		if(s000 == 0)
 			continue;
 		int s001 = f001.solidness ?: f001.visual_solidness;
@@ -160,29 +268,35 @@ static void extract_faces(MeshCollector *collector,
 
 		if(s001 != -1){
 			if(s000 > s001){
-				add_face(collector, m000, p000,  0,0,1, data, data_area);
+				add_face(collector, base_pf, n000, p000,  0,0,1, data,
+						data_area, block_div, far_map);
 			}
 			else if(s000 < s001){
 				v3s16 p001 = p000 + v3s16(0,0,1);
-				add_face(collector, m001, p001, 0,0,-1, data, data_area);
+				add_face(collector, base_pf, n001, p001, 0,0,-1, data,
+						data_area, block_div, far_map);
 			}
 		}
 		if(s010 != -1){
 			if(s000 > s010){
-				add_face(collector, m000, p000,  0,1,0, data, data_area);
+				add_face(collector, base_pf, n000, p000,  0,1,0, data,
+						data_area, block_div, far_map);
 			}
 			else if(s000 < s010){
 				v3s16 p010 = p000 + v3s16(0,1,0);
-				add_face(collector, m010, p010, 0,-1,0, data, data_area);
+				add_face(collector, base_pf, n010, p010, 0,-1,0, data,
+						data_area, block_div, far_map);
 			}
 		}
 		if(s100 != -1){
 			if(s000 > s100){
-				add_face(collector, m000, p000,  1,0,0, data, data_area);
+				add_face(collector, base_pf, n000, p000,  1,0,0, data,
+						data_area, block_div, far_map);
 			}
 			else if(s000 < s100){
 				v3s16 p100 = p000 + v3s16(1,0,0);
-				add_face(collector, m100, p100, -1,0,0, data, data_area);
+				add_face(collector, base_pf, n100, p100, -1,0,0, data,
+						data_area, block_div, far_map);
 			}
 		}
 	}
@@ -195,7 +309,7 @@ void FarMapBlockMeshGenerateTask::inThread()
 
 	ITextureSource *tsrc = far_map->client->getTextureSource();
 	IShaderSource *ssrc = far_map->client->getShaderSource();
-	INodeDefManager *ndef = far_map->client->getNodeDefManager();
+	//INodeDefManager *ndef = far_map->client->getNodeDefManager();
 
 	MeshCollector collector;
 
@@ -207,8 +321,15 @@ void FarMapBlockMeshGenerateTask::inThread()
 	v3s16 dp1 = dp0 + source_block.total_size - v3s16(1,1,1); // Inclusive
 	VoxelArea data_area(dp0, dp1);
 	VoxelArea gen_area = data_area;
+	// TODO: Extend source block content so that this doesn't need to be done
+	gen_area.MinEdge += v3s16(1,1,1);
+	gen_area.MaxEdge -= v3s16(1,1,1);
 
-	extract_faces(&collector, source_block.content, data_area, gen_area, ndef);
+	v3f base_pf = v3f(source_block.p.X, source_block.p.Y, source_block.p.Z)
+			* MAP_BLOCKSIZE * FMP_SCALE * BS;
+
+	extract_faces(&collector, base_pf, source_block.content, data_area,
+			gen_area, source_block.block_div, far_map);
 
 	// TODO
 
