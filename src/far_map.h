@@ -21,6 +21,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "irrlichttypes_bloated.h"
 #include "util/thread.h" // UpdateThread
+#include "threading/atomic.h"
 #include <ISceneNode.h>
 #include <SMesh.h>
 #include <vector>
@@ -101,7 +102,10 @@ struct FarMapBlockMeshGenerateTask: public FarMapTask
 class FarMapWorkerThread: public UpdateThread
 {
 public:
-	FarMapWorkerThread(): UpdateThread("FarMapWorker") {}
+	FarMapWorkerThread():
+		UpdateThread("FarMapWorker"),
+		m_queue_in_length(0)
+	{}
 	~FarMapWorkerThread();
 
 	void addTask(FarMapTask *task);
@@ -112,7 +116,8 @@ private:
 
 	MutexedQueue<FarMapTask*> m_queue_in;
 	MutexedQueue<FarMapTask*> m_queue_sync;
-	//v3s16 m_camera_offset; // TODO
+
+	Atomic<s32> m_queue_in_length; // For profiling
 };
 
 class FarMap: public scene::ISceneNode

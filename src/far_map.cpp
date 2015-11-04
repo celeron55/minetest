@@ -255,8 +255,6 @@ static void extract_faces(MeshCollector *collector,
 		const ContentFeatures &f010 = ndef->get(n010.id);
 		const ContentFeatures &f100 = ndef->get(n100.id);
 		int s000 = f000.solidness ?: f000.visual_solidness;
-		if(s000 == 0)
-			continue;
 		int s001 = f001.solidness ?: f001.visual_solidness;
 		int s010 = f010.solidness ?: f010.visual_solidness;
 		int s100 = f100.solidness ?: f100.visual_solidness;
@@ -561,6 +559,11 @@ FarMapWorkerThread::~FarMapWorkerThread()
 
 void FarMapWorkerThread::addTask(FarMapTask *task)
 {
+	g_profiler->add("Far: tasks added", 1);
+
+	s32 length = ++m_queue_in_length;
+	g_profiler->avg("Far: task queue length (avg)", length);
+
 	m_queue_in.push_back(task);
 	deferUpdate();
 }
@@ -573,6 +576,7 @@ void FarMapWorkerThread::sync()
 			infostream<<"FarMapWorkerThread: Running task in sync"<<std::endl;
 			t->sync();
 			delete t;
+			g_profiler->add("Far: tasks finished", 1);
 		} catch(ItemNotFoundException &e){
 			break;
 		}
@@ -583,6 +587,9 @@ void FarMapWorkerThread::doUpdate()
 {
 	for(;;){
 		try {
+			s32 length = --m_queue_in_length;
+			g_profiler->avg("Far: task queue length (avg)", length);
+
 			FarMapTask *t = m_queue_in.pop_front(250);
 			infostream<<"FarMapWorkerThread: Running task in thread"<<std::endl;
 			t->inThread();
