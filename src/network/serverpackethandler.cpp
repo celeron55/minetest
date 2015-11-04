@@ -2055,6 +2055,21 @@ void Server::handleCommand_GetFarBlocks(NetworkPacket* pkt_in)
 
 	size_t total_size_n = total_size.X * total_size.Y * total_size.Z;
 
+	// Output area in divisions
+	v3s16 out_div_area_p0(
+		area_offset.X * block_div.X,
+		area_offset.Y * block_div.Y,
+		area_offset.Z * block_div.Z
+	);
+	v3s16 out_div_area_p1 = out_div_area_p0 + v3s16(
+		area_size.X * block_div.X,
+		area_size.Y * block_div.Y,
+		area_size.Z * block_div.Z
+	);
+	// This can be used for indexing node_ids and lights
+	VoxelArea out_div_area(out_div_area_p0, out_div_area_p1 - v3s16(1,1,1));
+	assert(out_div_area.getVolume() == (s32)total_size_n);
+
 	std::vector<u16> node_ids;
 	node_ids.resize(total_size_n);
 
@@ -2062,23 +2077,25 @@ void Server::handleCommand_GetFarBlocks(NetworkPacket* pkt_in)
 	lights.resize(total_size_n);
 
 	v3s16 bp;
+	for (bp.Z=area_offset.Z; bp.Z<area_offset.Z+area_size.Z; bp.Z++)
 	for (bp.Y=area_offset.Y; bp.Y<area_offset.Y+area_size.Y; bp.Y++)
-	for (bp.X=area_offset.X; bp.X<area_offset.X+area_size.X; bp.X++)
-	for (bp.Z=area_offset.Z; bp.Z<area_offset.Z+area_size.Z; bp.Z++) {
+	for (bp.X=area_offset.X; bp.X<area_offset.X+area_size.X; bp.X++) {
 		//MapBlock *b = m_env->getMap().getBlockNoCreateNoEx(bp);
 		MapBlock *b = m_env->getMap().emergeBlock(bp, false);
 
-		v3s16 dp;
+		v3s16 dp; // Position inside block
+		for (dp.Z=0; dp.Z<block_div.Z; dp.Z++)
 		for (dp.Y=0; dp.Y<block_div.Y; dp.Y++)
-		for (dp.X=0; dp.X<block_div.X; dp.X++)
-		for (dp.Z=0; dp.Z<block_div.Z; dp.Z++) {
+		for (dp.X=0; dp.X<block_div.X; dp.X++) {
+			// Block's origin coordinates in global division coordinates
 			v3s16 dp0 = dp;
 			dp0.X += (bp.X - area_offset.X) * block_div.X;
 			dp0.Y += (bp.Y - area_offset.Y) * block_div.Y;
 			dp0.Z += (bp.Z - area_offset.Z) * block_div.Z;
 
-			size_t i = dp0.Z * total_size.Y * total_size.X +
-					dp0.Y * total_size.X + dp0.X;
+			v3s16 dp1 = dp0 + dp;
+			assert(out_div_area.contains(dp1));
+			size_t i = out_div_area.index(dp1);
 
 			u16 node_id = 0;
 			u8 light = 0;
@@ -2096,6 +2113,7 @@ void Server::handleCommand_GetFarBlocks(NetworkPacket* pkt_in)
 				} else {
 					// TODO: Get light of a nearby node; something that defines
 					//       how brightly this division should be rendered
+					light = (15) | (15<<4);
 				}
 			}
 

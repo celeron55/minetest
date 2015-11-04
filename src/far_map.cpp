@@ -267,44 +267,38 @@ static void extract_faces(MeshCollector *collector,
 		/*if(f000.drawtype == NDT_){
 		}*/
 
-		if(s001 != 0){
-			if(s000 > s001){
-				add_face(collector, base_pf, n000, p000,  0,0,1, data,
-						data_area, block_div, far_map);
-				(*profiler_num_faces_added)++;
-			}
-			else if(s000 < s001){
-				v3s16 p001 = p000 + v3s16(0,0,1);
-				add_face(collector, base_pf, n001, p001, 0,0,-1, data,
-						data_area, block_div, far_map);
-				(*profiler_num_faces_added)++;
-			}
+		if(s000 > s001){
+			add_face(collector, base_pf, n000, p000,  0,0,1, data,
+					data_area, block_div, far_map);
+			(*profiler_num_faces_added)++;
 		}
-		if(s010 != 0){
-			if(s000 > s010){
-				add_face(collector, base_pf, n000, p000,  0,1,0, data,
-						data_area, block_div, far_map);
-				(*profiler_num_faces_added)++;
-			}
-			else if(s000 < s010){
-				v3s16 p010 = p000 + v3s16(0,1,0);
-				add_face(collector, base_pf, n010, p010, 0,-1,0, data,
-						data_area, block_div, far_map);
-				(*profiler_num_faces_added)++;
-			}
+		else if(s000 < s001){
+			v3s16 p001 = p000 + v3s16(0,0,1);
+			add_face(collector, base_pf, n001, p001, 0,0,-1, data,
+					data_area, block_div, far_map);
+			(*profiler_num_faces_added)++;
 		}
-		if(s100 != 0){
-			if(s000 > s100){
-				add_face(collector, base_pf, n000, p000,  1,0,0, data,
-						data_area, block_div, far_map);
-				(*profiler_num_faces_added)++;
-			}
-			else if(s000 < s100){
-				v3s16 p100 = p000 + v3s16(1,0,0);
-				add_face(collector, base_pf, n100, p100, -1,0,0, data,
-						data_area, block_div, far_map);
-				(*profiler_num_faces_added)++;
-			}
+		if(s000 > s010){
+			add_face(collector, base_pf, n000, p000,  0,1,0, data,
+					data_area, block_div, far_map);
+			(*profiler_num_faces_added)++;
+		}
+		else if(s000 < s010){
+			v3s16 p010 = p000 + v3s16(0,1,0);
+			add_face(collector, base_pf, n010, p010, 0,-1,0, data,
+					data_area, block_div, far_map);
+			(*profiler_num_faces_added)++;
+		}
+		if(s000 > s100){
+			add_face(collector, base_pf, n000, p000,  1,0,0, data,
+					data_area, block_div, far_map);
+			(*profiler_num_faces_added)++;
+		}
+		else if(s000 < s100){
+			v3s16 p100 = p000 + v3s16(1,0,0);
+			add_face(collector, base_pf, n100, p100, -1,0,0, data,
+					data_area, block_div, far_map);
+			(*profiler_num_faces_added)++;
 		}
 	}
 }
@@ -320,11 +314,7 @@ void FarMapBlockMeshGenerateTask::inThread()
 
 	MeshCollector collector;
 
-	v3s16 dp0(
-		source_block.p.X * FMP_SCALE * source_block.block_div.X,
-		source_block.p.Y * FMP_SCALE * source_block.block_div.Y,
-		source_block.p.Z * FMP_SCALE * source_block.block_div.Z
-	);
+	v3s16 dp0(0, 0, 0);
 	v3s16 dp1 = dp0 + source_block.total_size - v3s16(1,1,1); // Inclusive
 	VoxelArea data_area(dp0, dp1);
 	VoxelArea gen_area = data_area;
@@ -673,7 +663,7 @@ void FarMap::insertData(v3s16 area_offset_mapblocks, v3s16 area_size_mapblocks,
 		area_size_mapblocks.Z * block_div.Z
 	);
 	// This can be used for indexing node_ids and lights
-	VoxelArea div_area(div_p0, div_p1);
+	VoxelArea div_area(div_p0, div_p1 - v3s16(1,1,1));
 
 	// Convert to FarMapBlock positions (this can cover extra area)
 	VoxelArea fmb_area(
@@ -710,6 +700,8 @@ void FarMap::insertData(v3s16 area_offset_mapblocks, v3s16 area_size_mapblocks,
 			size_t source_i = div_area.index(dp0);
 			size_t dst_i = b->index(dp1);
 			b->content[dst_i].id = node_ids[source_i];
+			/*b->content[dst_i].id = ((dp0.X + dp0.Y + dp0.Z) % 3 == 0) ?
+					5 : CONTENT_AIR;*/
 			b->content[dst_i].light = lights[source_i];
 		}
 
