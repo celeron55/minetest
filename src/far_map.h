@@ -45,6 +45,8 @@ struct FarMapBlock
 
 	// In how many pieces MapBlocks have been divided per dimension
 	v3s16 block_div;
+	// Total node dimensions of content
+	v3s16 total_size;
 
 	std::vector<FarMapNode> content;
 
@@ -57,6 +59,12 @@ struct FarMapBlock
 	void resize(v3s16 new_block_div);
 	void updateCameraOffset(v3s16 camera_offset);
 	void resetCameraOffset(v3s16 camera_offset = v3s16(0, 0, 0));
+
+	size_t index(v3s16 p) {
+		assert(p.X >= 0 && p.Y >= 0 && p.Z >= 0);
+		assert(p.X < total_size.X && p.Y < total_size.Y && p.Z < total_size.Z);
+		return p.Z * total_size.X * total_size.Y + p.Y * total_size.X + p.X;
+	}
 };
 
 struct FarMapSector

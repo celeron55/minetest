@@ -48,7 +48,7 @@ void FarMapBlock::resize(v3s16 new_block_div)
 
 	v3s16 area_size(FMP_SCALE, FMP_SCALE, FMP_SCALE);
 
-	v3s16 total_size(
+	total_size = v3s16(
 			area_size.X * block_div.X,
 			area_size.Y * block_div.Y,
 			area_size.Z * block_div.Z);
@@ -408,30 +408,64 @@ void FarMap::insertData(v3s16 area_offset_mapblocks, v3s16 area_size_mapblocks,
 			<<", node_ids.size(): "<<node_ids.size()
 			<<", lights.size(): "<<lights.size()
 			<<std::endl;
-	// Convert to FarMapBlock positions
-	// Inclusive
-	v3s16 area_p0 = getContainerPos(area_offset_mapblocks, FMP_SCALE);
-	// Inclusive
-	v3s16 area_p1 = getContainerPos(
-			area_offset_mapblocks + area_size_mapblocks - v3s16(1,1,1), FMP_SCALE);
+
+	// Convert to divisions (which will match FarMapNodes)
+	v3s16 div_p0(
+		area_offset_mapblocks.X * block_div.X,
+		area_offset_mapblocks.Y * block_div.Y,
+		area_offset_mapblocks.Z * block_div.Z
+	);
+	v3s16 div_p1 = div_p0 + v3s16(
+		area_size_mapblocks.X * block_div.X,
+		area_size_mapblocks.Y * block_div.Y,
+		area_size_mapblocks.Z * block_div.Z
+	);
+	// This can be used for indexing node_ids and lights
+	VoxelArea div_area(div_p0, div_p1);
+
+	// Convert to FarMapBlock positions (this can cover extra area)
+	VoxelArea fmb_area(
+		getContainerPos(area_offset_mapblocks, FMP_SCALE),
+		getContainerPos(area_offset_mapblocks + area_size_mapblocks -
+				v3s16(1,1,1), FMP_SCALE)
+	);
 
 	v3s16 fbp;
-	for (fbp.Y=area_p0.Y; fbp.Y<=area_p1.Y; fbp.Y++)
-	for (fbp.X=area_p0.X; fbp.X<=area_p1.X; fbp.X++)
-	for (fbp.Z=area_p0.Z; fbp.Z<=area_p1.Z; fbp.Z++) {
+	for (fbp.Y=fmb_area.MinEdge.Y; fbp.Y<=fmb_area.MaxEdge.Y; fbp.Y++)
+	for (fbp.X=fmb_area.MinEdge.X; fbp.X<=fmb_area.MaxEdge.X; fbp.X++)
+	for (fbp.Z=fmb_area.MinEdge.Z; fbp.Z<=fmb_area.MaxEdge.Z; fbp.Z++) {
 		infostream<<"FarMap::insertData: FarBlock "<<PP(fbp)<<std::endl;
 
 		FarMapBlock *b = getOrCreateBlock(fbp);
 		
 		b->resize(block_div);
 
-		// TODO: Remove this
+		// Copy stuff into b
+		v3s16 dp00(
+			fbp.X * FMP_SCALE * block_div.X,
+			fbp.Y * FMP_SCALE * block_div.Y,
+			fbp.Z * FMP_SCALE * block_div.Z
+		);
+		v3s16 dp1;
+		for (dp1.Y=0; dp1.Y<b->total_size.Y; dp1.Y++)
+		for (dp1.X=0; dp1.X<b->total_size.X; dp1.X++)
+		for (dp1.Z=0; dp1.Z<b->total_size.Z; dp1.Z++) {
+			v3s16 dp0 = dp00 + dp1;
+			// The source area does not necessarily contain all positions that
+			// the matching blocks contain
+			if(!div_area.contains(dp0))
+				continue;
+			size_t source_i = div_area.index(dp0);
+			size_t dst_i = b->index(dp1);
+			b->content[dst_i].id = node_ids[source_i];
+			b->content[dst_i].light = lights[source_i];
+		}
+
+		/*// TODO: Remove this
 		b->content[0].id = 5;
 		b->content[10].id = 6;
 		b->content[20].id = 7;
-		b->content[30].id = 8;
-
-		// TODO: Copy stuff into b
+		b->content[30].id = 8;*/
 
 		startGeneratingBlockMesh(b);
 	}

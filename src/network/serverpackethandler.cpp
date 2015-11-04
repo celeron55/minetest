@@ -2077,8 +2077,8 @@ void Server::handleCommand_GetFarBlocks(NetworkPacket* pkt_in)
 			dp0.Y += (bp.Y - area_offset.Y) * block_div.Y;
 			dp0.Z += (bp.Z - area_offset.Z) * block_div.Z;
 
-			size_t i = dp0.Y * total_size.X * total_size.Z +
-					dp0.X * total_size.Z + dp0.Z;
+			size_t i = dp0.Z * total_size.Y * total_size.X +
+					dp0.Y * total_size.X + dp0.X;
 
 			u16 node_id = 0;
 			u8 light = 0;
