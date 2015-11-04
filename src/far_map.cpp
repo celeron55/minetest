@@ -314,7 +314,24 @@ void FarMapBlockMeshGenerateTask::sync()
 
 FarMapWorkerThread::~FarMapWorkerThread()
 {
-	// TODO: Delete remaining tasks from both queues
+	verbosestream<<"FarMapWorkerThread: Deleting remaining tasks (in)"<<std::endl;
+	for(;;){
+		try {
+			FarMapTask *t = m_queue_in.pop_front(0);
+			delete t;
+		} catch(ItemNotFoundException &e){
+			break;
+		}
+	}
+	verbosestream<<"FarMapWorkerThread: Deleting remaining tasks (sync)"<<std::endl;
+	for(;;){
+		try {
+			FarMapTask *t = m_queue_sync.pop_front(0);
+			delete t;
+		} catch(ItemNotFoundException &e){
+			break;
+		}
+	}
 }
 
 void FarMapWorkerThread::addTask(FarMapTask *task)
