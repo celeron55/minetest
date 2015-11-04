@@ -24,6 +24,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "mesh.h" // translateMesh
 #include "util/numeric.h" // getContainerPos
 #include "client.h" // For use of Client's IGameDef interface
+#include "profiler.h"
 #include "irrlichttypes_extrabloated.h"
 #include <IMaterialRenderer.h>
 
@@ -451,6 +452,8 @@ void FarMap::insertGeneratedBlockMesh(v3s16 p, scene::SMesh *mesh)
 	mesh->grab();
 	b->mesh = mesh;
 	b->resetCameraOffset(m_camera_offset);
+
+	g_profiler->add("Far: generated farblocks meshes", 1);
 }
 
 void FarMap::update()
@@ -536,6 +539,8 @@ void FarMap::render()
 	video::IVideoDriver* driver = SceneManager->getVideoDriver();
 	driver->setTransform(video::ETS_WORLD, AbsoluteTransformation);
 
+	size_t profiler_num_rendered_farblocks = 0;
+
 	for (std::map<v2s16, FarMapSector*>::iterator i = m_sectors.begin();
 			i != m_sectors.end(); i++) {
 		FarMapSector *s = i->second;
@@ -544,8 +549,13 @@ void FarMap::render()
 				i != s->blocks.end(); i++) {
 			FarMapBlock *b = i->second;
 			renderBlock(this, b, driver);
+
+			profiler_num_rendered_farblocks++;
 		}
 	}
+
+	g_profiler->avg("Far: rendered farblocks per frame",
+			profiler_num_rendered_farblocks);
 }
 
 void FarMap::OnRegisterSceneNode()
