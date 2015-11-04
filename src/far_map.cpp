@@ -115,6 +115,79 @@ FarMapBlockMeshGenerateTask::~FarMapBlockMeshGenerateTask()
 		mesh->drop();
 }
 
+static void extract_faces(MeshCollector *collector,
+		const std::vector<FarMapNode> &data,
+		const VoxelArea &data_area, const VoxelArea &gen_area,
+		const INodeDefManager *ndef)
+{
+	// At least one extra node at each edge is required. This enables speed
+	// optimization of lookups in this algorithm.
+	assert(data_area.MinEdge.X <= gen_area.MinEdge.X - 1);
+	assert(data_area.MinEdge.Y <= gen_area.MinEdge.Y - 1);
+	assert(data_area.MinEdge.Z <= gen_area.MinEdge.Z - 1);
+	assert(data_area.MaxEdge.X >= gen_area.MaxEdge.X + 1);
+	assert(data_area.MaxEdge.Y >= gen_area.MaxEdge.Y + 1);
+	assert(data_area.MaxEdge.Z >= gen_area.MaxEdge.Z + 1);
+
+	v3s16 data_extent = data_area.getExtent();
+
+	v3s16 p000;
+	for (p000.Y=gen_area.MinEdge.Y; p000.Y<=gen_area.MaxEdge.Y; p000.Y++)
+	for (p000.X=gen_area.MinEdge.X; p000.X<=gen_area.MaxEdge.X; p000.X++)
+	for (p000.Z=gen_area.MinEdge.Z; p000.Z<=gen_area.MaxEdge.Z; p000.Z++)
+	{
+		size_t i000 = data_area.index(p000);
+		const FarMapNode &m000 = data[i000];
+		const FarMapNode &m001 = data[data_area.added_z(data_extent, i000, 1)];
+		const FarMapNode &m010 = data[data_area.added_y(data_extent, i000, 1)];
+		const FarMapNode &m100 = data[data_area.added_x(data_extent, i000, 1)];
+		const ContentFeatures &f000 = ndef->get(m000.id);
+		const ContentFeatures &f001 = ndef->get(m001.id);
+		const ContentFeatures &f010 = ndef->get(m010.id);
+		const ContentFeatures &f100 = ndef->get(m100.id);
+		int s000 = f000.solidness || f000.visual_solidness;
+		if(s000 == 0)
+			continue;
+		int s001 = f001.solidness ?: f001.visual_solidness;
+		int s010 = f010.solidness ?: f010.visual_solidness;
+		int s100 = f100.solidness ?: f100.visual_solidness;
+
+		// TODO: Somehow handle non-cubic things maybe
+		// NOTE: Don't call 'continue' though; it would break this
+		//       cube-collecting algorithm.
+		/*if(f000.drawtype == NDT_){
+		}*/
+
+		if(s001 != -1){
+			if(s000 > s001){
+				add_face(collector, m000, p000,  0,0,1, data, data_area);
+			}
+			else if(s000 < s001){
+				v3s16 p001 = p000 + v3s16(0,0,1);
+				add_face(collector, m001, p001, 0,0,-1, data, data_area);
+			}
+		}
+		if(s010 != -1){
+			if(s000 > s010){
+				add_face(collector, m000, p000,  0,1,0, data, data_area);
+			}
+			else if(s000 < s010){
+				v3s16 p010 = p000 + v3s16(0,1,0);
+				add_face(collector, m010, p010, 0,-1,0, data, data_area);
+			}
+		}
+		if(s100 != -1){
+			if(s000 > s100){
+				add_face(collector, m000, p000,  1,0,0, data, data_area);
+			}
+			else if(s000 < s100){
+				v3s16 p100 = p000 + v3s16(1,0,0);
+				add_face(collector, m100, p100, -1,0,0, data, data_area);
+			}
+		}
+	}
+}
+
 void FarMapBlockMeshGenerateTask::inThread()
 {
 	infostream<<"Generating FarMapBlock mesh for "
@@ -122,8 +195,20 @@ void FarMapBlockMeshGenerateTask::inThread()
 
 	ITextureSource *tsrc = far_map->client->getTextureSource();
 	IShaderSource *ssrc = far_map->client->getShaderSource();
+	INodeDefManager *ndef = far_map->client->getNodeDefManager();
 
 	MeshCollector collector;
+
+	v3s16 dp0(
+		source_block.p.X * FMP_SCALE * source_block.block_div.X,
+		source_block.p.Y * FMP_SCALE * source_block.block_div.Y,
+		source_block.p.Z * FMP_SCALE * source_block.block_div.Z
+	);
+	v3s16 dp1 = dp0 + source_block.total_size - v3s16(1,1,1); // Inclusive
+	VoxelArea data_area(dp0, dp1);
+	VoxelArea gen_area = data_area;
+
+	extract_faces(&collector, source_block.content, data_area, gen_area, ndef);
 
 	// TODO
 
