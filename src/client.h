@@ -595,6 +595,7 @@ private:
 	IrrlichtDevice *m_device;
 	Mapper *m_mapper;
 	bool m_minimap_disabled_by_server;
+	FarMap *m_far_map;
 	// Server serialization version
 	u8 m_server_ser_ver;
 

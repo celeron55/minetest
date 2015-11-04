@@ -43,6 +43,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "itemdef.h"
 #include "shader.h"
 #include "clientmap.h"
+#include "far_map.h"
 #include "clientmedia.h"
 #include "sound.h"
 #include "IMeshCache.h"
@@ -229,6 +230,8 @@ Client::Client(
 	m_con(PROTOCOL_ID, 512, CONNECTION_TIMEOUT, ipv6, this),
 	m_device(device),
 	m_minimap_disabled_by_server(false),
+	m_far_map(new FarMap(this, device->getSceneManager()->getRootSceneNode(),
+			device->getSceneManager(), 667)),
 	m_server_ser_ver(SER_FMT_VER_INVALID),
 	m_proto_ver(0),
 	m_playeritem(0),
