@@ -137,13 +137,14 @@ public:
 	void render();
 	const core::aabbox3d<f32>& getBoundingBox() const;
 
+	Client *client;
+
 	bool config_enable_shaders;
 	bool config_trilinear_filter;
 	bool config_bilinear_filter;
 	bool config_anistropic_filter;
 
 private:
-	Client *m_client;
 	FarMapWorkerThread m_worker_thread;
 
 	// Source data

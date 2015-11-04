@@ -23,6 +23,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "mapblock_mesh.h" // MeshCollector
 #include "mesh.h" // translateMesh
 #include "util/numeric.h" // getContainerPos
+#include "client.h" // For use of Client's IGameDef interface
 #include "irrlichttypes_extrabloated.h"
 #include <IMaterialRenderer.h>
 
@@ -118,6 +119,9 @@ void FarMapBlockMeshGenerateTask::inThread()
 	infostream<<"Generating FarMapBlock mesh for "
 			<<PP(source_block.p)<<std::endl;
 
+	ITextureSource *tsrc = far_map->client->getTextureSource();
+	IShaderSource *ssrc = far_map->client->getShaderSource();
+
 	MeshCollector collector;
 
 	// TODO
@@ -191,9 +195,24 @@ void FarMapBlockMeshGenerateTask::inThread()
 				MapBlock_LightColor(alpha, light_encoded, light_source),
 				core::vector2d<f32>(x0+w*abs_scale, y0));
 
+		// TODO: Don't do this; use a special texture atlas
+		std::string tile_name = "default_grass.png";
+
 		TileSpec t;
+		//t.texture_id = tsrc->getTextureId(tile_name);
+		//t.texture = tsrc->getTexture(t.texture_id);
 		t.alpha = alpha;
+		t.material_type = TILE_MATERIAL_BASIC;
 		t.material_flags &= ~MATERIAL_FLAG_BACKFACE_CULLING;
+
+		if (far_map->config_enable_shaders) {
+			// Fetch a basic node shader
+			enum NodeDrawType drawtype = NDT_NORMAL;
+			t.shader_id = ssrc->getShader(
+					"nodes_shader", t.material_type, drawtype);
+			bool normalmap_present = false;
+			t.flags_texture = tsrc->getShaderFlagsTexture(normalmap_present);
+		}
 
 		collector.append(t, vertices, 4, indices, 6);
 	}
@@ -246,17 +265,15 @@ void FarMapBlockMeshGenerateTask::inThread()
 		material.setFlag(video::EMF_BILINEAR_FILTER, false);
 		//material.setFlag(video::EMF_FOG_ENABLE, true); // TODO
 		material.setFlag(video::EMF_FOG_ENABLE, false);
-		//material.setTexture(0, p.tile.texture); // TODO
+		material.setTexture(0, p.tile.texture);
 
 		// TODO: A special texture atlas needs to be generated to be used here
 
 		if (p.tile.material_flags & MATERIAL_FLAG_HIGHLIGHTED) {
 			material.MaterialType = video::EMT_TRANSPARENT_ADD_COLOR;
 		} else {
-			// TODO: When shaders are enabled, use a special shader for this
-			p.tile.applyMaterialOptions(material);
-			/*if (far_map->config_enable_shaders) {
-				material.MaterialType = m_shdrsrc->getShaderInfo(p.tile.shader_id).material;
+			if (far_map->config_enable_shaders) {
+				material.MaterialType = ssrc->getShaderInfo(p.tile.shader_id).material;
 				p.tile.applyMaterialOptionsWithShaders(material);
 				if (p.tile.normal_texture) {
 					material.setTexture(1, p.tile.normal_texture);
@@ -264,7 +281,7 @@ void FarMapBlockMeshGenerateTask::inThread()
 				material.setTexture(2, p.tile.flags_texture);
 			} else {
 				p.tile.applyMaterialOptions(material);
-			}*/
+			}
 		}
 
 		// Create meshbuffer
@@ -277,6 +294,12 @@ void FarMapBlockMeshGenerateTask::inThread()
 		buf->drop();
 		buf->append(&p.vertices[0], p.vertices.size(),
 			&p.indices[0], p.indices.size());
+	}
+
+	if (far_map->config_enable_shaders) {
+		scene::IMeshManipulator* meshmanip =
+				far_map->client->getSceneManager()->getMeshManipulator();
+		meshmanip->recalculateTangents(mesh, true, false, false);
 	}
 }
 
@@ -338,7 +361,7 @@ FarMap::FarMap(
 		s32 id
 ):
 	scene::ISceneNode(parent, mgr, id),
-	m_client(client)
+	client(client)
 {
 	m_bounding_box = core::aabbox3d<f32>(-BS*1000000,-BS*1000000,-BS*1000000,
 			BS*1000000,BS*1000000,BS*1000000);
