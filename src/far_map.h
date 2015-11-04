@@ -144,7 +144,11 @@ public:
 	bool config_bilinear_filter;
 	bool config_anistropic_filter;
 
+	u32 farblock_shader_id;
+
 private:
+	void updateSettings();
+
 	FarMapWorkerThread m_worker_thread;
 
 	// Source data

@@ -206,11 +206,11 @@ void FarMapBlockMeshGenerateTask::inThread()
 		t.material_type = TILE_MATERIAL_BASIC;
 		t.material_flags &= ~MATERIAL_FLAG_BACKFACE_CULLING;
 
+		infostream<<"FarMapBlockMeshGenerate: enable_shaders="
+				<<(far_map->config_enable_shaders?"true":"false")<<std::endl;
+
 		if (far_map->config_enable_shaders) {
-			// Fetch a basic node shader
-			enum NodeDrawType drawtype = NDT_NORMAL;
-			t.shader_id = ssrc->getShader(
-					"whatever_shader", t.material_type, drawtype);
+			t.shader_id = far_map->farblock_shader_id;
 			bool normalmap_present = false;
 			t.flags_texture = tsrc->getShaderFlagsTexture(normalmap_present);
 		}
@@ -358,10 +358,13 @@ FarMap::FarMap(
 		s32 id
 ):
 	scene::ISceneNode(parent, mgr, id),
-	client(client)
+	client(client),
+	farblock_shader_id(0)
 {
 	m_bounding_box = core::aabbox3d<f32>(-BS*1000000,-BS*1000000,-BS*1000000,
 			BS*1000000,BS*1000000,BS*1000000);
+
+	updateSettings();
 	
 	m_worker_thread.start();
 }
@@ -453,10 +456,23 @@ void FarMap::insertGeneratedBlockMesh(v3s16 p, scene::SMesh *mesh)
 
 void FarMap::update()
 {
-	config_enable_shaders = g_settings->getBool("enable_shaders");
-	config_trilinear_filter = g_settings->getBool("trilinear_filter");
-	config_bilinear_filter = g_settings->getBool("bilinear_filter");
-	config_anistropic_filter = g_settings->getBool("anisotropic_filter");
+	updateSettings();
+
+	if (farblock_shader_id == 0 && config_enable_shaders) {
+		// Fetch a basic node shader
+		// NOTE: ShaderSource does not implement asynchronous fetching of
+		// shaders from the main thread like TextureSource. While it probably
+		// should do that, we can just fetch this id here for now as we use a
+		// static shader anyway.
+		u8 material_type = TILE_MATERIAL_BASIC;
+		enum NodeDrawType drawtype = NDT_NORMAL;
+		infostream<<"FarMapBlockMeshGenerate: Getting shader..."<<std::endl;
+		IShaderSource *ssrc = client->getShaderSource();
+		farblock_shader_id = ssrc->getShader(
+				"nodes_shader", material_type, drawtype);
+		infostream<<"FarMapBlockMeshGenerate: shader_id="<<farblock_shader_id
+				<<std::endl;
+	}
 
 	m_worker_thread.sync();
 }
@@ -477,6 +493,14 @@ void FarMap::updateCameraOffset(v3s16 camera_offset)
 			b->updateCameraOffset(camera_offset);
 		}
 	}
+}
+
+void FarMap::updateSettings()
+{
+	config_enable_shaders = g_settings->getBool("enable_shaders");
+	config_trilinear_filter = g_settings->getBool("trilinear_filter");
+	config_bilinear_filter = g_settings->getBool("bilinear_filter");
+	config_anistropic_filter = g_settings->getBool("anisotropic_filter");
 }
 
 static void renderBlock(FarMap *far_map, FarMapBlock *b, video::IVideoDriver* driver)
