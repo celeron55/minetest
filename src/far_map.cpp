@@ -224,7 +224,8 @@ static void extract_faces(MeshCollector *collector,
 		const std::vector<FarMapNode> &data,
 		const VoxelArea &data_area, const VoxelArea &gen_area,
 		const v3s16 &block_div,
-		const FarMap *far_map)
+		const FarMap *far_map,
+		size_t *profiler_num_faces_added)
 {
 	// At least one extra node at each edge is required. This enables speed
 	// optimization of lookups in this algorithm.
@@ -266,37 +267,43 @@ static void extract_faces(MeshCollector *collector,
 		/*if(f000.drawtype == NDT_){
 		}*/
 
-		if(s001 != -1){
+		if(s001 != 0){
 			if(s000 > s001){
 				add_face(collector, base_pf, n000, p000,  0,0,1, data,
 						data_area, block_div, far_map);
+				(*profiler_num_faces_added)++;
 			}
 			else if(s000 < s001){
 				v3s16 p001 = p000 + v3s16(0,0,1);
 				add_face(collector, base_pf, n001, p001, 0,0,-1, data,
 						data_area, block_div, far_map);
+				(*profiler_num_faces_added)++;
 			}
 		}
-		if(s010 != -1){
+		if(s010 != 0){
 			if(s000 > s010){
 				add_face(collector, base_pf, n000, p000,  0,1,0, data,
 						data_area, block_div, far_map);
+				(*profiler_num_faces_added)++;
 			}
 			else if(s000 < s010){
 				v3s16 p010 = p000 + v3s16(0,1,0);
 				add_face(collector, base_pf, n010, p010, 0,-1,0, data,
 						data_area, block_div, far_map);
+				(*profiler_num_faces_added)++;
 			}
 		}
-		if(s100 != -1){
+		if(s100 != 0){
 			if(s000 > s100){
 				add_face(collector, base_pf, n000, p000,  1,0,0, data,
 						data_area, block_div, far_map);
+				(*profiler_num_faces_added)++;
 			}
 			else if(s000 < s100){
 				v3s16 p100 = p000 + v3s16(1,0,0);
 				add_face(collector, base_pf, n100, p100, -1,0,0, data,
 						data_area, block_div, far_map);
+				(*profiler_num_faces_added)++;
 			}
 		}
 	}
@@ -328,14 +335,35 @@ void FarMapBlockMeshGenerateTask::inThread()
 	v3f base_pf = v3f(source_block.p.X, source_block.p.Y, source_block.p.Z)
 			* MAP_BLOCKSIZE * FMP_SCALE * BS;
 
+	size_t profiler_num_faces_added = 0;
+
 	extract_faces(&collector, base_pf, source_block.content, data_area,
-			gen_area, source_block.block_div, far_map);
+			gen_area, source_block.block_div, far_map,
+			&profiler_num_faces_added);
+
+	g_profiler->avg("Far: num faces per mesh", profiler_num_faces_added);
+	g_profiler->add("Far: num meshes generated", 1);
+	
 
 	// TODO
 
 	// Test
 	for (size_t i0=0; i0<5; i0++)
 	{
+		FarMapNode n000;
+		n000.id = 5;
+		n000.light = (15) | (15<<4);
+
+		v3s16 p000(
+			source_block.block_div.X * FMP_SCALE / 2,
+			source_block.block_div.Y * FMP_SCALE / 5 * i0,
+			source_block.block_div.Z * FMP_SCALE / 2
+		);
+
+		add_face(&collector, base_pf, n000, p000,  0,0,1, source_block.content,
+				data_area, source_block.block_div, far_map);
+
+#if 0
 		const u16 indices[] = {0,1,2,2,3,0};
 
 		v3s16 dir(0, 0, 1);
@@ -423,6 +451,7 @@ void FarMapBlockMeshGenerateTask::inThread()
 		}
 
 		collector.append(t, vertices, 4, indices, 6);
+#endif
 	}
 	
 	/*
