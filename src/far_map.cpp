@@ -19,14 +19,28 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "far_map.h"
 #include "constants.h"
+#include "util/numeric.h" // getContainerPos
 #include "irrlichttypes_extrabloated.h"
 #include <IMaterialRenderer.h>
 
-FarMapBlock::FarMapBlock(v3s16 p, v3s16 block_div):
+#define PP(x) "("<<(x).X<<","<<(x).Y<<","<<(x).Z<<")"
+
+FarMapBlock::FarMapBlock(v3s16 p):
 	p(p),
-	block_div(block_div),
 	mesh(NULL)
 {
+}
+
+FarMapBlock::~FarMapBlock()
+{
+	if(mesh)
+		mesh->drop();
+}
+
+void FarMapBlock::resize(v3s16 new_block_div)
+{
+	block_div = new_block_div;
+
 	v3s16 area_size(FMP_SCALE, FMP_SCALE, FMP_SCALE);
 
 	v3s16 total_size(
@@ -37,19 +51,6 @@ FarMapBlock::FarMapBlock(v3s16 p, v3s16 block_div):
 	size_t total_size_n = total_size.X * total_size.Y * total_size.Z;
 
 	content.resize(total_size_n);
-}
-
-FarMapBlock::~FarMapBlock()
-{
-	mesh->drop();
-}
-
-void FarMapBlock::setMesh(scene::SMesh *new_mesh)
-{
-	if(mesh)
-		mesh->drop();
-	new_mesh->grab();
-	mesh = new_mesh;
 }
 
 FarMapSector::FarMapSector(v2s16 p):
@@ -77,7 +78,7 @@ FarMapBlock* FarMapSector::getOrCreateBlock(s16 y)
 }
 
 FarMapBlockMeshGenerateTask::FarMapBlockMeshGenerateTask(
-		FarMap *far_map, const FarMapBlock &source_block),
+		FarMap *far_map, const FarMapBlock &source_block):
 	far_map(far_map),
 	source_block(source_block),
 	mesh(NULL)
@@ -92,31 +93,59 @@ FarMapBlockMeshGenerateTask::~FarMapBlockMeshGenerateTask()
 
 void FarMapBlockMeshGenerateTask::inThread()
 {
+	infostream<<"Generating FarMapBlock mesh for "
+			<<PP(source_block.p)<<std::endl;
 	// TODO
 }
 
-void FarMapBlockMeshGenerateTask::afterThread()
+void FarMapBlockMeshGenerateTask::sync()
 {
-	// TODO
+	if(mesh){
+		far_map->insertGeneratedBlockMesh(source_block.p, mesh);
+		mesh->drop();
+		mesh = NULL;
+	} else {
+		infostream<<"No FarMapBlock mesh result for "
+				<<PP(source_block.p)<<std::endl;
+	}
+}
+
+FarMapWorkerThread::~FarMapWorkerThread()
+{
+	// TODO: Delete remaining tasks from both queues
+}
+
+void FarMapWorkerThread::addTask(FarMapTask *task)
+{
+	m_queue_in.push_back(task);
+	deferUpdate();
+}
+
+void FarMapWorkerThread::sync()
+{
+	for(;;){
+		try {
+			FarMapTask *t = m_queue_sync.pop_front(0);
+			infostream<<"FarMapWorkerThread: Running task in sync"<<std::endl;
+			t->sync();
+			delete t;
+		} catch(ItemNotFoundException &e){
+			break;
+		}
+	}
 }
 
 void FarMapWorkerThread::doUpdate()
 {
-	QueuedFarMapWorker *q;
-	while ((q = m_queue_in.pop())) {
-
-		ScopeProfiler sp(g_profiler, "Client: Mesh making");
-
-		MapBlockMesh *mesh_new = new MapBlockMesh(q->data, m_camera_offset);
-
-		FarMapWorkerResult r;
-		r.p = q->p;
-		r.mesh = mesh_new;
-		r.ack_block_to_server = q->ack_block_to_server;
-
-		m_queue_out.push_back(r);
-
-		delete q;
+	for(;;){
+		try {
+			FarMapTask *t = m_queue_in.pop_front(250);
+			infostream<<"FarMapWorkerThread: Running task in thread"<<std::endl;
+			t->inThread();
+			m_queue_sync.push_back(t);
+		} catch(ItemNotFoundException &e){
+			break;
+		}
 	}
 }
 
@@ -131,6 +160,8 @@ FarMap::FarMap(
 {
 	m_bounding_box = core::aabbox3d<f32>(-BS*1000000,-BS*1000000,-BS*1000000,
 			BS*1000000,BS*1000000,BS*1000000);
+	
+	m_worker_thread.start();
 }
 
 FarMap::~FarMap()
@@ -165,24 +196,35 @@ void FarMap::insertData(v3s16 area_offset_mapblocks, v3s16 area_size_mapblocks,
 		v3s16 block_div,
 		const std::vector<u16> &node_ids, const std::vector<u8> &lights)
 {
+	infostream<<"FarMap::insertData: "
+			<<"area_offset_mapblocks: "<<PP(area_offset_mapblocks)
+			<<", area_size_mapblocks: "<<PP(area_size_mapblocks)
+			<<", block_div: "<<PP(block_div)
+			<<", node_ids.size(): "<<node_ids.size()
+			<<", lights.size(): "<<lights.size()
+			<<std::endl;
 	// Convert to FarMapBlock positions
 	// Inclusive
 	v3s16 area_p0 = getContainerPos(area_offset_mapblocks, FMP_SCALE);
-	// Exclusive
+	// Inclusive
 	v3s16 area_p1 = getContainerPos(
-			area_offset_mapblocks + area_size_mapblocks, FMP_SCALE);
+			area_offset_mapblocks + area_size_mapblocks - v3s16(1,1,1), FMP_SCALE);
 
 	v3s16 fbp;
-	for (fbp.Y=area_p0.Y; fbp.Y<area_p1.Y; fbp.Y++)
-	for (fbp.X=area_p0.X; fbp.X<area_p1.X; fbp.X++)
-	for (fbp.Z=area_p0.Z; fbp.Z<area_p1.Z; fbp.Z++) {
+	for (fbp.Y=area_p0.Y; fbp.Y<=area_p1.Y; fbp.Y++)
+	for (fbp.X=area_p0.X; fbp.X<=area_p1.X; fbp.X++)
+	for (fbp.Z=area_p0.Z; fbp.Z<=area_p1.Z; fbp.Z++) {
+		infostream<<"FarMap::insertData: FarBlock "<<PP(fbp)<<std::endl;
+
 		FarMapBlock *b = getOrCreateBlock(fbp);
+		
+		b->resize(block_div);
 
 		// TODO: Remove this
-		b->content[0] = 5;
-		b->content[10] = 6;
-		b->content[20] = 7;
-		b->content[30] = 8;
+		b->content[0].id = 5;
+		b->content[10].id = 6;
+		b->content[20].id = 7;
+		b->content[30].id = 8;
 
 		// TODO: Copy stuff into b
 
@@ -190,17 +232,23 @@ void FarMap::insertData(v3s16 area_offset_mapblocks, v3s16 area_size_mapblocks,
 	}
 }
 
-void FarMap::startGeneratingBlockMesh(v3s16 p)
+void FarMap::startGeneratingBlockMesh(FarMapBlock *b)
 {
-	// TODO
+	FarMapBlockMeshGenerateTask *t = new FarMapBlockMeshGenerateTask(this, *b);
+
+	m_worker_thread.addTask(t);
 }
 
 void FarMap::insertGeneratedBlockMesh(v3s16 p, scene::SMesh *mesh)
 {
-	// TODO
+	FarMapBlock *b = getOrCreateBlock(p);
+	if(b->mesh)
+		b->mesh->drop();
+	mesh->grab();
+	b->mesh = mesh;
 }
 
-void update()
+void FarMap::update()
 {
 	m_worker_thread.sync();
 }
@@ -208,6 +256,8 @@ void update()
 static void renderBlock(FarMapBlock *b, video::IVideoDriver* driver)
 {
 	scene::SMesh *mesh = b->mesh;
+	if(!mesh)
+		return;
 
 	u32 c = mesh->getMeshBufferCount();
 	for(u32 i=0; i<c; i++)

@@ -30,6 +30,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "server.h"
 #include "strfnd.h"
 #include "network/clientopcodes.h"
+#include "far_map.h"
 #include "util/serialize.h"
 #include "util/srp.h"
 
@@ -1264,8 +1265,11 @@ void Client::handleCommand_FarBlocksResult(NetworkPacket* pkt_in)
 	for(size_t i=0; i<total_size_n; i++)
 		*pkt_in >> lights[i];
 
-	// TODO: Shove the data somewhere to be rendered efficiently
+	// Shove the data into FarMap to be rendered efficiently
+	m_far_map->insertData(area_offset, area_size, block_div, node_ids, lights);
 
+#if 0
+	// TODO: Remove
 	// Create MapBlocks according to the received data
 	v3s16 bp;
 	for (bp.Y=area_offset.Y; bp.Y<area_offset.Y+area_size.Y; bp.Y++)
@@ -1356,5 +1360,6 @@ void Client::handleCommand_FarBlocksResult(NetworkPacket* pkt_in)
 		// Add it to mesh update queue, with no acknowledgement to the server
 		addUpdateMeshTaskWithEdge(bp, false);
 	}
+#endif
 }
 

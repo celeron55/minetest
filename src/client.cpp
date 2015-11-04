@@ -703,6 +703,9 @@ void Client::step(float dtime)
 
 		Send(&pkt);
 	}
+
+	// Update FarMap
+	m_far_map->update();
 }
 
 bool Client::loadMedia(const std::string &data, const std::string &filename)

@@ -20,12 +20,15 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define __FAR_MAP_H__
 
 #include "irrlichttypes_bloated.h"
+#include "util/thread.h" // UpdateThread
 #include <ISceneNode.h>
+#include <SMesh.h>
 #include <vector>
 #include <map>
 
 class Client;
 //class ITextureSource;
+struct FarMap;
 
 // FarMapBlock size in MapBlocks in every dimension
 #define FMP_SCALE 8
@@ -47,8 +50,10 @@ struct FarMapBlock
 
 	scene::SMesh *mesh;
 
-	FarMapBlock(v3s16 p, v3s16 block_div);
+	FarMapBlock(v3s16 p);
 	~FarMapBlock();
+
+	void resize(v3s16 new_block_div);
 
 	void generateMesh(scene::SMesh *new_mesh);
 };
@@ -69,7 +74,7 @@ struct FarMapTask
 {
 	virtual ~FarMapTask(){}
 	virtual void inThread() = 0;
-	virtual void afterThread() = 0;
+	virtual void sync() = 0;
 };
 
 struct FarMapBlockMeshGenerateTask: public FarMapTask
@@ -81,13 +86,14 @@ struct FarMapBlockMeshGenerateTask: public FarMapTask
 	FarMapBlockMeshGenerateTask(FarMap *far_map, const FarMapBlock &source_block);
 	~FarMapBlockMeshGenerateTask();
 	void inThread();
-	void afterThread();
+	void sync();
 };
 
 class FarMapWorkerThread: public UpdateThread
 {
 public:
 	FarMapWorkerThread(): UpdateThread("FarMapWorker") {}
+	~FarMapWorkerThread();
 
 	void addTask(FarMapTask *task);
 	void sync();
@@ -95,7 +101,8 @@ public:
 private:
 	void doUpdate();
 
-	MutexedQueue<FarMapTask> m_queue_in;
+	MutexedQueue<FarMapTask*> m_queue_in;
+	MutexedQueue<FarMapTask*> m_queue_sync;
 	//v3s16 m_camera_offset; // TODO
 };
 
@@ -118,7 +125,7 @@ public:
 			v3s16 block_div,
 			const std::vector<u16> &node_ids, const std::vector<u8> &lights);
 
-	void startGeneratingBlockMesh(v3s16 p);
+	void startGeneratingBlockMesh(FarMapBlock *b);
 	void insertGeneratedBlockMesh(v3s16 p, scene::SMesh *mesh);
 
 	void update();
