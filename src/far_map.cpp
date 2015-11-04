@@ -122,7 +122,9 @@ void FarMapBlockMeshGenerateTask::inThread()
 
 	// TODO
 
-	{ // Test
+	// Test
+	for (size_t i0=0; i0<5; i0++)
+	{
 		const u16 indices[] = {0,1,2,2,3,0};
 
 		v3s16 dir(0, 0, 1);
@@ -137,7 +139,8 @@ void FarMapBlockMeshGenerateTask::inThread()
 
 		v3f pf = v3f(source_block.p.X, source_block.p.Y, source_block.p.Z)
 				* MAP_BLOCKSIZE * FMP_SCALE * BS;
-		pf += v3f(0.5, 0.5, 0.5) * MAP_BLOCKSIZE * FMP_SCALE * BS;
+		pf += v3f(0.5, 0.0, 0.5) * MAP_BLOCKSIZE * FMP_SCALE * BS;
+		pf.Y += 0.2 * MAP_BLOCKSIZE * FMP_SCALE * BS * i0;
 
 		v3f vertex_pos[4];
 		for(u16 i=0; i<4; i++)
@@ -238,10 +241,12 @@ void FarMapBlockMeshGenerateTask::inThread()
 		// Create material
 		video::SMaterial material;
 		material.setFlag(video::EMF_LIGHTING, false);
-		material.setFlag(video::EMF_BACK_FACE_CULLING, true);
+		//material.setFlag(video::EMF_BACK_FACE_CULLING, true); // TODO
+		material.setFlag(video::EMF_BACK_FACE_CULLING, false);
 		material.setFlag(video::EMF_BILINEAR_FILTER, false);
-		material.setFlag(video::EMF_FOG_ENABLE, true);
-		material.setTexture(0, p.tile.texture);
+		//material.setFlag(video::EMF_FOG_ENABLE, true); // TODO
+		material.setFlag(video::EMF_FOG_ENABLE, false);
+		//material.setTexture(0, p.tile.texture); // TODO
 
 		if (p.tile.material_flags & MATERIAL_FLAG_HIGHLIGHTED) {
 			material.MaterialType = video::EMT_TRANSPARENT_ADD_COLOR;
@@ -455,10 +460,14 @@ void FarMap::updateCameraOffset(v3s16 camera_offset)
 static void renderBlock(FarMap *far_map, FarMapBlock *b, video::IVideoDriver* driver)
 {
 	scene::SMesh *mesh = b->mesh;
-	if(!mesh)
+	if(!mesh){
+		infostream<<"FarMap::renderBlock: "<<PP(b->p)<<": No mesh"<<std::endl;
 		return;
+	}
 
 	u32 c = mesh->getMeshBufferCount();
+	infostream<<"FarMap::renderBlock: "<<PP(b->p)<<": Rendering "
+			<<c<<" meshbuffers"<<std::endl;
 	for(u32 i=0; i<c; i++)
 	{
 		scene::IMeshBuffer *buf = mesh->getMeshBuffer(i);
