@@ -165,7 +165,7 @@ void FarMapBlockMeshGenerateTask::inThread()
 		u8 alpha = 255;
 
 		// As produced by getFaceLight (day | (night << 8))
-		u16 light_encoded = (255<<8) || (255);
+		u16 light_encoded = (255) | (255<<8);
 		// Light produced by the node itself
 		u8 light_source = 0;
 
@@ -196,11 +196,12 @@ void FarMapBlockMeshGenerateTask::inThread()
 				core::vector2d<f32>(x0+w*abs_scale, y0));
 
 		// TODO: Don't do this; use a special texture atlas
-		std::string tile_name = "default_grass.png";
+		//std::string tile_name = "default_grass.png";
+		std::string tile_name = "unknown_node.png";
 
 		TileSpec t;
-		//t.texture_id = tsrc->getTextureId(tile_name);
-		//t.texture = tsrc->getTexture(t.texture_id);
+		t.texture_id = tsrc->getTextureId(tile_name);
+		t.texture = tsrc->getTexture(t.texture_id);
 		t.alpha = alpha;
 		t.material_type = TILE_MATERIAL_BASIC;
 		t.material_flags &= ~MATERIAL_FLAG_BACKFACE_CULLING;
@@ -209,7 +210,7 @@ void FarMapBlockMeshGenerateTask::inThread()
 			// Fetch a basic node shader
 			enum NodeDrawType drawtype = NDT_NORMAL;
 			t.shader_id = ssrc->getShader(
-					"nodes_shader", t.material_type, drawtype);
+					"whatever_shader", t.material_type, drawtype);
 			bool normalmap_present = false;
 			t.flags_texture = tsrc->getShaderFlagsTexture(normalmap_present);
 		}
@@ -269,19 +270,15 @@ void FarMapBlockMeshGenerateTask::inThread()
 
 		// TODO: A special texture atlas needs to be generated to be used here
 
-		if (p.tile.material_flags & MATERIAL_FLAG_HIGHLIGHTED) {
-			material.MaterialType = video::EMT_TRANSPARENT_ADD_COLOR;
-		} else {
-			if (far_map->config_enable_shaders) {
-				material.MaterialType = ssrc->getShaderInfo(p.tile.shader_id).material;
-				p.tile.applyMaterialOptionsWithShaders(material);
-				if (p.tile.normal_texture) {
-					material.setTexture(1, p.tile.normal_texture);
-				}
-				material.setTexture(2, p.tile.flags_texture);
-			} else {
-				p.tile.applyMaterialOptions(material);
+		if (far_map->config_enable_shaders) {
+			material.MaterialType = ssrc->getShaderInfo(p.tile.shader_id).material;
+			p.tile.applyMaterialOptionsWithShaders(material);
+			if (p.tile.normal_texture) {
+				material.setTexture(1, p.tile.normal_texture);
 			}
+			material.setTexture(2, p.tile.flags_texture);
+		} else {
+			p.tile.applyMaterialOptions(material);
 		}
 
 		// Create meshbuffer
