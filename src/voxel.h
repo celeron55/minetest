@@ -288,24 +288,45 @@ public:
 	}
 
 	// Translate index in the X coordinate
-	void add_x(const v3s16 &extent, u32 &i, s16 a)
+	void add_x(const v3s16 &extent, u32 &i, s16 a) const
 	{
 		i += a;
 	}
 	// Translate index in the Y coordinate
-	void add_y(const v3s16 &extent, u32 &i, s16 a)
+	void add_y(const v3s16 &extent, u32 &i, s16 a) const
 	{
 		i += a * extent.X;
 	}
 	// Translate index in the Z coordinate
-	void add_z(const v3s16 &extent, u32 &i, s16 a)
+	void add_z(const v3s16 &extent, u32 &i, s16 a) const
 	{
 		i += a * extent.X*extent.Y;
 	}
 	// Translate index in space
-	void add_p(const v3s16 &extent, u32 &i, v3s16 a)
+	void add_p(const v3s16 &extent, u32 &i, v3s16 a) const
 	{
 		i += a.Z*extent.X*extent.Y + a.Y*extent.X + a.X;
+	}
+
+	// Translate index in the X coordinate
+	u32 added_x(const v3s16 &extent, u32 i, s16 a) const
+	{
+		return i + a;
+	}
+	// Translate index in the Y coordinate
+	u32 added_y(const v3s16 &extent, u32 i, s16 a) const
+	{
+		return i + a * extent.X;
+	}
+	// Translate index in the Z coordinate
+	u32 added_z(const v3s16 &extent, u32 i, s16 a) const
+	{
+		return i + a * extent.X*extent.Y;
+	}
+	// Translate index in space
+	u32 added_p(const v3s16 &extent, u32 i, v3s16 a) const
+	{
+		return i + a.Z*extent.X*extent.Y + a.Y*extent.X + a.X;
 	}
 
 	/*
