@@ -193,6 +193,7 @@ void FarMapBlockMeshGenerateTask::inThread()
 
 		TileSpec t;
 		t.alpha = alpha;
+		t.material_flags &= ~MATERIAL_FLAG_BACKFACE_CULLING;
 
 		collector.append(t, vertices, 4, indices, 6);
 	}
@@ -241,12 +242,13 @@ void FarMapBlockMeshGenerateTask::inThread()
 		// Create material
 		video::SMaterial material;
 		material.setFlag(video::EMF_LIGHTING, false);
-		//material.setFlag(video::EMF_BACK_FACE_CULLING, true); // TODO
-		material.setFlag(video::EMF_BACK_FACE_CULLING, false);
+		material.setFlag(video::EMF_BACK_FACE_CULLING, true);
 		material.setFlag(video::EMF_BILINEAR_FILTER, false);
 		//material.setFlag(video::EMF_FOG_ENABLE, true); // TODO
 		material.setFlag(video::EMF_FOG_ENABLE, false);
 		//material.setTexture(0, p.tile.texture); // TODO
+
+		// TODO: A special texture atlas needs to be generated to be used here
 
 		if (p.tile.material_flags & MATERIAL_FLAG_HIGHLIGHTED) {
 			material.MaterialType = video::EMT_TRANSPARENT_ADD_COLOR;
@@ -461,13 +463,13 @@ static void renderBlock(FarMap *far_map, FarMapBlock *b, video::IVideoDriver* dr
 {
 	scene::SMesh *mesh = b->mesh;
 	if(!mesh){
-		infostream<<"FarMap::renderBlock: "<<PP(b->p)<<": No mesh"<<std::endl;
+		//infostream<<"FarMap::renderBlock: "<<PP(b->p)<<": No mesh"<<std::endl;
 		return;
 	}
 
 	u32 c = mesh->getMeshBufferCount();
-	infostream<<"FarMap::renderBlock: "<<PP(b->p)<<": Rendering "
-			<<c<<" meshbuffers"<<std::endl;
+	/*infostream<<"FarMap::renderBlock: "<<PP(b->p)<<": Rendering "
+			<<c<<" meshbuffers"<<std::endl;*/
 	for(u32 i=0; i<c; i++)
 	{
 		scene::IMeshBuffer *buf = mesh->getMeshBuffer(i);
