@@ -264,8 +264,7 @@ void FarMapBlockMeshGenerateTask::inThread()
 		material.setFlag(video::EMF_LIGHTING, false);
 		material.setFlag(video::EMF_BACK_FACE_CULLING, true);
 		material.setFlag(video::EMF_BILINEAR_FILTER, false);
-		//material.setFlag(video::EMF_FOG_ENABLE, true); // TODO
-		material.setFlag(video::EMF_FOG_ENABLE, false);
+		material.setFlag(video::EMF_FOG_ENABLE, true);
 		material.setTexture(0, p.tile.texture);
 
 		// TODO: A special texture atlas needs to be generated to be used here

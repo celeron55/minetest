@@ -3889,12 +3889,19 @@ void Game::updateFrame(std::vector<aabb3f> &highlight_boxes,
 	if (draw_control->range_all) {
 		runData->fog_range = 100000 * BS;
 	} else {
-		runData->fog_range = draw_control->wanted_range * BS
-				+ 0.0 * MAP_BLOCKSIZE * BS;
-		runData->fog_range = MYMIN(
-				runData->fog_range,
-				(draw_control->farthest_drawn + 20) * BS);
-		runData->fog_range *= 0.9;
+		// TODO
+		bool farmap_enabled = true;
+		if (farmap_enabled) {
+			// TODO: Get current range from FarMap
+			runData->fog_range = 1000 * BS;
+		} else {
+			runData->fog_range = draw_control->wanted_range * BS
+					+ 0.0 * MAP_BLOCKSIZE * BS;
+			runData->fog_range = MYMIN(
+					runData->fog_range,
+					(draw_control->farthest_drawn + 20) * BS);
+			runData->fog_range *= 0.9;
+		}
 	}
 
 	/*
