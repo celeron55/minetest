@@ -19,6 +19,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "far_map.h"
 #include "constants.h"
+#include "settings.h"
+#include "mapblock_mesh.h" // MeshCollector
+#include "mesh.h" // translateMesh
 #include "util/numeric.h" // getContainerPos
 #include "irrlichttypes_extrabloated.h"
 #include <IMaterialRenderer.h>
@@ -53,6 +56,22 @@ void FarMapBlock::resize(v3s16 new_block_div)
 	content.resize(total_size_n);
 }
 
+void FarMapBlock::updateCameraOffset(v3s16 camera_offset)
+{
+	if (!mesh) return;
+
+	if (camera_offset != current_camera_offset) {
+		translateMesh(mesh, intToFloat(current_camera_offset-camera_offset, BS));
+		current_camera_offset = camera_offset;
+	}
+}
+
+void FarMapBlock::resetCameraOffset(v3s16 camera_offset)
+{
+	current_camera_offset = v3s16(0, 0, 0);
+	updateCameraOffset(camera_offset);
+}
+
 FarMapSector::FarMapSector(v2s16 p):
 	p(p)
 {
@@ -78,11 +97,14 @@ FarMapBlock* FarMapSector::getOrCreateBlock(s16 y)
 }
 
 FarMapBlockMeshGenerateTask::FarMapBlockMeshGenerateTask(
-		FarMap *far_map, const FarMapBlock &source_block):
+		FarMap *far_map, const FarMapBlock &source_block_):
 	far_map(far_map),
-	source_block(source_block),
+	source_block(source_block_),
 	mesh(NULL)
 {
+	// We don't want to deal with whatever mesh the block is currently holding;
+	// set it to NULL so that no destructor will drop it.
+	source_block.mesh = NULL;
 }
 
 FarMapBlockMeshGenerateTask::~FarMapBlockMeshGenerateTask()
@@ -95,7 +117,160 @@ void FarMapBlockMeshGenerateTask::inThread()
 {
 	infostream<<"Generating FarMapBlock mesh for "
 			<<PP(source_block.p)<<std::endl;
+
+	MeshCollector collector;
+
 	// TODO
+
+	{ // Test
+		const u16 indices[] = {0,1,2,2,3,0};
+
+		v3s16 dir(0, 0, 1);
+		v3s16 vertex_dirs[4];
+		getNodeVertexDirs(dir, vertex_dirs);
+
+		v3f scale(
+			MAP_BLOCKSIZE / source_block.block_div.X,
+			MAP_BLOCKSIZE / source_block.block_div.Y,
+			MAP_BLOCKSIZE / source_block.block_div.Z
+		);
+
+		v3f pf = v3f(source_block.p.X, source_block.p.Y, source_block.p.Z)
+				* MAP_BLOCKSIZE * FMP_SCALE * BS;
+		pf += v3f(0.5, 0.5, 0.5) * MAP_BLOCKSIZE * FMP_SCALE * BS;
+
+		v3f vertex_pos[4];
+		for(u16 i=0; i<4; i++)
+		{
+			vertex_pos[i] = v3f(
+					BS/2*vertex_dirs[i].X,
+					BS/2*vertex_dirs[i].Y,
+					BS/2*vertex_dirs[i].Z
+			);
+			vertex_pos[i].X *= scale.X;
+			vertex_pos[i].Y *= scale.Y;
+			vertex_pos[i].Z *= scale.Z;
+			vertex_pos[i] += pf;
+		}
+
+		v3f normal(dir.X, dir.Y, dir.Z);
+
+		u8 alpha = 255;
+
+		// As produced by getFaceLight (day | (night << 8))
+		u16 light_encoded = (255<<8) || (255);
+		// Light produced by the node itself
+		u8 light_source = 0;
+
+		// Some kind of texture coordinate aspect stretch thing
+		f32 abs_scale = 1.0;
+		if     (scale.X < 0.999 || scale.X > 1.001) abs_scale = scale.X;
+		else if(scale.Y < 0.999 || scale.Y > 1.001) abs_scale = scale.Y;
+		else if(scale.Z < 0.999 || scale.Z > 1.001) abs_scale = scale.Z;
+
+		// Texture coordinates
+		float x0 = 0.0;
+		float y0 = 0.0;
+		float w = 1.0;
+		float h = 1.0;
+
+		video::S3DVertex vertices[4];
+		vertices[0] = video::S3DVertex(vertex_pos[0], normal,
+				MapBlock_LightColor(alpha, light_encoded, light_source),
+				core::vector2d<f32>(x0+w*abs_scale, y0+h));
+		vertices[1] = video::S3DVertex(vertex_pos[1], normal,
+				MapBlock_LightColor(alpha, light_encoded, light_source),
+				core::vector2d<f32>(x0, y0+h));
+		vertices[2] = video::S3DVertex(vertex_pos[2], normal,
+				MapBlock_LightColor(alpha, light_encoded, light_source),
+				core::vector2d<f32>(x0, y0));
+		vertices[3] = video::S3DVertex(vertex_pos[3], normal,
+				MapBlock_LightColor(alpha, light_encoded, light_source),
+				core::vector2d<f32>(x0+w*abs_scale, y0));
+
+		TileSpec t;
+		t.alpha = alpha;
+
+		collector.append(t, vertices, 4, indices, 6);
+	}
+	
+	/*
+		Convert MeshCollector to SMesh
+	*/
+
+	assert(mesh == NULL);
+	mesh = new scene::SMesh();
+
+	for(u32 i = 0; i < collector.prebuffers.size(); i++)
+	{
+		PreMeshBuffer &p = collector.prebuffers[i];
+
+		for(u32 j = 0; j < p.vertices.size(); j++)
+		{
+			video::S3DVertexTangents *vertex = &p.vertices[j];
+			// Note applyFacesShading second parameter is precalculated sqrt
+			// value for speed improvement
+			// Skip it for lightsources and top faces.
+			video::SColor &vc = vertex->Color;
+			if (!vc.getBlue()) {
+				if (vertex->Normal.Y < -0.5) {
+					applyFacesShading (vc, 0.447213);
+				} else if (vertex->Normal.X > 0.5) {
+					applyFacesShading (vc, 0.670820);
+				} else if (vertex->Normal.X < -0.5) {
+					applyFacesShading (vc, 0.670820);
+				} else if (vertex->Normal.Z > 0.5) {
+					applyFacesShading (vc, 0.836660);
+				} else if (vertex->Normal.Z < -0.5) {
+					applyFacesShading (vc, 0.836660);
+				}
+			}
+			if(!far_map->config_enable_shaders)
+			{
+				// - Classic lighting (shaders handle this by themselves)
+				// Set initial real color and store for later updates
+				u8 day = vc.getRed();
+				u8 night = vc.getGreen();
+				finalColorBlend(vc, day, night, 1000);
+			}
+		}
+
+		// Create material
+		video::SMaterial material;
+		material.setFlag(video::EMF_LIGHTING, false);
+		material.setFlag(video::EMF_BACK_FACE_CULLING, true);
+		material.setFlag(video::EMF_BILINEAR_FILTER, false);
+		material.setFlag(video::EMF_FOG_ENABLE, true);
+		material.setTexture(0, p.tile.texture);
+
+		if (p.tile.material_flags & MATERIAL_FLAG_HIGHLIGHTED) {
+			material.MaterialType = video::EMT_TRANSPARENT_ADD_COLOR;
+		} else {
+			// TODO: When shaders are enabled, use a special shader for this
+			p.tile.applyMaterialOptions(material);
+			/*if (far_map->config_enable_shaders) {
+				material.MaterialType = m_shdrsrc->getShaderInfo(p.tile.shader_id).material;
+				p.tile.applyMaterialOptionsWithShaders(material);
+				if (p.tile.normal_texture) {
+					material.setTexture(1, p.tile.normal_texture);
+				}
+				material.setTexture(2, p.tile.flags_texture);
+			} else {
+				p.tile.applyMaterialOptions(material);
+			}*/
+		}
+
+		// Create meshbuffer
+		scene::SMeshBufferTangents *buf = new scene::SMeshBufferTangents();
+		// Set material
+		buf->Material = material;
+		// Add to mesh
+		mesh->addMeshBuffer(buf);
+		// Mesh grabbed it
+		buf->drop();
+		buf->append(&p.vertices[0], p.vertices.size(),
+			&p.indices[0], p.indices.size());
+	}
 }
 
 void FarMapBlockMeshGenerateTask::sync()
@@ -246,14 +421,38 @@ void FarMap::insertGeneratedBlockMesh(v3s16 p, scene::SMesh *mesh)
 		b->mesh->drop();
 	mesh->grab();
 	b->mesh = mesh;
+	b->resetCameraOffset(m_camera_offset);
 }
 
 void FarMap::update()
 {
+	config_enable_shaders = g_settings->getBool("enable_shaders");
+	config_trilinear_filter = g_settings->getBool("trilinear_filter");
+	config_bilinear_filter = g_settings->getBool("bilinear_filter");
+	config_anistropic_filter = g_settings->getBool("anisotropic_filter");
+
 	m_worker_thread.sync();
 }
 
-static void renderBlock(FarMapBlock *b, video::IVideoDriver* driver)
+void FarMap::updateCameraOffset(v3s16 camera_offset)
+{
+	if (camera_offset == m_camera_offset) return;
+
+	m_camera_offset = camera_offset;
+
+	for (std::map<v2s16, FarMapSector*>::iterator i = m_sectors.begin();
+			i != m_sectors.end(); i++) {
+		FarMapSector *s = i->second;
+
+		for (std::map<s16, FarMapBlock*>::iterator i = s->blocks.begin();
+				i != s->blocks.end(); i++) {
+			FarMapBlock *b = i->second;
+			b->updateCameraOffset(camera_offset);
+		}
+	}
+}
+
+static void renderBlock(FarMap *far_map, FarMapBlock *b, video::IVideoDriver* driver)
 {
 	scene::SMesh *mesh = b->mesh;
 	if(!mesh)
@@ -263,10 +462,12 @@ static void renderBlock(FarMapBlock *b, video::IVideoDriver* driver)
 	for(u32 i=0; i<c; i++)
 	{
 		scene::IMeshBuffer *buf = mesh->getMeshBuffer(i);
-		// TODO
-		//buf->getMaterial().setFlag(video::EMF_TRILINEAR_FILTER, m_cache_trilinear_filter);
-		//buf->getMaterial().setFlag(video::EMF_BILINEAR_FILTER, m_cache_bilinear_filter);
-		//buf->getMaterial().setFlag(video::EMF_ANISOTROPIC_FILTER, m_cache_anistropic_filter);
+		buf->getMaterial().setFlag(video::EMF_TRILINEAR_FILTER,
+				far_map->config_trilinear_filter);
+		buf->getMaterial().setFlag(video::EMF_BILINEAR_FILTER,
+				far_map->config_bilinear_filter);
+		buf->getMaterial().setFlag(video::EMF_ANISOTROPIC_FILTER,
+				far_map->config_anistropic_filter);
 
 		const video::SMaterial& material = buf->getMaterial();
 
@@ -288,7 +489,7 @@ void FarMap::render()
 		for (std::map<s16, FarMapBlock*>::iterator i = s->blocks.begin();
 				i != s->blocks.end(); i++) {
 			FarMapBlock *b = i->second;
-			renderBlock(b, driver);
+			renderBlock(this, b, driver);
 		}
 	}
 }

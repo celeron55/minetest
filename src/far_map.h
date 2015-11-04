@@ -49,13 +49,14 @@ struct FarMapBlock
 	std::vector<FarMapNode> content;
 
 	scene::SMesh *mesh;
+	v3s16 current_camera_offset;
 
 	FarMapBlock(v3s16 p);
 	~FarMapBlock();
 
 	void resize(v3s16 new_block_div);
-
-	void generateMesh(scene::SMesh *new_mesh);
+	void updateCameraOffset(v3s16 camera_offset);
+	void resetCameraOffset(v3s16 camera_offset = v3s16(0, 0, 0));
 };
 
 struct FarMapSector
@@ -129,11 +130,17 @@ public:
 	void insertGeneratedBlockMesh(v3s16 p, scene::SMesh *mesh);
 
 	void update();
+	void updateCameraOffset(v3s16 camera_offset);
 
 	// ISceneNode methods
 	void OnRegisterSceneNode();
 	void render();
 	const core::aabbox3d<f32>& getBoundingBox() const;
+
+	bool config_enable_shaders;
+	bool config_trilinear_filter;
+	bool config_bilinear_filter;
+	bool config_anistropic_filter;
 
 private:
 	Client *m_client;
@@ -144,6 +151,7 @@ private:
 
 	// Rendering stuff
 	core::aabbox3d<f32> m_bounding_box;
+	v3s16 m_camera_offset;
 };
 
 #endif

@@ -1711,6 +1711,13 @@ void Client::addUpdateMeshTaskForNode(v3s16 nodepos, bool ack_to_server, bool ur
 	}
 }
 
+void Client::updateCameraOffset(v3s16 camera_offset)
+{
+	m_mesh_update_thread.m_camera_offset = camera_offset;
+
+	m_far_map->updateCameraOffset(camera_offset);
+}
+
 ClientEvent Client::getClientEvent()
 {
 	ClientEvent event;
