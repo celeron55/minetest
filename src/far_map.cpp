@@ -34,6 +34,7 @@ FarBlock::FarBlock(v3s16 p):
 	p(p),
 	mesh(NULL)
 {
+	mapblock_meshes.resize(FMP_SCALE * FMP_SCALE * FMP_SCALE);
 }
 
 FarBlock::~FarBlock()
@@ -83,9 +84,6 @@ void FarBlock::resize(v3s16 new_block_div)
 	size_t content_size_n = content_area.getVolume();
 
 	content.resize(content_size_n);
-
-	mapblock_meshes.clear();
-	mapblock_meshes.resize(FMP_SCALE * FMP_SCALE * FMP_SCALE);
 }
 
 void FarBlock::updateCameraOffset(v3s16 camera_offset)
@@ -289,9 +287,9 @@ static void extract_faces(MeshCollector *collector,
 	v3s16 data_extent = data_area.getExtent();
 
 	v3s16 p000;
-	for (p000.Y=gen_area.MinEdge.Y; p000.Y<=gen_area.MaxEdge.Y; p000.Y++)
-	for (p000.X=gen_area.MinEdge.X; p000.X<=gen_area.MaxEdge.X; p000.X++)
-	for (p000.Z=gen_area.MinEdge.Z; p000.Z<=gen_area.MaxEdge.Z; p000.Z++)
+	for (p000.Y=gen_area.MinEdge.Y-1; p000.Y<=gen_area.MaxEdge.Y; p000.Y++)
+	for (p000.X=gen_area.MinEdge.X-1; p000.X<=gen_area.MaxEdge.X; p000.X++)
+	for (p000.Z=gen_area.MinEdge.Z-1; p000.Z<=gen_area.MaxEdge.Z; p000.Z++)
 	{
 		size_t i000 = data_area.index(p000);
 		const FarNode &n000 = data[i000];
@@ -461,6 +459,7 @@ void FarBlockMeshGenerateTask::inThread()
 		v3s16(0, 0, 0),
 		v3s16(FMP_SCALE-1, FMP_SCALE-1, FMP_SCALE-1)
 	);
+	std::vector<FarNode> content_buf;
 	v3s16 mp;
 	for (mp.Z=0; mp.Z<FMP_SCALE; mp.Z++)
 	for (mp.Y=0; mp.Y<FMP_SCALE; mp.Y++)
@@ -470,7 +469,7 @@ void FarBlockMeshGenerateTask::inThread()
 
 		MeshCollector collector;
 
-		VoxelArea gen_area(
+		VoxelArea gen_area( // effective
 			block.dp00 + v3s16(
 				block.block_div.X * mp.X,
 				block.block_div.Y * mp.Y,
@@ -482,10 +481,23 @@ void FarBlockMeshGenerateTask::inThread()
 				block.block_div.Z * mp.Z + block.block_div.Z - 1
 			)
 		);
+		VoxelArea content_buf_area(
+			gen_area.MinEdge - v3s16(1,1,1),
+			gen_area.MaxEdge + v3s16(1,1,1)
+		);
+		content_buf.resize(content_buf_area.getVolume());
+		v3s16 p;
+		// Fill in everything but the edges
+		for (p.Y=gen_area.MinEdge.Y; p.Y<=gen_area.MaxEdge.Y; p.Y++)
+		for (p.X=gen_area.MinEdge.X; p.X<=gen_area.MaxEdge.X; p.X++)
+		for (p.Z=gen_area.MinEdge.Z; p.Z<=gen_area.MaxEdge.Z; p.Z++) {
+			content_buf[content_buf_area.index(p)] =
+					block.content[block.content_area.index(p)];
+		}
 
 		size_t num_faces_added = 0;
 
-		extract_faces(&collector, block.content, block.content_area,
+		extract_faces(&collector, content_buf, content_buf_area,
 				gen_area, block.block_div, far_map,
 				&num_faces_added);
 
