@@ -30,6 +30,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define PP(x) "("<<(x).X<<","<<(x).Y<<","<<(x).Z<<")"
 
+/*
+	FarBlock
+*/
+
 FarBlock::FarBlock(v3s16 p):
 	p(p),
 	mesh(NULL)
@@ -108,6 +112,10 @@ void FarBlock::resetCameraOffset(v3s16 camera_offset)
 	updateCameraOffset(camera_offset);
 }
 
+/*
+	FarSector
+*/
+
 FarSector::FarSector(v2s16 p):
 	p(p)
 {
@@ -139,6 +147,10 @@ FarBlock* FarSector::getOrCreateBlock(s16 y)
 	blocks[y] = b;
 	return b;
 }
+
+/*
+	FarBlockMeshGenerateTask
+*/
 
 FarBlockMeshGenerateTask::FarBlockMeshGenerateTask(
 		FarMap *far_map, const FarBlock &source_block):
@@ -537,6 +549,10 @@ void FarBlockMeshGenerateTask::sync()
 	}
 }
 
+/*
+	FarMapWorkerThread
+*/
+
 FarMapWorkerThread::~FarMapWorkerThread()
 {
 	verbosestream<<"FarMapWorkerThread: Deleting remaining tasks (in)"<<std::endl;
@@ -602,6 +618,10 @@ void FarMapWorkerThread::doUpdate()
 	}
 }
 
+/*
+	BlockAreaBitmap
+*/
+
 void BlockAreaBitmap::reset(const VoxelArea &new_blocks_area)
 {
 	blocks_area = new_blocks_area;
@@ -622,6 +642,82 @@ bool BlockAreaBitmap::get(v3s16 bp)
 		return false;
 	return blocks[blocks_area.index(bp)];
 }
+
+/*
+	FarAtlas
+*/
+
+FarAtlas::FarAtlas():
+	next_subtexture_i(0)
+{
+	Atlas a;
+	a.image = new video::IImage();
+	a.texture = NULL;
+	atlas_textures.push_back(a);
+}
+
+FarAtlas::~FarAtlas()
+{
+	// TODO
+}
+
+FarAtlas::Atlas* FarAtlas::getFreeAtlas()
+{
+	Atlas *atlas = NULL;
+	if (atlases.size() == 0 ||
+			atlases[atlases.size()-1].sources.size() == textures_per_atlas) {
+		atlases.push_back(Atlas());
+		return &atlases[atlases.size()-1];
+	} else {
+		return &atlases[atlases.size()-1];
+	}
+}
+
+FarAtlas::TexRef FarAtlas::addTexture(const std::string &name)
+{
+	const size_t textures_per_atlas = 16; // TODO
+
+	Atlas *atlas = getFreeAtlas();
+	atlas->image = new video::IImage();
+
+	//atlas->texture =
+
+	TexRef r;
+	r.atlas_i = 
+}
+
+void FarAtlas::addNode(content_t id, const std::string &top,
+		const std::string &bottom, const std::string &side)
+{
+	NodeTexRefs ntr;
+	ntr.refs[0] = addTex(top);
+	ntr.refs[1] = addTex(bottom);
+	ntr.refs[2] = addTex(side);
+
+	if(node_texrefs.size() < id + 1)
+		node_texrefs.resize(id + 1);
+	node_texrefs[id] = ntr;
+}
+
+void FarAtlas::build()
+{
+	for(size_t i=0; i<atlases.size(); i++){
+		Atlas *atlas = &atlases[i];
+		if(atlas->valid)
+			continue;
+		atlas->image->drop();
+		core::dimension2d<u32> dim(1024, 1024); // TODO
+		atlas->image = driver->createImage(video::ECF_A8R8G8B8, dim);
+
+		atlas->texture->drop();
+		atlas->texture_name = std::string()+"far_atlas_texture_"+itos(i);
+		atlas->texture = addTexture(atlas->texture_name.c_str(), atlas->image);
+	}
+}
+
+/*
+	FarMap
+*/
 
 FarMap::FarMap(
 		Client *client,
@@ -728,12 +824,6 @@ void FarMap::insertData(v3s16 area_offset_mapblocks, v3s16 area_size_mapblocks,
 					5 : CONTENT_AIR;*/
 			b->content[dst_i].light = lights[source_i];
 		}
-
-		/*// TODO: Remove this
-		b->content[0].id = 5;
-		b->content[10].id = 6;
-		b->content[20].id = 7;
-		b->content[30].id = 8;*/
 
 		startGeneratingBlockMesh(b);
 	}
