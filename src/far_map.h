@@ -52,6 +52,9 @@ struct FarBlock
 	// Effective size of content in FarNodes based on block_div in global
 	// coordinates
 	v3s16 effective_size;
+	// Effective size of content in FarNodes based on block_div in global
+	// coordinates
+	VoxelArea effective_area;
 	// Raw size of content in FarNodes based on block_div in global
 	// coordinates
 	v3s16 content_size;

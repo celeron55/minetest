@@ -66,6 +66,11 @@ void FarBlock::resize(v3s16 new_block_div)
 			FMP_SCALE * block_div.Y,
 			FMP_SCALE * block_div.Z);
 
+	v3s16 edp0 = dp00;
+	v3s16 edp1 = edp0 + effective_size - v3s16(1,1,1); // Inclusive
+
+	effective_area = VoxelArea(edp0, edp1);
+
 	// One extra FarNode layer per edge as required by mesh generation
 	content_size = effective_size + v3s16(2,2,2);
 
@@ -430,17 +435,10 @@ void FarBlockMeshGenerateTask::inThread()
 	infostream<<"Generating FarBlock mesh for "
 			<<PP(block.p)<<std::endl;
 
-	//ITextureSource *tsrc = far_map->client->getTextureSource();
-	//IShaderSource *ssrc = far_map->client->getShaderSource();
-	//INodeDefManager *ndef = far_map->client->getNodeDefManager();
-
 	MeshCollector collector;
 
 	VoxelArea data_area = block.content_area;
-	VoxelArea gen_area = data_area;
-	// Remove dummy edges from area to be generated
-	gen_area.MinEdge += v3s16(1,1,1);
-	gen_area.MaxEdge -= v3s16(1,1,1);
+	VoxelArea gen_area = block.effective_area;
 
 	size_t profiler_num_faces_added = 0;
 
@@ -451,31 +449,7 @@ void FarBlockMeshGenerateTask::inThread()
 	g_profiler->avg("Far: num faces per mesh", profiler_num_faces_added);
 	g_profiler->add("Far: num meshes generated", 1);
 	
-#if 0
-	// Test
-	for (size_t i0=0; i0<5; i0++)
-	{
-		FarNode n000;
-		n000.id = 5;
-		n000.light = (15) | (15<<4);
-
-		v3s16 p000 = gen_area.MinEdge + v3s16(
-			block.block_div.X * FMP_SCALE / 2,
-			block.block_div.Y * FMP_SCALE / 5 * i0,
-			block.block_div.Z * FMP_SCALE / 2
-		);
-
-		add_face(&collector, n000, p000,  0,0,1, block.content,
-				data_area, block.block_div, far_map);
-	}
-#endif
-	
-	/*
-		Convert MeshCollector to SMesh
-	*/
-
 	assert(block.mesh == NULL);
-
 	block.mesh = create_farblock_mesh(far_map, &collector);
 }
 
