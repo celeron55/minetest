@@ -22,6 +22,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "irrlichttypes_bloated.h"
 #include "util/thread.h" // UpdateThread
 #include "threading/atomic.h"
+#include "voxel.h" // VoxelArea
 #include <ISceneNode.h>
 #include <SMesh.h>
 #include <vector>
@@ -46,12 +47,25 @@ struct FarMapBlock
 
 	// In how many pieces MapBlocks have been divided per dimension
 	v3s16 block_div;
-	// Total node dimensions of content
-	v3s16 total_size;
+	// Block's effective origin in FarMapNodes based on block_div
+	v3s16 dp00;
+	// Effective size of content in FarMapNodes based on block_div in global
+	// coordinates
+	v3s16 effective_size;
+	// Raw size of content in FarMapNodes based on block_div in global
+	// coordinates
+	v3s16 content_size;
+	// Raw area of content in FarMapNodes based on block_div in global
+	// coordinates
+	VoxelArea content_area;
 
 	std::vector<FarMapNode> content;
 
 	scene::SMesh *mesh;
+
+	// TODO: An array of MapBlock-sized meshes to be used when the area is
+	//       partly being rendered from the regular Map
+
 	v3s16 current_camera_offset;
 
 	FarMapBlock(v3s16 p);
@@ -62,9 +76,9 @@ struct FarMapBlock
 	void resetCameraOffset(v3s16 camera_offset = v3s16(0, 0, 0));
 
 	size_t index(v3s16 p) {
-		assert(p.X >= 0 && p.Y >= 0 && p.Z >= 0);
-		assert(p.X < total_size.X && p.Y < total_size.Y && p.Z < total_size.Z);
-		return p.Z * total_size.X * total_size.Y + p.Y * total_size.X + p.X;
+		//p -= dp00;
+		assert(content_area.contains(p));
+		return content_area.index(p);
 	}
 };
 

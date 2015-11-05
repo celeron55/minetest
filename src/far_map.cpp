@@ -47,16 +47,33 @@ void FarMapBlock::resize(v3s16 new_block_div)
 {
 	block_div = new_block_div;
 
-	v3s16 area_size(FMP_SCALE, FMP_SCALE, FMP_SCALE);
+	// Block's effective origin in FarMapNodes based on block_div
+	dp00 = v3s16(
+		p.X * FMP_SCALE * block_div.X,
+		p.Y * FMP_SCALE * block_div.Y,
+		p.Z * FMP_SCALE * block_div.Z
+	);
 
-	total_size = v3s16(
-			area_size.X * block_div.X,
-			area_size.Y * block_div.Y,
-			area_size.Z * block_div.Z);
+	// Effective size of content in FarMapNodes based on block_div in global
+	// coordinates
+	effective_size = v3s16(
+			FMP_SCALE * block_div.X,
+			FMP_SCALE * block_div.Y,
+			FMP_SCALE * block_div.Z);
 
-	size_t total_size_n = total_size.X * total_size.Y * total_size.Z;
+	// One extra FarMapNode layer per edge as required by mesh generation
+	content_size = effective_size + v3s16(2,2,2);
 
-	content.resize(total_size_n);
+	// Min and max edge of content (one extra FarMapNode layer per edge as
+	// required by mesh generation)
+	v3s16 dp0 = dp00 - v3s16(1,1,1);
+	v3s16 dp1 = dp0 + content_size - v3s16(1,1,1); // Inclusive
+
+	content_area = VoxelArea(dp0, dp1);
+
+	size_t content_size_n = content_area.getVolume();
+
+	content.resize(content_size_n);
 }
 
 void FarMapBlock::updateCameraOffset(v3s16 camera_offset)
@@ -324,23 +341,21 @@ void FarMapBlockMeshGenerateTask::inThread()
 	infostream<<"Generating FarMapBlock mesh for "
 			<<PP(source_block.p)<<std::endl;
 
-	ITextureSource *tsrc = far_map->client->getTextureSource();
+	//ITextureSource *tsrc = far_map->client->getTextureSource();
 	IShaderSource *ssrc = far_map->client->getShaderSource();
 	//INodeDefManager *ndef = far_map->client->getNodeDefManager();
 
 	MeshCollector collector;
 
-	v3s16 dp0(0, 0, 0);
-	v3s16 dp1 = dp0 + source_block.total_size - v3s16(1,1,1); // Inclusive
-	VoxelArea data_area(dp0, dp1);
+	VoxelArea data_area = source_block.content_area;
 	VoxelArea gen_area = data_area;
-	// TODO: Extend source block content so that edges don't have to be left out
-	//       like this
+	// Remove dummy edges from area to be generated
 	gen_area.MinEdge += v3s16(1,1,1);
 	gen_area.MaxEdge -= v3s16(1,1,1);
 
-	v3f base_pf = v3f(source_block.p.X, source_block.p.Y, source_block.p.Z)
-			* MAP_BLOCKSIZE * FMP_SCALE * BS;
+	/*v3f base_pf = v3f(source_block.p.X, source_block.p.Y, source_block.p.Z)
+			* MAP_BLOCKSIZE * FMP_SCALE * BS;*/
+	v3f base_pf(0, 0, 0);
 
 	size_t profiler_num_faces_added = 0;
 
@@ -359,7 +374,7 @@ void FarMapBlockMeshGenerateTask::inThread()
 		n000.id = 5;
 		n000.light = (15) | (15<<4);
 
-		v3s16 p000(
+		v3s16 p000 = gen_area.MinEdge + v3s16(
 			source_block.block_div.X * FMP_SCALE / 2,
 			source_block.block_div.Y * FMP_SCALE / 5 * i0,
 			source_block.block_div.Z * FMP_SCALE / 2
@@ -617,25 +632,19 @@ void FarMap::insertData(v3s16 area_offset_mapblocks, v3s16 area_size_mapblocks,
 		
 		b->resize(block_div);
 
-		// Copy stuff into b
-		v3s16 dp00(
-			fbp.X * FMP_SCALE * block_div.X,
-			fbp.Y * FMP_SCALE * block_div.Y,
-			fbp.Z * FMP_SCALE * block_div.Z
-		);
-		v3s16 dp1;
-		for (dp1.Y=0; dp1.Y<b->total_size.Y; dp1.Y++)
-		for (dp1.X=0; dp1.X<b->total_size.X; dp1.X++)
-		for (dp1.Z=0; dp1.Z<b->total_size.Z; dp1.Z++) {
-			v3s16 dp0 = dp00 + dp1;
+		v3s16 dp_in_fb;
+		for (dp_in_fb.Y=0; dp_in_fb.Y<b->effective_size.Y; dp_in_fb.Y++)
+		for (dp_in_fb.X=0; dp_in_fb.X<b->effective_size.X; dp_in_fb.X++)
+		for (dp_in_fb.Z=0; dp_in_fb.Z<b->effective_size.Z; dp_in_fb.Z++) {
+			v3s16 dp1 = b->dp00 + dp_in_fb;
 			// The source area does not necessarily contain all positions that
 			// the matching blocks contain
-			if(!div_area.contains(dp0))
+			if(!div_area.contains(dp1))
 				continue;
-			size_t source_i = div_area.index(dp0);
+			size_t source_i = div_area.index(dp1);
 			size_t dst_i = b->index(dp1);
 			b->content[dst_i].id = node_ids[source_i];
-			/*b->content[dst_i].id = ((dp0.X + dp0.Y + dp0.Z) % 3 == 0) ?
+			/*b->content[dst_i].id = ((dp1.X + dp1.Y + dp1.Z) % 3 == 0) ?
 					5 : CONTENT_AIR;*/
 			b->content[dst_i].light = lights[source_i];
 		}
