@@ -39,6 +39,8 @@ struct FarNode
 {
 	u16 id;
 	u8 light;
+
+	FarNode(u16 id=0, u8 light=0): id(id), light(light) {}
 };
 
 struct FarBlock

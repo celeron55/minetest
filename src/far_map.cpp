@@ -257,7 +257,7 @@ static void add_face(MeshCollector *collector,
 	t.texture = tsrc->getTexture(t.texture_id);
 	t.alpha = alpha;
 	t.material_type = TILE_MATERIAL_BASIC;
-	t.material_flags &= ~MATERIAL_FLAG_BACKFACE_CULLING;
+	//t.material_flags &= ~MATERIAL_FLAG_BACKFACE_CULLING;
 
 	if (far_map->config_enable_shaders) {
 		t.shader_id = far_map->farblock_shader_id;
@@ -871,9 +871,10 @@ static void renderBlock(FarMap *far_map, FarBlock *b,
 		if (far_map->normally_rendered_blocks.get(mp)) {
 			// This MapBlock is being rendered by ClientMap
 			fb_being_normally_rendered = true;
-			break;
+			goto big_break;
 		}
 	}
+big_break:;
 
 	if (fb_being_normally_rendered) {
 		for (mp0.Z=0; mp0.Z<FMP_SCALE; mp0.Z++)
