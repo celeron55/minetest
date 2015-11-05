@@ -188,7 +188,7 @@ static void add_face(MeshCollector *collector,
 	// Texture coordinates
 	float x0 = 0.0;
 	float y0 = 0.0;
-	float w = 1.0;
+	float w = 1.0 / 8; // WTF
 	float h = 1.0;
 
 	video::S3DVertex vertices[4];
@@ -205,12 +205,21 @@ static void add_face(MeshCollector *collector,
 			MapBlock_LightColor(alpha, light_encoded, light_source),
 			core::vector2d<f32>(x0+w*abs_scale, y0));
 
-	const ContentFeatures &f = ndef->get(n.id);
-	const std::string &tile_name = f.tiledef[1].name;
+	// TODO: A specialized texture atlas with preprocessed textures for this
+	//       purpose is needed
+
 	//std::string tile_name = "unknown_node.png";
+	const ContentFeatures &f = ndef->get(n.id);
+	const std::string *tile_name = NULL;
+	if(dir.Y == 1) // Top
+		tile_name = &f.tiledef[0].name;
+	else if(dir.Y == -1) // Bottom
+		tile_name = &f.tiledef[1].name;
+	else // Side
+		tile_name = &f.tiledef[2].name;
 
 	TileSpec t;
-	t.texture_id = tsrc->getTextureId(tile_name);
+	t.texture_id = tsrc->getTextureId(*tile_name);
 	t.texture = tsrc->getTexture(t.texture_id);
 	t.alpha = alpha;
 	t.material_type = TILE_MATERIAL_BASIC;
