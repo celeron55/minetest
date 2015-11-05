@@ -140,6 +140,18 @@ private:
 	Atomic<s32> m_queue_in_length; // For profiling
 };
 
+// ClientMap uses this to report what it's rendering so that FarMap can avoid
+// rendering over it
+struct BlockAreaBitmap
+{
+	VoxelArea blocks_area;
+	std::vector<bool> blocks;
+
+	void reset(const VoxelArea &new_blocks_area);
+	void set(v3s16 bp, bool v);
+	bool get(v3s16 bp);
+};
+
 class FarMap: public scene::ISceneNode
 {
 public:
@@ -166,6 +178,8 @@ public:
 	void update();
 	void updateCameraOffset(v3s16 camera_offset);
 
+	void reportNormallyRenderedBlocks(const BlockAreaBitmap &nrb);
+
 	// ISceneNode methods
 	void OnRegisterSceneNode();
 	void render();
@@ -179,6 +193,7 @@ public:
 	bool config_anistropic_filter;
 
 	u32 farblock_shader_id;
+	BlockAreaBitmap normally_rendered_blocks;
 
 private:
 	void updateSettings();

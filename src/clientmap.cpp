@@ -29,6 +29,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "profiler.h"
 #include "settings.h"
 #include "camera.h"               // CameraModes
+#include "far_map.h"              // For reporting what is being rendered by us
 #include "util/mathconstants.h"
 #include <algorithm>
 
@@ -157,8 +158,6 @@ void ClientMap::updateDrawList(video::IVideoDriver* driver)
 	}
 	m_drawlist.clear();
 
-	m_last_drawn_sectors.clear();
-
 	m_camera_mutex.lock();
 	v3f camera_position = m_camera_position;
 	v3f camera_direction = m_camera_direction;
@@ -185,6 +184,11 @@ void ClientMap::updateDrawList(video::IVideoDriver* driver)
 			p_nodes_max.X / MAP_BLOCKSIZE + 1,
 			p_nodes_max.Y / MAP_BLOCKSIZE + 1,
 			p_nodes_max.Z / MAP_BLOCKSIZE + 1);
+
+	// Set up a BlockAreaBitmap for reporting to FarMap
+	VoxelArea nrb_area(p_blocks_min, p_blocks_max);
+	BlockAreaBitmap normally_rendered_blocks;
+	normally_rendered_blocks.reset(nrb_area);
 
 	// Number of blocks in rendering range
 	u32 blocks_in_range = 0;
@@ -341,10 +345,14 @@ void ClientMap::updateDrawList(video::IVideoDriver* driver)
 			if(d/BS > farthest_drawn)
 				farthest_drawn = d/BS;
 
-		} // foreach sectorblocks
+			normally_rendered_blocks.set(block->getPos(), true);
 
-		if(sector_blocks_drawn != 0)
-			m_last_drawn_sectors.insert(sp);
+		} // foreach sectorblocks
+	}
+
+	FarMap *fm = m_client->getFarMap();
+	if (fm) {
+		fm->reportNormallyRenderedBlocks(normally_rendered_blocks);
 	}
 
 	m_control.blocks_would_have_drawn = blocks_would_have_drawn;

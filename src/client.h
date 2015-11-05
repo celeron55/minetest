@@ -422,6 +422,9 @@ public:
 	ClientEnvironment& getEnv()
 	{ return m_env; }
 
+	FarMap* getFarMap()
+	{ return m_far_map; }
+
 	// Causes urgent mesh updates (unlike Map::add/removeNodeWithEvent)
 	void removeNode(v3s16 p);
 	void addNode(v3s16 p, MapNode n, bool remove_metadata = true);

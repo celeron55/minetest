@@ -132,12 +132,6 @@ public:
 	// For debug printing
 	virtual void PrintInfo(std::ostream &out);
 	
-	// Check if sector was drawn on last render()
-	bool sectorWasDrawn(v2s16 p)
-	{
-		return (m_last_drawn_sectors.find(p) != m_last_drawn_sectors.end());
-	}
-	
 private:
 	Client *m_client;
 	
@@ -153,8 +147,6 @@ private:
 
 	std::map<v3s16, MapBlock*> m_drawlist;
 	
-	std::set<v2s16> m_last_drawn_sectors;
-
 	bool m_cache_trilinear_filter;
 	bool m_cache_bilinear_filter;
 	bool m_cache_anistropic_filter;

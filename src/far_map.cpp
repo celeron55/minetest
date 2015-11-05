@@ -25,7 +25,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "util/numeric.h" // getContainerPos
 #include "client.h" // For use of Client's IGameDef interface
 #include "profiler.h"
-#include "clientmap.h" // ClientMap::sectorWasDrawn
 #include "irrlichttypes_extrabloated.h"
 #include <IMaterialRenderer.h>
 
@@ -584,6 +583,27 @@ void FarMapWorkerThread::doUpdate()
 	}
 }
 
+void BlockAreaBitmap::reset(const VoxelArea &new_blocks_area)
+{
+	blocks_area = new_blocks_area;
+	blocks.clear();
+	blocks.resize(new_blocks_area.getVolume());
+}
+
+void BlockAreaBitmap::set(v3s16 bp, bool v)
+{
+	if(!blocks_area.contains(bp))
+		return;
+	blocks[blocks_area.index(bp)] = v;
+}
+
+bool BlockAreaBitmap::get(v3s16 bp)
+{
+	if(!blocks_area.contains(bp))
+		return false;
+	return blocks[blocks_area.index(bp)];
+}
+
 FarMap::FarMap(
 		Client *client,
 		scene::ISceneNode* parent,
@@ -780,6 +800,16 @@ void FarMap::updateCameraOffset(v3s16 camera_offset)
 	}
 }
 
+void FarMap::reportNormallyRenderedBlocks(const BlockAreaBitmap &nrb)
+{
+	normally_rendered_blocks = nrb;
+
+	infostream<<"FarMap::reportNormallyRenderedBlocks: "
+			<<"reported area: ";
+	normally_rendered_blocks.blocks_area.print(infostream);
+	infostream<<std::endl;
+}
+
 void FarMap::updateSettings()
 {
 	config_enable_shaders = g_settings->getBool("enable_shaders");
@@ -796,10 +826,35 @@ static void renderBlock(FarMap *far_map, FarBlock *b, video::IVideoDriver* drive
 		return;
 	}
 
+	// Check what ClientMap is rendering and avoid rendering over it
+	VoxelArea area_in_mapblocks_from_origin(
+		v3s16(0, 0, 0),
+		v3s16(FMP_SCALE-1, FMP_SCALE-1, FMP_SCALE-1)
+	);
+	v3s16 fb_origin_mapblock = b->p * FMP_SCALE;
+	VoxelArea area_in_mapblocks(
+		area_in_mapblocks_from_origin.MinEdge + fb_origin_mapblock,
+		area_in_mapblocks_from_origin.MaxEdge + fb_origin_mapblock
+	);
+	v3s16 mp0;
+	for (mp0.Z=0; mp0.Z<FMP_SCALE; mp0.Z++)
+	for (mp0.Y=0; mp0.Y<FMP_SCALE; mp0.Y++)
+	for (mp0.X=0; mp0.X<FMP_SCALE; mp0.X++) {
+		v3s16 mp = fb_origin_mapblock + mp0;
+
+		if (far_map->normally_rendered_blocks.get(mp)) {
+			// This MapBlock is being rendered by ClientMap
+			// TODO
+			return;
+		}
+		// Index to mapblock_meshes
+		//size_t mi = area_in_mapblocks_from_origin.index(mp);
+	}
+
 	u32 c = mesh->getMeshBufferCount();
 	/*infostream<<"FarMap::renderBlock: "<<PP(b->p)<<": Rendering "
 			<<c<<" meshbuffers"<<std::endl;*/
-	for(u32 i=0; i<c; i++)
+	for (u32 i=0; i<c; i++)
 	{
 		scene::IMeshBuffer *buf = mesh->getMeshBuffer(i);
 		buf->getMaterial().setFlag(video::EMF_TRILINEAR_FILTER,
@@ -826,14 +881,14 @@ void FarMap::render()
 
 	size_t profiler_num_rendered_farblocks = 0;
 
-	ClientEnvironment *client_env = &client->getEnv();
-	ClientMap *map = &client_env->getClientMap();
+	//ClientEnvironment *client_env = &client->getEnv();
+	//ClientMap *map = &client_env->getClientMap();
 
 	for (std::map<v2s16, FarSector*>::iterator i = m_sectors.begin();
 			i != m_sectors.end(); i++) {
 		FarSector *s = i->second;
 
-		// Don't render if something from regular map was rendered inside this
+		/*// Don't render if something from regular map was rendered inside this
 		// sector
 		size_t num_covered = 0;
 		const size_t min_required = s->mapsectors_covered.size() / 3;
@@ -845,11 +900,12 @@ void FarMap::render()
 			}
 		}
 		if (num_covered >= min_required)
-			break;
+			break;*/
 
 		for (std::map<s16, FarBlock*>::iterator i = s->blocks.begin();
 				i != s->blocks.end(); i++) {
 			FarBlock *b = i->second;
+
 			renderBlock(this, b, driver);
 
 			profiler_num_rendered_farblocks++;
