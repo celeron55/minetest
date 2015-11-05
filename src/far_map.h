@@ -200,6 +200,9 @@ public:
 
 	void reportNormallyRenderedBlocks(const BlockAreaBitmap &nrb);
 
+	// Shall be called after the client receives all node definitions
+	void createAtlas();
+
 	// ISceneNode methods
 	void OnRegisterSceneNode();
 	void render();

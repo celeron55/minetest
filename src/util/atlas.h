@@ -73,7 +73,7 @@ namespace atlas
 
 	struct AtlasSegmentCache
 	{
-		video::ITexture *texture;
+		video::ITexture **texture;
 		v2f coord0;
 		v2f coord1;
 
@@ -109,6 +109,12 @@ namespace atlas
 			image(NULL),
 			texture(NULL)
 		{}
+		~AtlasCache() {
+			if (image)
+				image->drop();
+			if (texture)
+				texture->drop();
+		}
 	};
 
 	struct AtlasRegistry

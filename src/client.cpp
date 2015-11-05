@@ -1845,6 +1845,15 @@ void Client::afterContentReceived(IrrlichtDevice *device)
 		delete[] text;
 	}
 
+	// Create FarMap atlas
+	if (m_far_map) {
+		infostream<<"- Creating FarMap atlas"<<std::endl;
+		text = wgettext("Creating FarMap atlas...");
+		draw_load_screen(text, device, guienv, 0, 100);
+		m_far_map->createAtlas();
+		delete[] text;
+	}
+
 	// Start mesh update thread after setting up content definitions
 	infostream<<"- Starting mesh update thread"<<std::endl;
 	m_mesh_update_thread.start();

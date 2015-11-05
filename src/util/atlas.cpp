@@ -19,6 +19,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "atlas.h"
 #include "string.h"
+#include "log.h"
 #include "../gamedef.h"
 #include "../client/tile.h" // ITextureSource
 #include "../exceptions.h"
@@ -132,21 +133,14 @@ struct CAtlasRegistry: public AtlasRegistry
 			// Create image for new atlas
 			video::IImage *atlas_img = m_driver->createImage(video::ECF_A8R8G8B8,
 					core::dimension2d<u32>(atlas_resolution.X, atlas_resolution.Y));
-			/*// Create texture for new atlas
-			video::ITexture *atlas_tex = new video::ITexture(m_context);
-			// TODO: Make this configurable
-			atlas_tex->SetFilterMode(magic::FILTER_NEAREST);
-			// TODO: Use TEXTURE_STATIC or TEXTURE_DYNAMIC?
-			atlas_tex->SetSize(atlas_resolution.X, atlas_resolution.Y,
-					magic::Graphics::GetRGBAFormat(), magic::TEXTURE_STATIC);*/
 			// Add new atlas to cache
 			const size_t &id = atlas_def->id;
 			m_cache.resize(id+1);
 			AtlasCache *cache = &m_cache[id];
 			cache->id = id;
 			cache->image = atlas_img;
+			cache->image->grab();
 			cache->texture_name = std::string()+"atlas_"+m_name+"_texture_"+itos(id);
-			//cache->texture = atlas_tex;
 			cache->segment_resolution = atlas_def->segment_resolution;
 			cache->total_segments = atlas_def->total_segments;
 		}
@@ -218,8 +212,8 @@ struct CAtlasRegistry: public AtlasRegistry
 					itos(atlas.total_segments.X)+", "+
 					itos(atlas.total_segments.Y)+"))");
 		}
-		// Set segment texture
-		cache.texture = atlas.texture;
+		// Set segment texture pointer-pointer
+		cache.texture = &atlas.texture;
 		// Calculate segment's position in atlas texture
 		v2s32 total_segs = atlas.total_segments;
 		size_t seg_iy = seg_id / total_segs.X;
@@ -395,8 +389,13 @@ struct CAtlasRegistry: public AtlasRegistry
 			}
 		}
 		// Update atlas texture from atlas image
-		atlas.texture->drop();
+		/*if (atlas.texture != NULL) { // TODO
+			infostream<<"Dropping atlas.texture "<<atlas.texture<<std::endl;
+			atlas.texture->drop();
+		}*/
 		atlas.texture = m_driver->addTexture(atlas.texture_name.c_str(), atlas.image);
+		atlas.texture->grab();
+		infostream<<"Created atlas.texture "<<atlas.texture<<std::endl;
 
 		// Debug: save atlas image to file
 		/*std::string atlas_img_name = "/tmp/atlas_"+itos(seg_size.X)+"x"+

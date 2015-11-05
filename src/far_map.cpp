@@ -255,7 +255,7 @@ static void add_face(MeshCollector *collector,
 	/*t.texture_id = tsrc->getTextureId(*tile_name);
 	t.texture = tsrc->getTexture(t.texture_id);*/
 	t.texture_id = 0; // atlas::AtlasRegistry doesn't provide this
-	t.texture = asc->texture;
+	t.texture = *asc->texture;
 	t.alpha = alpha;
 	t.material_type = TILE_MATERIAL_BASIC;
 	//t.material_flags &= ~MATERIAL_FLAG_BACKFACE_CULLING;
@@ -908,6 +908,39 @@ void FarMap::reportNormallyRenderedBlocks(const BlockAreaBitmap &nrb)
 			<<"reported area: ";
 	normally_rendered_blocks.blocks_area.print(infostream);
 	infostream<<std::endl;
+}
+
+void FarMap::createAtlas()
+{
+	INodeDefManager *ndef = client->getNodeDefManager();
+
+	// TODO
+
+	// Umm... let's just start from zero and see how far we get?
+	for(content_t id=CONTENT_IGNORE+1; ; id++){
+		const ContentFeatures &f = ndef->get(id);
+		if(f.name.empty() || f.name == "unknown")
+			break;
+
+		infostream<<"FarMap: Adding node "<<id<<" = \""<<f.name<<"\""<<std::endl;
+
+		std::string top = f.tiledef[0].name;
+		if (!top.empty()) {
+			std::string bottom = f.tiledef[1].name;
+			std::string side = f.tiledef[2].name;
+			if(bottom.empty())
+				bottom = top;
+			if(side.empty())
+				side = top;
+			atlas.addNode(id, top, bottom, side);
+		}
+
+		if(id == 65535)
+			break;
+	}
+
+	infostream<<"FarMap: Created atlas out of "<<atlas.node_segrefs.size()
+			<<" nodes";
 }
 
 void FarMap::updateSettings()
