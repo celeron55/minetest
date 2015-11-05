@@ -142,8 +142,7 @@ FarBlockMeshGenerateTask::~FarBlockMeshGenerateTask()
 }
 
 static void add_face(MeshCollector *collector,
-		const v3f base_pf, const FarNode &n,
-		const v3s16 &p, s16 dir_x, s16 dir_y, s16 dir_z,
+		const FarNode &n, const v3s16 &p, s16 dir_x, s16 dir_y, s16 dir_z,
 		const std::vector<FarNode> &data,
 		const VoxelArea &data_area,
 		const v3s16 &block_div,
@@ -166,8 +165,7 @@ static void add_face(MeshCollector *collector,
 		MAP_BLOCKSIZE / block_div.Z
 	);
 
-	v3f pf = base_pf;
-	pf += v3f(
+	v3f pf(
 		scale.X * p.X * BS,
 		scale.Y * p.Y * BS,
 		scale.Z * p.Z * BS
@@ -255,7 +253,6 @@ static void add_face(MeshCollector *collector,
 }
 
 static void extract_faces(MeshCollector *collector,
-		const v3f base_pf,
 		const std::vector<FarNode> &data,
 		const VoxelArea &data_area, const VoxelArea &gen_area,
 		const v3s16 &block_div,
@@ -301,35 +298,35 @@ static void extract_faces(MeshCollector *collector,
 		}*/
 
 		if(s000 > s001){
-			add_face(collector, base_pf, n000, p000,  0,0,1, data,
+			add_face(collector, n000, p000,  0,0,1, data,
 					data_area, block_div, far_map);
 			(*profiler_num_faces_added)++;
 		}
 		else if(s000 < s001){
 			v3s16 p001 = p000 + v3s16(0,0,1);
-			add_face(collector, base_pf, n001, p001, 0,0,-1, data,
+			add_face(collector, n001, p001, 0,0,-1, data,
 					data_area, block_div, far_map);
 			(*profiler_num_faces_added)++;
 		}
 		if(s000 > s010){
-			add_face(collector, base_pf, n000, p000,  0,1,0, data,
+			add_face(collector, n000, p000,  0,1,0, data,
 					data_area, block_div, far_map);
 			(*profiler_num_faces_added)++;
 		}
 		else if(s000 < s010){
 			v3s16 p010 = p000 + v3s16(0,1,0);
-			add_face(collector, base_pf, n010, p010, 0,-1,0, data,
+			add_face(collector, n010, p010, 0,-1,0, data,
 					data_area, block_div, far_map);
 			(*profiler_num_faces_added)++;
 		}
 		if(s000 > s100){
-			add_face(collector, base_pf, n000, p000,  1,0,0, data,
+			add_face(collector, n000, p000,  1,0,0, data,
 					data_area, block_div, far_map);
 			(*profiler_num_faces_added)++;
 		}
 		else if(s000 < s100){
 			v3s16 p100 = p000 + v3s16(1,0,0);
-			add_face(collector, base_pf, n100, p100, -1,0,0, data,
+			add_face(collector, n100, p100, -1,0,0, data,
 					data_area, block_div, far_map);
 			(*profiler_num_faces_added)++;
 		}
@@ -353,13 +350,9 @@ void FarBlockMeshGenerateTask::inThread()
 	gen_area.MinEdge += v3s16(1,1,1);
 	gen_area.MaxEdge -= v3s16(1,1,1);
 
-	/*v3f base_pf = v3f(source_block.p.X, source_block.p.Y, source_block.p.Z)
-			* MAP_BLOCKSIZE * FMP_SCALE * BS;*/
-	v3f base_pf(0, 0, 0);
-
 	size_t profiler_num_faces_added = 0;
 
-	extract_faces(&collector, base_pf, source_block.content, data_area,
+	extract_faces(&collector, source_block.content, data_area,
 			gen_area, source_block.block_div, far_map,
 			&profiler_num_faces_added);
 
@@ -380,7 +373,7 @@ void FarBlockMeshGenerateTask::inThread()
 			source_block.block_div.Z * FMP_SCALE / 2
 		);
 
-		add_face(&collector, base_pf, n000, p000,  0,0,1, source_block.content,
+		add_face(&collector, n000, p000,  0,0,1, source_block.content,
 				data_area, source_block.block_div, far_map);
 	}
 #endif
