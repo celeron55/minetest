@@ -855,12 +855,15 @@ static void renderMesh(FarMap *far_map, scene::SMesh *mesh,
 }
 
 static void renderBlock(FarMap *far_map, FarBlock *b,
-		video::IVideoDriver* driver)
+		video::IVideoDriver* driver,
+		size_t *profiler_num_rendered_farblocks,
+		size_t *profiler_num_rendered_fbmbparts)
 {
 	if(!b->mesh){
 		//infostream<<"FarMap::renderBlock: "<<PP(b->p)<<": No mesh"<<std::endl;
 		return;
 	}
+	(*profiler_num_rendered_farblocks)++;
 
 	// Check what ClientMap is rendering and avoid rendering over it
 	VoxelArea area_in_mapblocks_from_origin(
@@ -902,6 +905,7 @@ big_break:;
 			if (!mesh)
 				continue;
 			renderMesh(far_map, mesh, driver);
+			(*profiler_num_rendered_fbmbparts)++;
 		}
 	} else {
 		scene::SMesh *mesh = b->mesh;
@@ -919,6 +923,7 @@ void FarMap::render()
 	driver->setTransform(video::ETS_WORLD, AbsoluteTransformation);
 
 	size_t profiler_num_rendered_farblocks = 0;
+	size_t profiler_num_rendered_fbmbparts = 0;
 
 	//ClientEnvironment *client_env = &client->getEnv();
 	//ClientMap *map = &client_env->getClientMap();
@@ -927,32 +932,20 @@ void FarMap::render()
 			i != m_sectors.end(); i++) {
 		FarSector *s = i->second;
 
-		/*// Don't render if something from regular map was rendered inside this
-		// sector
-		size_t num_covered = 0;
-		const size_t min_required = s->mapsectors_covered.size() / 3;
-		for (size_t i=0; i<s->mapsectors_covered.size(); i++) {
-			if (map->sectorWasDrawn(s->mapsectors_covered[i])) {
-				num_covered++;
-				if (num_covered >= min_required)
-					break;
-			}
-		}
-		if (num_covered >= min_required)
-			break;*/
-
 		for (std::map<s16, FarBlock*>::iterator i = s->blocks.begin();
 				i != s->blocks.end(); i++) {
 			FarBlock *b = i->second;
 
-			renderBlock(this, b, driver);
-
-			profiler_num_rendered_farblocks++;
+			renderBlock(this, b, driver,
+					&profiler_num_rendered_farblocks,
+					&profiler_num_rendered_fbmbparts);
 		}
 	}
 
 	g_profiler->avg("Far: rendered farblocks per frame",
 			profiler_num_rendered_farblocks);
+	g_profiler->avg("Far: rendered farblock-mb-parts frame",
+			profiler_num_rendered_fbmbparts);
 }
 
 void FarMap::OnRegisterSceneNode()
