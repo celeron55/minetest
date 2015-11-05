@@ -347,12 +347,18 @@ static void extract_faces(MeshCollector *collector,
 	}
 }
 
-static scene::SMesh* create_farblock_mesh(FarMap *far_map,
-		MeshCollector *collector)
+static scene::SMesh* create_farblock_mesh(scene::SMesh *old_mesh,
+		FarMap *far_map, MeshCollector *collector)
 {
 	IShaderSource *ssrc = far_map->client->getShaderSource();
 
-	scene::SMesh *mesh = new scene::SMesh();
+	scene::SMesh *mesh = NULL;
+	if (old_mesh) {
+		old_mesh->clear();
+		mesh = old_mesh;
+	} else {
+		mesh = new scene::SMesh();
+	}
 
 	for(u32 i = 0; i < collector->prebuffers.size(); i++)
 	{
@@ -450,7 +456,8 @@ void FarBlockMeshGenerateTask::inThread()
 
 		assert(block.mesh == NULL);
 		if (num_faces_added > 0) {
-			block.mesh = create_farblock_mesh(far_map, &collector);
+			block.mesh = create_farblock_mesh(block.mesh, far_map, &collector);
+			block.mesh->setHardwareMappingHint(scene::EHM_STATIC);
 		}
 	}
 
@@ -504,9 +511,9 @@ void FarBlockMeshGenerateTask::inThread()
 		g_profiler->avg("Far: num faces per mb mesh", num_faces_added);
 		g_profiler->add("Far: num mb meshes generated", 1);
 
-		assert(block.mapblock_meshes[mi] == NULL);
 		if (num_faces_added > 0) {
-			block.mapblock_meshes[mi] = create_farblock_mesh(far_map, &collector);
+			block.mapblock_meshes[mi] = create_farblock_mesh(
+					block.mapblock_meshes[mi], far_map, &collector);
 		}
 	}
 }
@@ -816,7 +823,7 @@ void FarMap::reportNormallyRenderedBlocks(const BlockAreaBitmap &nrb)
 {
 	normally_rendered_blocks = nrb;
 
-	infostream<<"FarMap::reportNormallyRenderedBlocks: "
+	verbosestream<<"FarMap::reportNormallyRenderedBlocks: "
 			<<"reported area: ";
 	normally_rendered_blocks.blocks_area.print(infostream);
 	infostream<<std::endl;

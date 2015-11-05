@@ -2107,7 +2107,7 @@ void Server::handleCommand_GetFarBlocks(NetworkPacket* pkt_in)
 					dp.X * block_div.X + MAP_BLOCKSIZE/block_div.X/2,
 					dp.Y * block_div.Y + MAP_BLOCKSIZE/block_div.Y/2,
 					dp.Z * block_div.Z + MAP_BLOCKSIZE/block_div.Z/2);
-				for(s32 i=0; i<MAP_BLOCKSIZE/block_div.Y; i++){
+				for(s32 i=0; i<MAP_BLOCKSIZE/block_div.Y+1; i++){
 					MapNode n = b->getNodeNoEx(np);
 					const ContentFeatures &f = getNodeDefManager()->get(n);
 					if (!f.name.empty() && f.param_type == CPT_LIGHT) {
