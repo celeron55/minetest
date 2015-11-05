@@ -94,6 +94,12 @@ void FarBlock::updateCameraOffset(v3s16 camera_offset)
 
 	if (camera_offset != current_camera_offset) {
 		translateMesh(mesh, intToFloat(current_camera_offset-camera_offset, BS));
+		for (size_t i=0; i<mapblock_meshes.size(); i++) {
+			if (!mapblock_meshes[i])
+				continue;
+			translateMesh(mapblock_meshes[i],
+					intToFloat(current_camera_offset-camera_offset, BS));
+		}
 		current_camera_offset = camera_offset;
 	}
 }
@@ -179,18 +185,18 @@ static void add_face(MeshCollector *collector,
 	);
 
 	v3f pf(
-		scale.X * p.X * BS,
-		scale.Y * p.Y * BS,
-		scale.Z * p.Z * BS
+		(scale.X * p.X + scale.X/2 - 0.5) * BS,
+		(scale.Y * p.Y + scale.Y/2 - 0.5) * BS,
+		(scale.Z * p.Z + scale.Z/2 - 0.5) * BS
 	);
 
 	v3f vertex_pos[4];
 	for(u16 i=0; i<4; i++)
 	{
 		vertex_pos[i] = v3f(
-				BS/2*vertex_dirs[i].X,
-				BS/2*vertex_dirs[i].Y,
-				BS/2*vertex_dirs[i].Z
+			BS / 2 * vertex_dirs[i].X,
+			BS / 2 * vertex_dirs[i].Y,
+			BS / 2 * vertex_dirs[i].Z
 		);
 		vertex_pos[i].X *= scale.X;
 		vertex_pos[i].Y *= scale.Y;
@@ -253,9 +259,6 @@ static void add_face(MeshCollector *collector,
 	t.material_type = TILE_MATERIAL_BASIC;
 	t.material_flags &= ~MATERIAL_FLAG_BACKFACE_CULLING;
 
-	infostream<<"FarBlockMeshGenerate: enable_shaders="
-			<<(far_map->config_enable_shaders?"true":"false")<<std::endl;
-
 	if (far_map->config_enable_shaders) {
 		t.shader_id = far_map->farblock_shader_id;
 		bool normalmap_present = false;
@@ -270,7 +273,7 @@ static void extract_faces(MeshCollector *collector,
 		const VoxelArea &data_area, const VoxelArea &gen_area,
 		const v3s16 &block_div,
 		const FarMap *far_map,
-		size_t *profiler_num_faces_added)
+		size_t *num_faces_added)
 {
 	// At least one extra node at each edge is required. This enables speed
 	// optimization of lookups in this algorithm.
@@ -313,35 +316,35 @@ static void extract_faces(MeshCollector *collector,
 		if(s000 > s001){
 			add_face(collector, n000, p000,  0,0,1, data,
 					data_area, block_div, far_map);
-			(*profiler_num_faces_added)++;
+			(*num_faces_added)++;
 		}
 		else if(s000 < s001){
 			v3s16 p001 = p000 + v3s16(0,0,1);
 			add_face(collector, n001, p001, 0,0,-1, data,
 					data_area, block_div, far_map);
-			(*profiler_num_faces_added)++;
+			(*num_faces_added)++;
 		}
 		if(s000 > s010){
 			add_face(collector, n000, p000,  0,1,0, data,
 					data_area, block_div, far_map);
-			(*profiler_num_faces_added)++;
+			(*num_faces_added)++;
 		}
 		else if(s000 < s010){
 			v3s16 p010 = p000 + v3s16(0,1,0);
 			add_face(collector, n010, p010, 0,-1,0, data,
 					data_area, block_div, far_map);
-			(*profiler_num_faces_added)++;
+			(*num_faces_added)++;
 		}
 		if(s000 > s100){
 			add_face(collector, n000, p000,  1,0,0, data,
 					data_area, block_div, far_map);
-			(*profiler_num_faces_added)++;
+			(*num_faces_added)++;
 		}
 		else if(s000 < s100){
 			v3s16 p100 = p000 + v3s16(1,0,0);
 			add_face(collector, n100, p100, -1,0,0, data,
 					data_area, block_div, far_map);
-			(*profiler_num_faces_added)++;
+			(*num_faces_added)++;
 		}
 	}
 }
@@ -438,17 +441,19 @@ void FarBlockMeshGenerateTask::inThread()
 	{
 		MeshCollector collector;
 
-		size_t profiler_num_faces_added = 0;
+		size_t num_faces_added = 0;
 
 		extract_faces(&collector, block.content, block.content_area,
 				block.effective_area, block.block_div, far_map,
-				&profiler_num_faces_added);
+				&num_faces_added);
 
-		g_profiler->avg("Far: num faces per mesh", profiler_num_faces_added);
+		g_profiler->avg("Far: num faces per mesh", num_faces_added);
 		g_profiler->add("Far: num meshes generated", 1);
 
 		assert(block.mesh == NULL);
-		block.mesh = create_farblock_mesh(far_map, &collector);
+		if (num_faces_added > 0) {
+			block.mesh = create_farblock_mesh(far_map, &collector);
+		}
 	}
 
 	// MapBlock-sized meshes
@@ -478,24 +483,19 @@ void FarBlockMeshGenerateTask::inThread()
 			)
 		);
 
-		size_t profiler_num_faces_added = 0;
+		size_t num_faces_added = 0;
 
 		extract_faces(&collector, block.content, block.content_area,
 				gen_area, block.block_div, far_map,
-				&profiler_num_faces_added);
+				&num_faces_added);
 
-		g_profiler->avg("Far: num faces per mb mesh", profiler_num_faces_added);
+		g_profiler->avg("Far: num faces per mb mesh", num_faces_added);
 		g_profiler->add("Far: num mb meshes generated", 1);
 
 		assert(block.mapblock_meshes[mi] == NULL);
-		block.mapblock_meshes[mi] = create_farblock_mesh(far_map, &collector);
-
-		/*for (np.Z=0; np.Z<block_div.Z; np.Z++)
-		for (np.Y=0; np.Y<block_div.Y; np.Y++)
-		for (np.X=0; np.X<block_div.X; np.X++) {
-			// Index to content
-			size_t ni = content_area.index(
-		}*/
+		if (num_faces_added > 0) {
+			block.mapblock_meshes[mi] = create_farblock_mesh(far_map, &collector);
+		}
 	}
 }
 
@@ -818,39 +818,9 @@ void FarMap::updateSettings()
 	config_anistropic_filter = g_settings->getBool("anisotropic_filter");
 }
 
-static void renderBlock(FarMap *far_map, FarBlock *b, video::IVideoDriver* driver)
+static void renderMesh(FarMap *far_map, scene::SMesh *mesh,
+		video::IVideoDriver* driver)
 {
-	scene::SMesh *mesh = b->mesh;
-	if(!mesh){
-		//infostream<<"FarMap::renderBlock: "<<PP(b->p)<<": No mesh"<<std::endl;
-		return;
-	}
-
-	// Check what ClientMap is rendering and avoid rendering over it
-	VoxelArea area_in_mapblocks_from_origin(
-		v3s16(0, 0, 0),
-		v3s16(FMP_SCALE-1, FMP_SCALE-1, FMP_SCALE-1)
-	);
-	v3s16 fb_origin_mapblock = b->p * FMP_SCALE;
-	VoxelArea area_in_mapblocks(
-		area_in_mapblocks_from_origin.MinEdge + fb_origin_mapblock,
-		area_in_mapblocks_from_origin.MaxEdge + fb_origin_mapblock
-	);
-	v3s16 mp0;
-	for (mp0.Z=0; mp0.Z<FMP_SCALE; mp0.Z++)
-	for (mp0.Y=0; mp0.Y<FMP_SCALE; mp0.Y++)
-	for (mp0.X=0; mp0.X<FMP_SCALE; mp0.X++) {
-		v3s16 mp = fb_origin_mapblock + mp0;
-
-		if (far_map->normally_rendered_blocks.get(mp)) {
-			// This MapBlock is being rendered by ClientMap
-			// TODO
-			return;
-		}
-		// Index to mapblock_meshes
-		//size_t mi = area_in_mapblocks_from_origin.index(mp);
-	}
-
 	u32 c = mesh->getMeshBufferCount();
 	/*infostream<<"FarMap::renderBlock: "<<PP(b->p)<<": Rendering "
 			<<c<<" meshbuffers"<<std::endl;*/
@@ -869,6 +839,62 @@ static void renderBlock(FarMap *far_map, FarBlock *b, video::IVideoDriver* drive
 		driver->setMaterial(material);
 
 		driver->drawMeshBuffer(buf);
+	}
+}
+
+static void renderBlock(FarMap *far_map, FarBlock *b,
+		video::IVideoDriver* driver)
+{
+	if(!b->mesh){
+		//infostream<<"FarMap::renderBlock: "<<PP(b->p)<<": No mesh"<<std::endl;
+		return;
+	}
+
+	// Check what ClientMap is rendering and avoid rendering over it
+	VoxelArea area_in_mapblocks_from_origin(
+		v3s16(0, 0, 0),
+		v3s16(FMP_SCALE-1, FMP_SCALE-1, FMP_SCALE-1)
+	);
+	v3s16 fb_origin_mapblock = b->p * FMP_SCALE;
+	VoxelArea area_in_mapblocks(
+		area_in_mapblocks_from_origin.MinEdge + fb_origin_mapblock,
+		area_in_mapblocks_from_origin.MaxEdge + fb_origin_mapblock
+	);
+
+	v3s16 mp0;
+
+	bool fb_being_normally_rendered = false;
+	for (mp0.Z=0; mp0.Z<FMP_SCALE; mp0.Z++)
+	for (mp0.Y=0; mp0.Y<FMP_SCALE; mp0.Y++)
+	for (mp0.X=0; mp0.X<FMP_SCALE; mp0.X++) {
+		v3s16 mp = fb_origin_mapblock + mp0;
+		if (far_map->normally_rendered_blocks.get(mp)) {
+			// This MapBlock is being rendered by ClientMap
+			fb_being_normally_rendered = true;
+			break;
+		}
+	}
+
+	if (fb_being_normally_rendered) {
+		for (mp0.Z=0; mp0.Z<FMP_SCALE; mp0.Z++)
+		for (mp0.Y=0; mp0.Y<FMP_SCALE; mp0.Y++)
+		for (mp0.X=0; mp0.X<FMP_SCALE; mp0.X++) {
+			v3s16 mp = fb_origin_mapblock + mp0;
+			if (far_map->normally_rendered_blocks.get(mp))
+				continue;
+			assert(area_in_mapblocks.contains(mp));
+			// Index to mapblock_meshes
+			size_t mi = area_in_mapblocks.index(mp);
+			scene::SMesh *mesh = b->mapblock_meshes[mi];
+			if (!mesh)
+				continue;
+			renderMesh(far_map, mesh, driver);
+		}
+	} else {
+		scene::SMesh *mesh = b->mesh;
+		if (mesh) {
+			renderMesh(far_map, mesh, driver);
+		}
 	}
 }
 
