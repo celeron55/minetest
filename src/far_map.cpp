@@ -31,40 +31,40 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define PP(x) "("<<(x).X<<","<<(x).Y<<","<<(x).Z<<")"
 
-FarMapBlock::FarMapBlock(v3s16 p):
+FarBlock::FarBlock(v3s16 p):
 	p(p),
 	mesh(NULL)
 {
 }
 
-FarMapBlock::~FarMapBlock()
+FarBlock::~FarBlock()
 {
 	if(mesh)
 		mesh->drop();
 }
 
-void FarMapBlock::resize(v3s16 new_block_div)
+void FarBlock::resize(v3s16 new_block_div)
 {
 	block_div = new_block_div;
 
-	// Block's effective origin in FarMapNodes based on block_div
+	// Block's effective origin in FarNodes based on block_div
 	dp00 = v3s16(
 		p.X * FMP_SCALE * block_div.X,
 		p.Y * FMP_SCALE * block_div.Y,
 		p.Z * FMP_SCALE * block_div.Z
 	);
 
-	// Effective size of content in FarMapNodes based on block_div in global
+	// Effective size of content in FarNodes based on block_div in global
 	// coordinates
 	effective_size = v3s16(
 			FMP_SCALE * block_div.X,
 			FMP_SCALE * block_div.Y,
 			FMP_SCALE * block_div.Z);
 
-	// One extra FarMapNode layer per edge as required by mesh generation
+	// One extra FarNode layer per edge as required by mesh generation
 	content_size = effective_size + v3s16(2,2,2);
 
-	// Min and max edge of content (one extra FarMapNode layer per edge as
+	// Min and max edge of content (one extra FarNode layer per edge as
 	// required by mesh generation)
 	v3s16 dp0 = dp00 - v3s16(1,1,1);
 	v3s16 dp1 = dp0 + content_size - v3s16(1,1,1); // Inclusive
@@ -76,7 +76,7 @@ void FarMapBlock::resize(v3s16 new_block_div)
 	content.resize(content_size_n);
 }
 
-void FarMapBlock::updateCameraOffset(v3s16 camera_offset)
+void FarBlock::updateCameraOffset(v3s16 camera_offset)
 {
 	if (!mesh) return;
 
@@ -86,13 +86,13 @@ void FarMapBlock::updateCameraOffset(v3s16 camera_offset)
 	}
 }
 
-void FarMapBlock::resetCameraOffset(v3s16 camera_offset)
+void FarBlock::resetCameraOffset(v3s16 camera_offset)
 {
 	current_camera_offset = v3s16(0, 0, 0);
 	updateCameraOffset(camera_offset);
 }
 
-FarMapSector::FarMapSector(v2s16 p):
+FarSector::FarSector(v2s16 p):
 	p(p)
 {
 	v2s16 bp0(p.X * FMP_SCALE, p.Y * FMP_SCALE);
@@ -105,27 +105,27 @@ FarMapSector::FarMapSector(v2s16 p):
 	}
 }
 
-FarMapSector::~FarMapSector()
+FarSector::~FarSector()
 {
-	for (std::map<s16, FarMapBlock*>::iterator i = blocks.begin();
+	for (std::map<s16, FarBlock*>::iterator i = blocks.begin();
 			i != blocks.end(); i++) {
 		delete i->second;
 	}
 }
 
-FarMapBlock* FarMapSector::getOrCreateBlock(s16 y)
+FarBlock* FarSector::getOrCreateBlock(s16 y)
 {
-	std::map<s16, FarMapBlock*>::iterator i = blocks.find(y);
+	std::map<s16, FarBlock*>::iterator i = blocks.find(y);
 	if(i != blocks.end())
 		return i->second;
 	v3s16 p3d(p.X, y, p.Y);
-	FarMapBlock *b = new FarMapBlock(p3d);
+	FarBlock *b = new FarBlock(p3d);
 	blocks[y] = b;
 	return b;
 }
 
-FarMapBlockMeshGenerateTask::FarMapBlockMeshGenerateTask(
-		FarMap *far_map, const FarMapBlock &source_block_):
+FarBlockMeshGenerateTask::FarBlockMeshGenerateTask(
+		FarMap *far_map, const FarBlock &source_block_):
 	far_map(far_map),
 	source_block(source_block_),
 	mesh(NULL)
@@ -135,16 +135,16 @@ FarMapBlockMeshGenerateTask::FarMapBlockMeshGenerateTask(
 	source_block.mesh = NULL;
 }
 
-FarMapBlockMeshGenerateTask::~FarMapBlockMeshGenerateTask()
+FarBlockMeshGenerateTask::~FarBlockMeshGenerateTask()
 {
 	if(mesh)
 		mesh->drop();
 }
 
 static void add_face(MeshCollector *collector,
-		const v3f base_pf, const FarMapNode &n,
+		const v3f base_pf, const FarNode &n,
 		const v3s16 &p, s16 dir_x, s16 dir_y, s16 dir_z,
-		const std::vector<FarMapNode> &data,
+		const std::vector<FarNode> &data,
 		const VoxelArea &data_area,
 		const v3s16 &block_div,
 		const FarMap *far_map)
@@ -159,7 +159,7 @@ static void add_face(MeshCollector *collector,
 	v3s16 vertex_dirs[4];
 	getNodeVertexDirs(dir, vertex_dirs);
 
-	// This is the size of one FarMapNode (without BS being factored in)
+	// This is the size of one FarNode (without BS being factored in)
 	v3f scale(
 		MAP_BLOCKSIZE / block_div.X,
 		MAP_BLOCKSIZE / block_div.Y,
@@ -242,7 +242,7 @@ static void add_face(MeshCollector *collector,
 	t.material_type = TILE_MATERIAL_BASIC;
 	t.material_flags &= ~MATERIAL_FLAG_BACKFACE_CULLING;
 
-	infostream<<"FarMapBlockMeshGenerate: enable_shaders="
+	infostream<<"FarBlockMeshGenerate: enable_shaders="
 			<<(far_map->config_enable_shaders?"true":"false")<<std::endl;
 
 	if (far_map->config_enable_shaders) {
@@ -256,7 +256,7 @@ static void add_face(MeshCollector *collector,
 
 static void extract_faces(MeshCollector *collector,
 		const v3f base_pf,
-		const std::vector<FarMapNode> &data,
+		const std::vector<FarNode> &data,
 		const VoxelArea &data_area, const VoxelArea &gen_area,
 		const v3s16 &block_div,
 		const FarMap *far_map,
@@ -281,10 +281,10 @@ static void extract_faces(MeshCollector *collector,
 	for (p000.Z=gen_area.MinEdge.Z; p000.Z<=gen_area.MaxEdge.Z; p000.Z++)
 	{
 		size_t i000 = data_area.index(p000);
-		const FarMapNode &n000 = data[i000];
-		const FarMapNode &n001 = data[data_area.added_z(data_extent, i000, 1)];
-		const FarMapNode &n010 = data[data_area.added_y(data_extent, i000, 1)];
-		const FarMapNode &n100 = data[data_area.added_x(data_extent, i000, 1)];
+		const FarNode &n000 = data[i000];
+		const FarNode &n001 = data[data_area.added_z(data_extent, i000, 1)];
+		const FarNode &n010 = data[data_area.added_y(data_extent, i000, 1)];
+		const FarNode &n100 = data[data_area.added_x(data_extent, i000, 1)];
 		const ContentFeatures &f000 = ndef->get(n000.id);
 		const ContentFeatures &f001 = ndef->get(n001.id);
 		const ContentFeatures &f010 = ndef->get(n010.id);
@@ -336,9 +336,9 @@ static void extract_faces(MeshCollector *collector,
 	}
 }
 
-void FarMapBlockMeshGenerateTask::inThread()
+void FarBlockMeshGenerateTask::inThread()
 {
-	infostream<<"Generating FarMapBlock mesh for "
+	infostream<<"Generating FarBlock mesh for "
 			<<PP(source_block.p)<<std::endl;
 
 	//ITextureSource *tsrc = far_map->client->getTextureSource();
@@ -370,7 +370,7 @@ void FarMapBlockMeshGenerateTask::inThread()
 	// Test
 	for (size_t i0=0; i0<5; i0++)
 	{
-		FarMapNode n000;
+		FarNode n000;
 		n000.id = 5;
 		n000.light = (15) | (15<<4);
 
@@ -466,14 +466,14 @@ void FarMapBlockMeshGenerateTask::inThread()
 	}
 }
 
-void FarMapBlockMeshGenerateTask::sync()
+void FarBlockMeshGenerateTask::sync()
 {
 	if(mesh){
 		far_map->insertGeneratedBlockMesh(source_block.p, mesh);
 		mesh->drop();
 		mesh = NULL;
 	} else {
-		infostream<<"No FarMapBlock mesh result for "
+		infostream<<"No FarBlock mesh result for "
 				<<PP(source_block.p)<<std::endl;
 	}
 }
@@ -566,26 +566,26 @@ FarMap::~FarMap()
 	m_worker_thread.stop();
 	m_worker_thread.wait();
 
-	for (std::map<v2s16, FarMapSector*>::iterator i = m_sectors.begin();
+	for (std::map<v2s16, FarSector*>::iterator i = m_sectors.begin();
 			i != m_sectors.end(); i++) {
 		delete i->second;
 	}
 }
 
-FarMapSector* FarMap::getOrCreateSector(v2s16 p)
+FarSector* FarMap::getOrCreateSector(v2s16 p)
 {
-	std::map<v2s16, FarMapSector*>::iterator i = m_sectors.find(p);
+	std::map<v2s16, FarSector*>::iterator i = m_sectors.find(p);
 	if(i != m_sectors.end())
 		return i->second;
-	FarMapSector *s = new FarMapSector(p);
+	FarSector *s = new FarSector(p);
 	m_sectors[p] = s;
 	return s;
 }
 
-FarMapBlock* FarMap::getOrCreateBlock(v3s16 p)
+FarBlock* FarMap::getOrCreateBlock(v3s16 p)
 {
 	v2s16 p2d(p.X, p.Z);
-	FarMapSector *s = getOrCreateSector(p2d);
+	FarSector *s = getOrCreateSector(p2d);
 	return s->getOrCreateBlock(p.Y);
 }
 
@@ -601,7 +601,7 @@ void FarMap::insertData(v3s16 area_offset_mapblocks, v3s16 area_size_mapblocks,
 			<<", lights.size(): "<<lights.size()
 			<<std::endl;
 
-	// Convert to divisions (which will match FarMapNodes)
+	// Convert to divisions (which will match FarNodes)
 	v3s16 div_p0(
 		area_offset_mapblocks.X * block_div.X,
 		area_offset_mapblocks.Y * block_div.Y,
@@ -615,20 +615,20 @@ void FarMap::insertData(v3s16 area_offset_mapblocks, v3s16 area_size_mapblocks,
 	// This can be used for indexing node_ids and lights
 	VoxelArea div_area(div_p0, div_p1 - v3s16(1,1,1));
 
-	// Convert to FarMapBlock positions (this can cover extra area)
-	VoxelArea fmb_area(
+	// Convert to FarBlock positions (this can cover extra area)
+	VoxelArea fb_area(
 		getContainerPos(area_offset_mapblocks, FMP_SCALE),
 		getContainerPos(area_offset_mapblocks + area_size_mapblocks -
 				v3s16(1,1,1), FMP_SCALE)
 	);
 
 	v3s16 fbp;
-	for (fbp.Y=fmb_area.MinEdge.Y; fbp.Y<=fmb_area.MaxEdge.Y; fbp.Y++)
-	for (fbp.X=fmb_area.MinEdge.X; fbp.X<=fmb_area.MaxEdge.X; fbp.X++)
-	for (fbp.Z=fmb_area.MinEdge.Z; fbp.Z<=fmb_area.MaxEdge.Z; fbp.Z++) {
+	for (fbp.Y=fb_area.MinEdge.Y; fbp.Y<=fb_area.MaxEdge.Y; fbp.Y++)
+	for (fbp.X=fb_area.MinEdge.X; fbp.X<=fb_area.MaxEdge.X; fbp.X++)
+	for (fbp.Z=fb_area.MinEdge.Z; fbp.Z<=fb_area.MaxEdge.Z; fbp.Z++) {
 		infostream<<"FarMap::insertData: FarBlock "<<PP(fbp)<<std::endl;
 
-		FarMapBlock *b = getOrCreateBlock(fbp);
+		FarBlock *b = getOrCreateBlock(fbp);
 		
 		b->resize(block_div);
 
@@ -659,16 +659,16 @@ void FarMap::insertData(v3s16 area_offset_mapblocks, v3s16 area_size_mapblocks,
 	}
 }
 
-void FarMap::startGeneratingBlockMesh(FarMapBlock *b)
+void FarMap::startGeneratingBlockMesh(FarBlock *b)
 {
-	FarMapBlockMeshGenerateTask *t = new FarMapBlockMeshGenerateTask(this, *b);
+	FarBlockMeshGenerateTask *t = new FarBlockMeshGenerateTask(this, *b);
 
 	m_worker_thread.addTask(t);
 }
 
 void FarMap::insertGeneratedBlockMesh(v3s16 p, scene::SMesh *mesh)
 {
-	FarMapBlock *b = getOrCreateBlock(p);
+	FarBlock *b = getOrCreateBlock(p);
 	if(b->mesh)
 		b->mesh->drop();
 	mesh->grab();
@@ -690,11 +690,11 @@ void FarMap::update()
 		// static shader anyway.
 		u8 material_type = TILE_MATERIAL_BASIC;
 		enum NodeDrawType drawtype = NDT_NORMAL;
-		infostream<<"FarMapBlockMeshGenerate: Getting shader..."<<std::endl;
+		infostream<<"FarBlockMeshGenerate: Getting shader..."<<std::endl;
 		IShaderSource *ssrc = client->getShaderSource();
 		farblock_shader_id = ssrc->getShader(
 				"nodes_shader", material_type, drawtype);
-		infostream<<"FarMapBlockMeshGenerate: shader_id="<<farblock_shader_id
+		infostream<<"FarBlockMeshGenerate: shader_id="<<farblock_shader_id
 				<<std::endl;
 	}
 
@@ -707,13 +707,13 @@ void FarMap::updateCameraOffset(v3s16 camera_offset)
 
 	m_camera_offset = camera_offset;
 
-	for (std::map<v2s16, FarMapSector*>::iterator i = m_sectors.begin();
+	for (std::map<v2s16, FarSector*>::iterator i = m_sectors.begin();
 			i != m_sectors.end(); i++) {
-		FarMapSector *s = i->second;
+		FarSector *s = i->second;
 
-		for (std::map<s16, FarMapBlock*>::iterator i = s->blocks.begin();
+		for (std::map<s16, FarBlock*>::iterator i = s->blocks.begin();
 				i != s->blocks.end(); i++) {
-			FarMapBlock *b = i->second;
+			FarBlock *b = i->second;
 			b->updateCameraOffset(camera_offset);
 		}
 	}
@@ -727,7 +727,7 @@ void FarMap::updateSettings()
 	config_anistropic_filter = g_settings->getBool("anisotropic_filter");
 }
 
-static void renderBlock(FarMap *far_map, FarMapBlock *b, video::IVideoDriver* driver)
+static void renderBlock(FarMap *far_map, FarBlock *b, video::IVideoDriver* driver)
 {
 	scene::SMesh *mesh = b->mesh;
 	if(!mesh){
@@ -766,9 +766,9 @@ void FarMap::render()
 	ClientEnvironment *client_env = &client->getEnv();
 	ClientMap *map = &client_env->getClientMap();
 
-	for (std::map<v2s16, FarMapSector*>::iterator i = m_sectors.begin();
+	for (std::map<v2s16, FarSector*>::iterator i = m_sectors.begin();
 			i != m_sectors.end(); i++) {
-		FarMapSector *s = i->second;
+		FarSector *s = i->second;
 
 		// Don't render if something from regular map was rendered inside this
 		// sector
@@ -784,9 +784,9 @@ void FarMap::render()
 		if (num_covered >= min_required)
 			break;
 
-		for (std::map<s16, FarMapBlock*>::iterator i = s->blocks.begin();
+		for (std::map<s16, FarBlock*>::iterator i = s->blocks.begin();
 				i != s->blocks.end(); i++) {
-			FarMapBlock *b = i->second;
+			FarBlock *b = i->second;
 			renderBlock(this, b, driver);
 
 			profiler_num_rendered_farblocks++;

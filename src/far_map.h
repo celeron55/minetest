@@ -32,34 +32,34 @@ class Client;
 //class ITextureSource;
 struct FarMap;
 
-// FarMapBlock size in MapBlocks in every dimension
+// FarBlock size in MapBlocks in every dimension
 #define FMP_SCALE 8
 
-struct FarMapNode
+struct FarNode
 {
 	u16 id;
 	u8 light;
 };
 
-struct FarMapBlock
+struct FarBlock
 {
 	v3s16 p;
 
 	// In how many pieces MapBlocks have been divided per dimension
 	v3s16 block_div;
-	// Block's effective origin in FarMapNodes based on block_div
+	// Block's effective origin in FarNodes based on block_div
 	v3s16 dp00;
-	// Effective size of content in FarMapNodes based on block_div in global
+	// Effective size of content in FarNodes based on block_div in global
 	// coordinates
 	v3s16 effective_size;
-	// Raw size of content in FarMapNodes based on block_div in global
+	// Raw size of content in FarNodes based on block_div in global
 	// coordinates
 	v3s16 content_size;
-	// Raw area of content in FarMapNodes based on block_div in global
+	// Raw area of content in FarNodes based on block_div in global
 	// coordinates
 	VoxelArea content_area;
 
-	std::vector<FarMapNode> content;
+	std::vector<FarNode> content;
 
 	scene::SMesh *mesh;
 
@@ -68,8 +68,8 @@ struct FarMapBlock
 
 	v3s16 current_camera_offset;
 
-	FarMapBlock(v3s16 p);
-	~FarMapBlock();
+	FarBlock(v3s16 p);
+	~FarBlock();
 
 	void resize(v3s16 new_block_div);
 	void updateCameraOffset(v3s16 camera_offset);
@@ -82,18 +82,18 @@ struct FarMapBlock
 	}
 };
 
-struct FarMapSector
+struct FarSector
 {
 	v2s16 p;
 
-	std::map<s16, FarMapBlock*> blocks;
+	std::map<s16, FarBlock*> blocks;
 
 	std::vector<v2s16> mapsectors_covered;
 
-	FarMapSector(v2s16 p);
-	~FarMapSector();
+	FarSector(v2s16 p);
+	~FarSector();
 
-	FarMapBlock* getOrCreateBlock(s16 p);
+	FarBlock* getOrCreateBlock(s16 p);
 };
 
 struct FarMapTask
@@ -103,14 +103,14 @@ struct FarMapTask
 	virtual void sync() = 0;
 };
 
-struct FarMapBlockMeshGenerateTask: public FarMapTask
+struct FarBlockMeshGenerateTask: public FarMapTask
 {
 	FarMap *far_map;
-	FarMapBlock source_block;
+	FarBlock source_block;
 	scene::SMesh *mesh;
 
-	FarMapBlockMeshGenerateTask(FarMap *far_map, const FarMapBlock &source_block);
-	~FarMapBlockMeshGenerateTask();
+	FarBlockMeshGenerateTask(FarMap *far_map, const FarBlock &source_block);
+	~FarBlockMeshGenerateTask();
 	void inThread();
 	void sync();
 };
@@ -147,15 +147,15 @@ public:
 	);
 	~FarMap();
 
-	FarMapSector* getOrCreateSector(v2s16 p);
-	FarMapBlock* getOrCreateBlock(v3s16 p);
+	FarSector* getOrCreateSector(v2s16 p);
+	FarBlock* getOrCreateBlock(v3s16 p);
 
 	// Parameter dimensions are in MapBlocks
 	void insertData(v3s16 area_offset_mapblocks, v3s16 area_size_mapblocks,
 			v3s16 block_div,
 			const std::vector<u16> &node_ids, const std::vector<u8> &lights);
 
-	void startGeneratingBlockMesh(FarMapBlock *b);
+	void startGeneratingBlockMesh(FarBlock *b);
 	void insertGeneratedBlockMesh(v3s16 p, scene::SMesh *mesh);
 
 	void update();
@@ -181,7 +181,7 @@ private:
 	FarMapWorkerThread m_worker_thread;
 
 	// Source data
-	std::map<v2s16, FarMapSector*> m_sectors;
+	std::map<v2s16, FarSector*> m_sectors;
 
 	// Rendering stuff
 	core::aabbox3d<f32> m_bounding_box;
