@@ -435,22 +435,69 @@ void FarBlockMeshGenerateTask::inThread()
 	infostream<<"Generating FarBlock mesh for "
 			<<PP(block.p)<<std::endl;
 
-	MeshCollector collector;
+	// Main mesh
+	{
+		MeshCollector collector;
 
-	VoxelArea data_area = block.content_area;
-	VoxelArea gen_area = block.effective_area;
+		size_t profiler_num_faces_added = 0;
 
-	size_t profiler_num_faces_added = 0;
+		extract_faces(&collector, block.content, block.content_area,
+				block.effective_area, block.block_div, far_map,
+				&profiler_num_faces_added);
 
-	extract_faces(&collector, block.content, data_area,
-			gen_area, block.block_div, far_map,
-			&profiler_num_faces_added);
+		g_profiler->avg("Far: num faces per mesh", profiler_num_faces_added);
+		g_profiler->add("Far: num meshes generated", 1);
 
-	g_profiler->avg("Far: num faces per mesh", profiler_num_faces_added);
-	g_profiler->add("Far: num meshes generated", 1);
-	
-	assert(block.mesh == NULL);
-	block.mesh = create_farblock_mesh(far_map, &collector);
+		assert(block.mesh == NULL);
+		block.mesh = create_farblock_mesh(far_map, &collector);
+	}
+
+	// MapBlock-sized meshes
+	VoxelArea mapblock_meshes_area(
+		v3s16(0, 0, 0),
+		v3s16(FMP_SCALE-1, FMP_SCALE-1, FMP_SCALE-1)
+	);
+	v3s16 mp;
+	for (mp.Z=0; mp.Z<FMP_SCALE; mp.Z++)
+	for (mp.Y=0; mp.Y<FMP_SCALE; mp.Y++)
+	for (mp.X=0; mp.X<FMP_SCALE; mp.X++) {
+		// Index to mapblock_meshes
+		size_t mi = mapblock_meshes_area.index(mp);
+
+		MeshCollector collector;
+
+		VoxelArea gen_area(
+			block.dp00 + v3s16(
+				block.block_div.X * mp.X,
+				block.block_div.Y * mp.Y,
+				block.block_div.Z * mp.Z
+			),
+			block.dp00 + v3s16(
+				block.block_div.X * mp.X + block.block_div.X - 1,
+				block.block_div.Y * mp.Y + block.block_div.Y - 1,
+				block.block_div.Z * mp.Z + block.block_div.Z - 1
+			)
+		);
+
+		size_t profiler_num_faces_added = 0;
+
+		extract_faces(&collector, block.content, block.content_area,
+				gen_area, block.block_div, far_map,
+				&profiler_num_faces_added);
+
+		g_profiler->avg("Far: num faces per mb mesh", profiler_num_faces_added);
+		g_profiler->add("Far: num mb meshes generated", 1);
+
+		assert(block.mapblock_meshes[mi] == NULL);
+		block.mapblock_meshes[mi] = create_farblock_mesh(far_map, &collector);
+
+		/*for (np.Z=0; np.Z<block_div.Z; np.Z++)
+		for (np.Y=0; np.Y<block_div.Y; np.Y++)
+		for (np.X=0; np.X<block_div.X; np.X++) {
+			// Index to content
+			size_t ni = content_area.index(
+		}*/
+	}
 }
 
 void FarBlockMeshGenerateTask::sync()
