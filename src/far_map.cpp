@@ -41,6 +41,11 @@ FarBlock::~FarBlock()
 {
 	if(mesh)
 		mesh->drop();
+
+	for (size_t i=0; i<mapblock_meshes.size(); i++) {
+		if(mapblock_meshes[i])
+			mapblock_meshes[i]->drop();
+	}
 }
 
 void FarBlock::resize(v3s16 new_block_div)
@@ -74,6 +79,9 @@ void FarBlock::resize(v3s16 new_block_div)
 	size_t content_size_n = content_area.getVolume();
 
 	content.resize(content_size_n);
+
+	mapblock_meshes.clear();
+	mapblock_meshes.resize(FMP_SCALE * FMP_SCALE * FMP_SCALE);
 }
 
 void FarBlock::updateCameraOffset(v3s16 camera_offset)
@@ -125,20 +133,21 @@ FarBlock* FarSector::getOrCreateBlock(s16 y)
 }
 
 FarBlockMeshGenerateTask::FarBlockMeshGenerateTask(
-		FarMap *far_map, const FarBlock &source_block_):
+		FarMap *far_map, const FarBlock &source_block):
 	far_map(far_map),
-	source_block(source_block_),
-	mesh(NULL)
+	block(source_block)
 {
-	// We don't want to deal with whatever mesh the block is currently holding;
-	// set it to NULL so that no destructor will drop it.
-	source_block.mesh = NULL;
+	// We don't want to deal with whatever mesh the block was currently holding;
+	// set things to NULL so that FarBlock's destructor will not drop the
+	// original contents and we can store our results in it.
+	block.mesh = NULL;
+	for (size_t i=0; i<block.mapblock_meshes.size(); i++) {
+		block.mapblock_meshes[i] = NULL;
+	}
 }
 
 FarBlockMeshGenerateTask::~FarBlockMeshGenerateTask()
 {
-	if(mesh)
-		mesh->drop();
 }
 
 static void add_face(MeshCollector *collector,
@@ -333,61 +342,16 @@ static void extract_faces(MeshCollector *collector,
 	}
 }
 
-void FarBlockMeshGenerateTask::inThread()
+static scene::SMesh* create_farblock_mesh(FarMap *far_map,
+		MeshCollector *collector)
 {
-	infostream<<"Generating FarBlock mesh for "
-			<<PP(source_block.p)<<std::endl;
-
-	//ITextureSource *tsrc = far_map->client->getTextureSource();
 	IShaderSource *ssrc = far_map->client->getShaderSource();
-	//INodeDefManager *ndef = far_map->client->getNodeDefManager();
 
-	MeshCollector collector;
+	scene::SMesh *mesh = new scene::SMesh();
 
-	VoxelArea data_area = source_block.content_area;
-	VoxelArea gen_area = data_area;
-	// Remove dummy edges from area to be generated
-	gen_area.MinEdge += v3s16(1,1,1);
-	gen_area.MaxEdge -= v3s16(1,1,1);
-
-	size_t profiler_num_faces_added = 0;
-
-	extract_faces(&collector, source_block.content, data_area,
-			gen_area, source_block.block_div, far_map,
-			&profiler_num_faces_added);
-
-	g_profiler->avg("Far: num faces per mesh", profiler_num_faces_added);
-	g_profiler->add("Far: num meshes generated", 1);
-	
-#if 0
-	// Test
-	for (size_t i0=0; i0<5; i0++)
+	for(u32 i = 0; i < collector->prebuffers.size(); i++)
 	{
-		FarNode n000;
-		n000.id = 5;
-		n000.light = (15) | (15<<4);
-
-		v3s16 p000 = gen_area.MinEdge + v3s16(
-			source_block.block_div.X * FMP_SCALE / 2,
-			source_block.block_div.Y * FMP_SCALE / 5 * i0,
-			source_block.block_div.Z * FMP_SCALE / 2
-		);
-
-		add_face(&collector, n000, p000,  0,0,1, source_block.content,
-				data_area, source_block.block_div, far_map);
-	}
-#endif
-	
-	/*
-		Convert MeshCollector to SMesh
-	*/
-
-	assert(mesh == NULL);
-	mesh = new scene::SMesh();
-
-	for(u32 i = 0; i < collector.prebuffers.size(); i++)
-	{
-		PreMeshBuffer &p = collector.prebuffers[i];
+		PreMeshBuffer &p = collector->prebuffers[i];
 
 		for(u32 j = 0; j < p.vertices.size(); j++)
 		{
@@ -457,17 +421,80 @@ void FarBlockMeshGenerateTask::inThread()
 				far_map->client->getSceneManager()->getMeshManipulator();
 		meshmanip->recalculateTangents(mesh, true, false, false);
 	}
+
+	return mesh;
+}
+
+void FarBlockMeshGenerateTask::inThread()
+{
+	infostream<<"Generating FarBlock mesh for "
+			<<PP(block.p)<<std::endl;
+
+	//ITextureSource *tsrc = far_map->client->getTextureSource();
+	//IShaderSource *ssrc = far_map->client->getShaderSource();
+	//INodeDefManager *ndef = far_map->client->getNodeDefManager();
+
+	MeshCollector collector;
+
+	VoxelArea data_area = block.content_area;
+	VoxelArea gen_area = data_area;
+	// Remove dummy edges from area to be generated
+	gen_area.MinEdge += v3s16(1,1,1);
+	gen_area.MaxEdge -= v3s16(1,1,1);
+
+	size_t profiler_num_faces_added = 0;
+
+	extract_faces(&collector, block.content, data_area,
+			gen_area, block.block_div, far_map,
+			&profiler_num_faces_added);
+
+	g_profiler->avg("Far: num faces per mesh", profiler_num_faces_added);
+	g_profiler->add("Far: num meshes generated", 1);
+	
+#if 0
+	// Test
+	for (size_t i0=0; i0<5; i0++)
+	{
+		FarNode n000;
+		n000.id = 5;
+		n000.light = (15) | (15<<4);
+
+		v3s16 p000 = gen_area.MinEdge + v3s16(
+			block.block_div.X * FMP_SCALE / 2,
+			block.block_div.Y * FMP_SCALE / 5 * i0,
+			block.block_div.Z * FMP_SCALE / 2
+		);
+
+		add_face(&collector, n000, p000,  0,0,1, block.content,
+				data_area, block.block_div, far_map);
+	}
+#endif
+	
+	/*
+		Convert MeshCollector to SMesh
+	*/
+
+	assert(block.mesh == NULL);
+
+	block.mesh = create_farblock_mesh(far_map, &collector);
 }
 
 void FarBlockMeshGenerateTask::sync()
 {
-	if(mesh){
-		far_map->insertGeneratedBlockMesh(source_block.p, mesh);
-		mesh->drop();
-		mesh = NULL;
+	if(block.mesh){
+		far_map->insertGeneratedBlockMesh(block.p, block.mesh,
+				block.mapblock_meshes);
+		block.mesh->drop();
+		block.mesh = NULL;
+		for (size_t i=0; i<block.mapblock_meshes.size(); i++) {
+			if (block.mapblock_meshes[i] != NULL) {
+				block.mapblock_meshes[i]->drop();
+				block.mapblock_meshes[i] = NULL;
+			}
+		}
 	} else {
 		infostream<<"No FarBlock mesh result for "
-				<<PP(source_block.p)<<std::endl;
+				<<PP(block.p)<<std::endl;
 	}
 }
 
@@ -659,13 +686,33 @@ void FarMap::startGeneratingBlockMesh(FarBlock *b)
 	m_worker_thread.addTask(t);
 }
 
-void FarMap::insertGeneratedBlockMesh(v3s16 p, scene::SMesh *mesh)
+void FarMap::insertGeneratedBlockMesh(v3s16 p, scene::SMesh *mesh,
+		const std::vector<scene::SMesh*> &mapblock_meshes)
 {
 	FarBlock *b = getOrCreateBlock(p);
+
 	if(b->mesh)
 		b->mesh->drop();
+
 	mesh->grab();
 	b->mesh = mesh;
+
+	for (size_t i=0; i<b->mapblock_meshes.size(); i++) {
+		if(b->mapblock_meshes[i])
+			b->mapblock_meshes[i]->drop();
+		b->mapblock_meshes[i] = NULL;
+	}
+	b->mapblock_meshes.resize(mapblock_meshes.size());
+	for (size_t i=0; i<mapblock_meshes.size(); i++) {
+		if (mapblock_meshes[i] != NULL) {
+			mapblock_meshes[i]->grab();
+			b->mapblock_meshes[i] = mapblock_meshes[i];
+		} else {
+			warningstream<<"FarMap::insertGenerated: mapblock_meshes["
+					<<i<<"] is NULL"<<std::endl;
+		}
+	}
+
 	b->resetCameraOffset(m_camera_offset);
 
 	g_profiler->add("Far: generated farblocks meshes", 1);

@@ -61,10 +61,12 @@ struct FarBlock
 
 	std::vector<FarNode> content;
 
+	// Mesh covering everything in this FarBlock
 	scene::SMesh *mesh;
 
-	// TODO: An array of MapBlock-sized meshes to be used when the area is
-	//       partly being rendered from the regular Map
+	// An array of MapBlock-sized meshes to be used when the area is partly
+	// being rendered from the regular Map and the whole mesh cannnot be used
+	std::vector<scene::SMesh*> mapblock_meshes;
 
 	v3s16 current_camera_offset;
 
@@ -106,8 +108,7 @@ struct FarMapTask
 struct FarBlockMeshGenerateTask: public FarMapTask
 {
 	FarMap *far_map;
-	FarBlock source_block;
-	scene::SMesh *mesh;
+	FarBlock block;
 
 	FarBlockMeshGenerateTask(FarMap *far_map, const FarBlock &source_block);
 	~FarBlockMeshGenerateTask();
@@ -156,7 +157,8 @@ public:
 			const std::vector<u16> &node_ids, const std::vector<u8> &lights);
 
 	void startGeneratingBlockMesh(FarBlock *b);
-	void insertGeneratedBlockMesh(v3s16 p, scene::SMesh *mesh);
+	void insertGeneratedBlockMesh(v3s16 p, scene::SMesh *mesh,
+			const std::vector<scene::SMesh*> &mapblock_meshes);
 
 	void update();
 	void updateCameraOffset(v3s16 camera_offset);
