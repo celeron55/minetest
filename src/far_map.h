@@ -23,13 +23,13 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "util/thread.h" // UpdateThread
 #include "threading/atomic.h"
 #include "voxel.h" // VoxelArea
+#include "util/atlas.h"
 #include <ISceneNode.h>
 #include <SMesh.h>
 #include <vector>
 #include <map>
 
 class Client;
-//class ITextureSource;
 struct FarMap;
 
 // FarBlock size in MapBlocks in every dimension
@@ -156,46 +156,20 @@ struct BlockAreaBitmap
 
 struct FarAtlas
 {
-	struct Result
-	{
-		video::ITexture *texture;
-		float x0;
-		float y0;
-		float x1;
-		float y1;
+	struct NodeSegRefs {
+		atlas::AtlasSegmentReference refs[3]; // top, bottom, side
 	};
 
-	struct Atlas
-	{
-		std::vector<content_t> sources;
-		video::IImage *image;
-		std::string texture_name;
-		video::Itexture *texture;
-		size_t next_subtexture_i;
-		bool valid;
+	atlas::AtlasRegistry *atlas;
+	std::vector<NodeSegRefs> node_segrefs;
 
-		Atlas(): image(NULL), texture(NULL), next_subtexture_i(0), valid(false) {}
-	};
-
-	struct TexRef
-	{
-		size_t atlas_i;
-		size_t subtexture_i;
-	};
-
-	struct NodeTexRefs
-	{
-		TexRef refs[3]; // top, bottom, side
-	};
-
-	std::vector<Atlas> atlases;
-	std::vector<NodeTexRefs> node_texrefs;
-
-	Atlas* getFreeAtlas();
-	TexRef addTexure(const std::string &name);
+	FarAtlas(FarMap *far_map);
+	~FarAtlas();
+	atlas::AtlasSegmentReference addTexture(const std::string &name);
 	void addNode(content_t id, const std::string &top,
 			const std::string &bottom, const std::string &side);
-	void build();
+	const atlas::AtlasSegmentCache* getNode(content_t id, u8 face) const;
+	void update();
 };
 
 class FarMap: public scene::ISceneNode
@@ -232,6 +206,7 @@ public:
 	const core::aabbox3d<f32>& getBoundingBox() const;
 
 	Client *client;
+	FarAtlas atlas;
 
 	bool config_enable_shaders;
 	bool config_trilinear_filter;

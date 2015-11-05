@@ -25,6 +25,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "util/numeric.h" // getContainerPos
 #include "client.h" // For use of Client's IGameDef interface
 #include "profiler.h"
+#include "util/atlas.h"
 #include "irrlichttypes_extrabloated.h"
 #include <IMaterialRenderer.h>
 
@@ -179,7 +180,7 @@ static void add_face(MeshCollector *collector,
 {
 	ITextureSource *tsrc = far_map->client->getTextureSource();
 	//IShaderSource *ssrc = far_map->client->getShaderSource();
-	INodeDefManager *ndef = far_map->client->getNodeDefManager();
+	//INodeDefManager *ndef = far_map->client->getNodeDefManager();
 
 	static const u16 indices[] = {0,1,2,2,3,0};
 
@@ -235,6 +236,37 @@ static void add_face(MeshCollector *collector,
 	float w = 1.0 / 8; // WTF
 	float h = 1.0;
 
+	// Get texture from texture atlas
+	u8 face = dir.Y == 1 ? 0 : dir.Y == -1 ? 1 : 2;
+	const atlas::AtlasSegmentCache *asc = far_map->atlas.getNode(n.id, face);
+	assert(asc);
+
+	/*//std::string tile_name = "unknown_node.png";
+	const ContentFeatures &f = ndef->get(n.id);
+	const std::string *tile_name = NULL;
+	if(dir.Y == 1) // Top
+		tile_name = &f.tiledef[0].name;
+	else if(dir.Y == -1) // Bottom
+		tile_name = &f.tiledef[1].name;
+	else // Side
+		tile_name = &f.tiledef[2].name;*/
+
+	TileSpec t;
+	/*t.texture_id = tsrc->getTextureId(*tile_name);
+	t.texture = tsrc->getTexture(t.texture_id);*/
+	t.texture_id = 0; // atlas::AtlasRegistry doesn't provide this
+	t.texture = asc->texture;
+	t.alpha = alpha;
+	t.material_type = TILE_MATERIAL_BASIC;
+	//t.material_flags &= ~MATERIAL_FLAG_BACKFACE_CULLING;
+
+	if (far_map->config_enable_shaders) {
+		t.shader_id = far_map->farblock_shader_id;
+		bool normalmap_present = false;
+		t.flags_texture = tsrc->getShaderFlagsTexture(normalmap_present);
+	}
+
+	// Finally create the vertices that we have been preparing for
 	video::S3DVertex vertices[4];
 	vertices[0] = video::S3DVertex(vertex_pos[0], normal,
 			MapBlock_LightColor(alpha, light_encoded, light_source),
@@ -248,32 +280,6 @@ static void add_face(MeshCollector *collector,
 	vertices[3] = video::S3DVertex(vertex_pos[3], normal,
 			MapBlock_LightColor(alpha, light_encoded, light_source),
 			core::vector2d<f32>(x0+w*abs_scale, y0));
-
-	// TODO: A specialized texture atlas with preprocessed textures for this
-	//       purpose is needed
-
-	//std::string tile_name = "unknown_node.png";
-	const ContentFeatures &f = ndef->get(n.id);
-	const std::string *tile_name = NULL;
-	if(dir.Y == 1) // Top
-		tile_name = &f.tiledef[0].name;
-	else if(dir.Y == -1) // Bottom
-		tile_name = &f.tiledef[1].name;
-	else // Side
-		tile_name = &f.tiledef[2].name;
-
-	TileSpec t;
-	t.texture_id = tsrc->getTextureId(*tile_name);
-	t.texture = tsrc->getTexture(t.texture_id);
-	t.alpha = alpha;
-	t.material_type = TILE_MATERIAL_BASIC;
-	//t.material_flags &= ~MATERIAL_FLAG_BACKFACE_CULLING;
-
-	if (far_map->config_enable_shaders) {
-		t.shader_id = far_map->farblock_shader_id;
-		bool normalmap_present = false;
-		t.flags_texture = tsrc->getShaderFlagsTexture(normalmap_present);
-	}
 
 	collector->append(t, vertices, 4, indices, 6);
 }
@@ -647,72 +653,52 @@ bool BlockAreaBitmap::get(v3s16 bp)
 	FarAtlas
 */
 
-FarAtlas::FarAtlas():
-	next_subtexture_i(0)
+FarAtlas::FarAtlas(FarMap *far_map)
 {
-	Atlas a;
-	a.image = new video::IImage();
-	a.texture = NULL;
-	atlas_textures.push_back(a);
+	video::IVideoDriver* driver =
+			far_map->client->getSceneManager()->getVideoDriver();
+	atlas = atlas::createAtlasRegistry("FarMap", driver, far_map->client);
 }
 
 FarAtlas::~FarAtlas()
 {
-	// TODO
+	delete atlas;
 }
 
-FarAtlas::Atlas* FarAtlas::getFreeAtlas()
+atlas::AtlasSegmentReference FarAtlas::addTexture(const std::string &name)
 {
-	Atlas *atlas = NULL;
-	if (atlases.size() == 0 ||
-			atlases[atlases.size()-1].sources.size() == textures_per_atlas) {
-		atlases.push_back(Atlas());
-		return &atlases[atlases.size()-1];
-	} else {
-		return &atlases[atlases.size()-1];
-	}
-}
-
-FarAtlas::TexRef FarAtlas::addTexture(const std::string &name)
-{
-	const size_t textures_per_atlas = 16; // TODO
-
-	Atlas *atlas = getFreeAtlas();
-	atlas->image = new video::IImage();
-
-	//atlas->texture =
-
-	TexRef r;
-	r.atlas_i = 
+	atlas::AtlasSegmentDefinition def;
+	def.image_name = name;
+	def.total_segments = v2s32(1, 1);
+	def.select_segment = v2s32(1, 1);
+	def.lod_simulation = 2;
+	return atlas->find_or_add_segment(def);
 }
 
 void FarAtlas::addNode(content_t id, const std::string &top,
 		const std::string &bottom, const std::string &side)
 {
-	NodeTexRefs ntr;
-	ntr.refs[0] = addTex(top);
-	ntr.refs[1] = addTex(bottom);
-	ntr.refs[2] = addTex(side);
+	NodeSegRefs nsr;
+	nsr.refs[0] = addTexture(top);
+	nsr.refs[1] = addTexture(bottom);
+	nsr.refs[2] = addTexture(side);
 
-	if(node_texrefs.size() < id + 1)
-		node_texrefs.resize(id + 1);
-	node_texrefs[id] = ntr;
+	if((content_t)node_segrefs.size() < id + 1)
+		node_segrefs.resize(id + 1);
+	node_segrefs[id] = nsr;
 }
 
-void FarAtlas::build()
+const atlas::AtlasSegmentCache* FarAtlas::getNode(content_t id, u8 face) const
 {
-	for(size_t i=0; i<atlases.size(); i++){
-		Atlas *atlas = &atlases[i];
-		if(atlas->valid)
-			continue;
-		atlas->image->drop();
-		core::dimension2d<u32> dim(1024, 1024); // TODO
-		atlas->image = driver->createImage(video::ECF_A8R8G8B8, dim);
+	assert(face < 3);
+	if(node_segrefs.size() <= id)
+		return NULL;
+	return atlas->get_texture(node_segrefs[id].refs[face]);
+}
 
-		atlas->texture->drop();
-		atlas->texture_name = std::string()+"far_atlas_texture_"+itos(i);
-		atlas->texture = addTexture(atlas->texture_name.c_str(), atlas->image);
-	}
+void FarAtlas::update()
+{
+	atlas->update();
 }
 
 /*
@@ -727,6 +713,7 @@ FarMap::FarMap(
 ):
 	scene::ISceneNode(parent, mgr, id),
 	client(client),
+	atlas(this),
 	farblock_shader_id(0)
 {
 	m_bounding_box = core::aabbox3d<f32>(-BS*1000000,-BS*1000000,-BS*1000000,
@@ -735,6 +722,8 @@ FarMap::FarMap(
 	updateSettings();
 	
 	m_worker_thread.start();
+
+	// TODO: Add nodes to atlas
 }
 
 FarMap::~FarMap()
@@ -887,6 +876,8 @@ void FarMap::update()
 		infostream<<"FarBlockMeshGenerate: shader_id="<<farblock_shader_id
 				<<std::endl;
 	}
+
+	atlas.update();
 
 	m_worker_thread.sync();
 }
