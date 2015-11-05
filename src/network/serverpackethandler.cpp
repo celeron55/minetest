@@ -2102,20 +2102,27 @@ void Server::handleCommand_GetFarBlocks(NetworkPacket* pkt_in)
 			u8 light = 0;
 
 			if(b){
-				// Node at center of division
+				// Node at center of division (horizontally)
 				v3s16 np(
-					dp.X * block_div.X + block_div.X/2,
-					dp.Y * block_div.Y + block_div.Y - 1, // Top
-					dp.Z * block_div.Z + block_div.Z/2);
-				MapNode n = b->getNodeNoEx(np);
-				node_id = n.getContent();
-				const ContentFeatures &f = getNodeDefManager()->get(n);
-				if (!f.name.empty() && f.param_type == CPT_LIGHT) {
-					light = n.param1;
-				} else {
-					// TODO: Get light of a nearby node; something that defines
-					//       how brightly this division should be rendered
-					light = (15) | (15<<4);
+					dp.X * block_div.X + MAP_BLOCKSIZE/block_div.X/2,
+					dp.Y * block_div.Y + MAP_BLOCKSIZE/block_div.Y/2,
+					dp.Z * block_div.Z + MAP_BLOCKSIZE/block_div.Z/2);
+				for(s32 i=0; i<MAP_BLOCKSIZE/block_div.Y; i++){
+					MapNode n = b->getNodeNoEx(np);
+					const ContentFeatures &f = getNodeDefManager()->get(n);
+					if (!f.name.empty() && f.param_type == CPT_LIGHT) {
+						light = n.param1;
+						if(node_id == 0){
+							node_id = n.getContent();
+						}
+						break;
+					} else {
+						// TODO: Get light of a nearby node; something that defines
+						//       how brightly this division should be rendered
+						light = (15) | (15<<4);
+						node_id = n.getContent();
+					}
+					np.Y++;
 				}
 			}
 
