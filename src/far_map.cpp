@@ -134,7 +134,7 @@ static void add_face(MeshCollector *collector,
 {
 	ITextureSource *tsrc = far_map->client->getTextureSource();
 	//IShaderSource *ssrc = far_map->client->getShaderSource();
-	//INodeDefManager *ndef = far_map->client->getNodeDefManager();
+	INodeDefManager *ndef = far_map->client->getNodeDefManager();
 
 	static const u16 indices[] = {0,1,2,2,3,0};
 
@@ -205,9 +205,9 @@ static void add_face(MeshCollector *collector,
 			MapBlock_LightColor(alpha, light_encoded, light_source),
 			core::vector2d<f32>(x0+w*abs_scale, y0));
 
-	// TODO: Don't do this; use a special texture atlas
-	//std::string tile_name = "default_grass.png";
-	std::string tile_name = "unknown_node.png";
+	const ContentFeatures &f = ndef->get(n.id);
+	const std::string &tile_name = f.tiledef[1].name;
+	//std::string tile_name = "unknown_node.png";
 
 	TileSpec t;
 	t.texture_id = tsrc->getTextureId(tile_name);
@@ -342,9 +342,7 @@ void FarMapBlockMeshGenerateTask::inThread()
 	g_profiler->avg("Far: num faces per mesh", profiler_num_faces_added);
 	g_profiler->add("Far: num meshes generated", 1);
 	
-
-	// TODO
-
+#if 0
 	// Test
 	for (size_t i0=0; i0<5; i0++)
 	{
@@ -360,97 +358,8 @@ void FarMapBlockMeshGenerateTask::inThread()
 
 		add_face(&collector, base_pf, n000, p000,  0,0,1, source_block.content,
 				data_area, source_block.block_div, far_map);
-
-#if 0
-		const u16 indices[] = {0,1,2,2,3,0};
-
-		v3s16 dir(0, 0, 1);
-		v3s16 vertex_dirs[4];
-		getNodeVertexDirs(dir, vertex_dirs);
-
-		v3f scale(
-			MAP_BLOCKSIZE / source_block.block_div.X,
-			MAP_BLOCKSIZE / source_block.block_div.Y,
-			MAP_BLOCKSIZE / source_block.block_div.Z
-		);
-
-		v3f pf = v3f(source_block.p.X, source_block.p.Y, source_block.p.Z)
-				* MAP_BLOCKSIZE * FMP_SCALE * BS;
-		pf += v3f(0.5, 0.0, 0.5) * MAP_BLOCKSIZE * FMP_SCALE * BS;
-		pf.Y += 0.2 * MAP_BLOCKSIZE * FMP_SCALE * BS * i0;
-
-		v3f vertex_pos[4];
-		for(u16 i=0; i<4; i++)
-		{
-			vertex_pos[i] = v3f(
-					BS/2*vertex_dirs[i].X,
-					BS/2*vertex_dirs[i].Y,
-					BS/2*vertex_dirs[i].Z
-			);
-			vertex_pos[i].X *= scale.X;
-			vertex_pos[i].Y *= scale.Y;
-			vertex_pos[i].Z *= scale.Z;
-			vertex_pos[i] += pf;
-		}
-
-		v3f normal(dir.X, dir.Y, dir.Z);
-
-		u8 alpha = 255;
-
-		// As produced by getFaceLight (day | (night << 8))
-		u16 light_encoded = (255) | (255<<8);
-		// Light produced by the node itself
-		u8 light_source = 0;
-
-		// Some kind of texture coordinate aspect stretch thing
-		f32 abs_scale = 1.0;
-		if     (scale.X < 0.999 || scale.X > 1.001) abs_scale = scale.X;
-		else if(scale.Y < 0.999 || scale.Y > 1.001) abs_scale = scale.Y;
-		else if(scale.Z < 0.999 || scale.Z > 1.001) abs_scale = scale.Z;
-
-		// Texture coordinates
-		float x0 = 0.0;
-		float y0 = 0.0;
-		float w = 1.0;
-		float h = 1.0;
-
-		video::S3DVertex vertices[4];
-		vertices[0] = video::S3DVertex(vertex_pos[0], normal,
-				MapBlock_LightColor(alpha, light_encoded, light_source),
-				core::vector2d<f32>(x0+w*abs_scale, y0+h));
-		vertices[1] = video::S3DVertex(vertex_pos[1], normal,
-				MapBlock_LightColor(alpha, light_encoded, light_source),
-				core::vector2d<f32>(x0, y0+h));
-		vertices[2] = video::S3DVertex(vertex_pos[2], normal,
-				MapBlock_LightColor(alpha, light_encoded, light_source),
-				core::vector2d<f32>(x0, y0));
-		vertices[3] = video::S3DVertex(vertex_pos[3], normal,
-				MapBlock_LightColor(alpha, light_encoded, light_source),
-				core::vector2d<f32>(x0+w*abs_scale, y0));
-
-		// TODO: Don't do this; use a special texture atlas
-		//std::string tile_name = "default_grass.png";
-		std::string tile_name = "unknown_node.png";
-
-		TileSpec t;
-		t.texture_id = tsrc->getTextureId(tile_name);
-		t.texture = tsrc->getTexture(t.texture_id);
-		t.alpha = alpha;
-		t.material_type = TILE_MATERIAL_BASIC;
-		t.material_flags &= ~MATERIAL_FLAG_BACKFACE_CULLING;
-
-		infostream<<"FarMapBlockMeshGenerate: enable_shaders="
-				<<(far_map->config_enable_shaders?"true":"false")<<std::endl;
-
-		if (far_map->config_enable_shaders) {
-			t.shader_id = far_map->farblock_shader_id;
-			bool normalmap_present = false;
-			t.flags_texture = tsrc->getShaderFlagsTexture(normalmap_present);
-		}
-
-		collector.append(t, vertices, 4, indices, 6);
-#endif
 	}
+#endif
 	
 	/*
 		Convert MeshCollector to SMesh
