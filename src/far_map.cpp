@@ -751,6 +751,8 @@ static void renderBlock(FarMap *far_map, FarBlock *b, video::IVideoDriver* drive
 
 void FarMap::render()
 {
+	ScopeProfiler sp_render(g_profiler, "Far: render time (avg)", SPT_AVG);
+
 	video::IVideoDriver* driver = SceneManager->getVideoDriver();
 	driver->setTransform(video::ETS_WORLD, AbsoluteTransformation);
 
