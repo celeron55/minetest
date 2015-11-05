@@ -157,6 +157,8 @@ void ClientMap::updateDrawList(video::IVideoDriver* driver)
 	}
 	m_drawlist.clear();
 
+	m_last_drawn_sectors.clear();
+
 	m_camera_mutex.lock();
 	v3f camera_position = m_camera_position;
 	v3f camera_direction = m_camera_direction;
@@ -409,14 +411,6 @@ void ClientMap::renderMap(video::IVideoDriver* driver, s32 pass)
 		prefix = "CM: solid: ";
 	else
 		prefix = "CM: transparent: ";
-
-	/*
-		This is called two times per frame, reset on the non-transparent one
-	*/
-	if(pass == scene::ESNRP_SOLID)
-	{
-		m_last_drawn_sectors.clear();
-	}
 
 	/*
 		Get time for measuring timeout.

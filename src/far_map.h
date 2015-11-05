@@ -74,6 +74,8 @@ struct FarMapSector
 
 	std::map<s16, FarMapBlock*> blocks;
 
+	std::vector<v2s16> mapsectors_covered;
+
 	FarMapSector(v2s16 p);
 	~FarMapSector();
 

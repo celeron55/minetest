@@ -25,6 +25,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "util/numeric.h" // getContainerPos
 #include "client.h" // For use of Client's IGameDef interface
 #include "profiler.h"
+#include "clientmap.h" // ClientMap::sectorWasDrawn
 #include "irrlichttypes_extrabloated.h"
 #include <IMaterialRenderer.h>
 
@@ -77,6 +78,14 @@ void FarMapBlock::resetCameraOffset(v3s16 camera_offset)
 FarMapSector::FarMapSector(v2s16 p):
 	p(p)
 {
+	v2s16 bp0(p.X * FMP_SCALE, p.Y * FMP_SCALE);
+	v2s16 bp1 = bp0 + v2s16(FMP_SCALE, FMP_SCALE); // Exclusive
+
+	v2s16 bp;
+	for (bp.X=bp0.X; bp.X<bp1.X; bp.X++)
+	for (bp.Y=bp0.Y; bp.Y<bp1.Y; bp.Y++) {
+		mapsectors_covered.push_back(bp);
+	}
 }
 
 FarMapSector::~FarMapSector()
@@ -316,7 +325,8 @@ void FarMapBlockMeshGenerateTask::inThread()
 	v3s16 dp1 = dp0 + source_block.total_size - v3s16(1,1,1); // Inclusive
 	VoxelArea data_area(dp0, dp1);
 	VoxelArea gen_area = data_area;
-	// TODO: Extend source block content so that this doesn't need to be done
+	// TODO: Extend source block content so that edges don't have to be left out
+	//       like this
 	gen_area.MinEdge += v3s16(1,1,1);
 	gen_area.MaxEdge -= v3s16(1,1,1);
 
@@ -826,9 +836,26 @@ void FarMap::render()
 
 	size_t profiler_num_rendered_farblocks = 0;
 
+	ClientEnvironment *client_env = &client->getEnv();
+	ClientMap *map = &client_env->getClientMap();
+
 	for (std::map<v2s16, FarMapSector*>::iterator i = m_sectors.begin();
 			i != m_sectors.end(); i++) {
 		FarMapSector *s = i->second;
+
+		// Don't render if something from regular map was rendered inside this
+		// sector
+		size_t num_covered = 0;
+		const size_t min_required = s->mapsectors_covered.size() / 3;
+		for (size_t i=0; i<s->mapsectors_covered.size(); i++) {
+			if (map->sectorWasDrawn(s->mapsectors_covered[i])) {
+				num_covered++;
+				if (num_covered >= min_required)
+					break;
+			}
+		}
+		if (num_covered >= min_required)
+			break;
 
 		for (std::map<s16, FarMapBlock*>::iterator i = s->blocks.begin();
 				i != s->blocks.end(); i++) {

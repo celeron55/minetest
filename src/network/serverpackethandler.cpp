@@ -2105,7 +2105,7 @@ void Server::handleCommand_GetFarBlocks(NetworkPacket* pkt_in)
 				// Node at center of division
 				v3s16 np(
 					dp.X * block_div.X + block_div.X/2,
-					dp.Y * block_div.Y + block_div.Y/2,
+					dp.Y * block_div.Y + block_div.Y - 1, // Top
 					dp.Z * block_div.Z + block_div.Z/2);
 				MapNode n = b->getNodeNoEx(np);
 				node_id = n.getContent();
