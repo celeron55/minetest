@@ -485,6 +485,7 @@ set(client_SRCS
 	sky.cpp
 	wieldmesh.cpp
 	far_map.cpp
+	util/atlas.cpp
 	${client_SCRIPT_SRCS}
 )
 list(SORT client_SRCS)
