@@ -224,12 +224,6 @@ static void add_face(MeshCollector *collector,
 	// Light produced by the node itself
 	u8 light_source = 0;
 
-	// Some kind of texture coordinate aspect stretch thing
-	f32 abs_scale = 1.0;
-	if     (scale.X < 0.999 || scale.X > 1.001) abs_scale = scale.X;
-	else if(scale.Y < 0.999 || scale.Y > 1.001) abs_scale = scale.Y;
-	else if(scale.Z < 0.999 || scale.Z > 1.001) abs_scale = scale.Z;
-
 	// Texture coordinates
 	float x0 = 0.0;
 	float y0 = 0.0;
@@ -297,7 +291,7 @@ static void add_face(MeshCollector *collector,
 	video::S3DVertex vertices[4];
 	vertices[0] = video::S3DVertex(vertex_pos[0], normal,
 			MapBlock_LightColor(alpha, light_encoded, light_source),
-			core::vector2d<f32>(x0+w*abs_scale, y0+h));
+			core::vector2d<f32>(x0+w, y0+h));
 	vertices[1] = video::S3DVertex(vertex_pos[1], normal,
 			MapBlock_LightColor(alpha, light_encoded, light_source),
 			core::vector2d<f32>(x0, y0+h));
@@ -306,7 +300,7 @@ static void add_face(MeshCollector *collector,
 			core::vector2d<f32>(x0, y0));
 	vertices[3] = video::S3DVertex(vertex_pos[3], normal,
 			MapBlock_LightColor(alpha, light_encoded, light_source),
-			core::vector2d<f32>(x0+w*abs_scale, y0));
+			core::vector2d<f32>(x0+w, y0));
 
 	collector->append(t, vertices, 4, indices, 6);
 }
