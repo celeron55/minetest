@@ -82,6 +82,15 @@ struct CAtlasRegistry: public AtlasRegistry
 
 		// Get resolution of texture
 		v2s32 seg_img_size(seg_img->getDimension().Width, seg_img->getDimension().Height);
+		if (segment_def.lod_simulation >= 2) {
+			seg_img_size *= segment_def.lod_simulation;
+			// We don't need a completely huge size; it would just degrade
+			// performance for no good reason
+			if (seg_img_size.X > 64)
+				seg_img_size.X = 64;
+			if (seg_img_size.Y > 64)
+				seg_img_size.Y = 64;
+		}
 		// Try to find a texture atlas for this texture size
 		AtlasDefinition *atlas_def = NULL;
 		for(size_t i=0; i<m_defs.size(); i++){
@@ -241,15 +250,21 @@ struct CAtlasRegistry: public AtlasRegistry
 				(float)dst_p1.Y / (float)(total_segs.Y * seg_size.Y * 2)
 		);
 		// Draw segment into atlas image
-		v2s32 seg_img_size(seg_img->getDimension().Width, seg_img->getDimension().Height);
+		v2s32 src_size(seg_img->getDimension().Width, seg_img->getDimension().Height);
 		v2s32 src_off(
-				seg_img_size.X / def.total_segments.X * def.select_segment.X,
-				seg_img_size.Y / def.total_segments.Y * def.select_segment.Y
+				src_size.X / def.total_segments.X * def.select_segment.X,
+				src_size.Y / def.total_segments.Y * def.select_segment.Y
 		);
 		// Draw main texture
 		if(def.lod_simulation == 0){
 			for(int y = 0; y<seg_size.Y * 2; y++){
 				for(int x = 0; x<seg_size.X * 2; x++){
+					/*float fx = (float)src_size.X / seg_size.X;
+					float fy = (float)src_size.Y / seg_size.Y;
+					v2s32 src_p = src_off + v2s32(
+							(int)(x * fx + src_size.X / 2) % src_size.X,
+							(int)(y * fy + src_size.Y / 2) % src_size.Y
+					);*/
 					v2s32 src_p = src_off + v2s32(
 							(x + seg_size.X / 2) % seg_size.X,
 							(y + seg_size.Y / 2) % seg_size.Y
@@ -271,13 +286,21 @@ struct CAtlasRegistry: public AtlasRegistry
 			uint8_t flags = def.lod_simulation & 0xf0;
 			for(int y = 0; y<seg_size.Y * 2; y++){
 				for(int x = 0; x<seg_size.X * 2; x++){
+					float fx = (float)src_size.X * lod / seg_size.X;
+					float fy = (float)src_size.Y * lod / seg_size.Y;
+					// TODO: Not sure if this is right
+					v2s32 src_p = src_off + v2s32(
+							(int)(x * fx + src_size.X * lod / 2) % src_size.X,
+							(int)(y * fy + src_size.Y * lod / 2) % src_size.Y
+					);
+					/*v2s32 src_p = src_off + v2s32(
+							((x + seg_size.X / 2) * lod) % seg_size.X,
+							((y + seg_size.Y / 2) * lod) % seg_size.Y
+					);*/
+					v2s32 dst_p = dst_p00 + v2s32(x, y);
+
 					if(flags & ATLAS_LOD_TOP_FACE){
 						// Preserve original colors
-						v2s32 src_p = src_off + v2s32(
-								((x + seg_size.X / 2) * lod) % seg_size.X,
-								((y + seg_size.Y / 2) * lod) % seg_size.Y
-						);
-						v2s32 dst_p = dst_p00 + v2s32(x, y);
 						video::SColor c = seg_img->getPixel(src_p.X, src_p.Y);
 						if(flags & ATLAS_LOD_BAKE_SHADOWS){
 							c.set(
@@ -291,17 +314,13 @@ struct CAtlasRegistry: public AtlasRegistry
 								c.getAlpha(),
 								c.getRed() * 1.0f,
 								c.getGreen() * 1.0f,
-								c.getBlue() * 0.875f
+								c.getBlue() * 1.0f
+								//c.getBlue() * 0.875f
 							);
 						}
 						acache.image->setPixel(dst_p.X, dst_p.Y, c);
 					} else {
 						// Simulate sides
-						v2s32 src_p = src_off + v2s32(
-								((x + seg_size.X / 2) * lod) % seg_size.X,
-								((y + seg_size.Y / 2) * lod) % seg_size.Y
-						);
-						v2s32 dst_p = dst_p00 + v2s32(x, y);
 						video::SColor c = seg_img->getPixel(src_p.X, src_p.Y);
 						// Leave horizontal edges look like they are bright
 						// topsides
