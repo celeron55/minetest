@@ -321,7 +321,7 @@ Client::~Client()
 
 	delete m_mapper;
 
-	delete m_far_map;
+	m_far_map->drop();
 }
 
 void Client::connect(Address address,

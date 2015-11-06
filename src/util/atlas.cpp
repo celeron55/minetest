@@ -422,18 +422,12 @@ struct CAtlasRegistry: public AtlasRegistry
 		if (acache.texture != NULL) {
 			infostream<<"Dropping acache.texture "<<acache.texture<<std::endl;
 			acache.texture->drop();
+			acache.texture = NULL;
 			for(size_t i=0; i<acache.segments.size(); i++){
 				AtlasSegmentCache &scache = acache.segments[i];
 				scache.texture_pp = NULL;
 			}
 		}
-
-		// Debug: save atlas image to file
-		/*std::string atlas_img_name = "/tmp/atlas_"+itos(seg_size.X)+"x"+
-				itos(seg_size.Y)+".png";
-		// TODO: Port to irrlicht but leave commented out
-		magic::File f(m_context, atlas_img_name.c_str(), magic::FILE_WRITE);
-		atlas.image->Save(f);*/
 	}
 
 	void refresh_textures()
@@ -445,9 +439,9 @@ struct CAtlasRegistry: public AtlasRegistry
 			if (acache.image == NULL)
 				continue;
 
-			// For debugging
-			std::string path = std::string()+"/tmp/"+acache.texture_name+".png";
-			m_driver->writeImageToFile(acache.image, path.c_str(), 0);
+			// Uncomment for debugging
+			/*std::string path = std::string()+"/tmp/"+acache.texture_name+".png";
+			m_driver->writeImageToFile(acache.image, path.c_str(), 0);*/
 
 			acache.texture = m_driver->addTexture(acache.texture_name.c_str(),
 					acache.image);
