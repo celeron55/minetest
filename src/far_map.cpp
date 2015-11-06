@@ -686,13 +686,16 @@ FarAtlas::~FarAtlas()
 	delete atlas;
 }
 
-atlas::AtlasSegmentReference FarAtlas::addTexture(const std::string &name)
+atlas::AtlasSegmentReference FarAtlas::addTexture(const std::string &name,
+		bool is_top)
 {
 	atlas::AtlasSegmentDefinition def;
 	def.image_name = name;
 	def.total_segments = v2s32(1, 1);
 	def.select_segment = v2s32(0, 0);
-	def.lod_simulation = 4; // TODO
+	def.lod_simulation = 8;
+	if (is_top)
+		def.lod_simulation |= atlas::ATLAS_LOD_TOP_FACE;
 	return atlas->find_or_add_segment(def);
 }
 
@@ -700,9 +703,9 @@ void FarAtlas::addNode(content_t id, const std::string &top,
 		const std::string &bottom, const std::string &side)
 {
 	NodeSegRefs nsr;
-	nsr.refs[0] = addTexture(top);
-	nsr.refs[1] = addTexture(bottom);
-	nsr.refs[2] = addTexture(side);
+	nsr.refs[0] = addTexture(top, true);
+	nsr.refs[1] = addTexture(bottom, false);
+	nsr.refs[2] = addTexture(side, false);
 
 	if((content_t)node_segrefs.size() < id + 1)
 		node_segrefs.resize(id + 1);

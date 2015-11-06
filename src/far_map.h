@@ -165,7 +165,7 @@ struct FarAtlas
 
 	FarAtlas(FarMap *far_map);
 	~FarAtlas();
-	atlas::AtlasSegmentReference addTexture(const std::string &name);
+	atlas::AtlasSegmentReference addTexture(const std::string &name, bool is_top);
 	void addNode(content_t id, const std::string &top,
 			const std::string &bottom, const std::string &side);
 	const atlas::AtlasSegmentCache* getNode(content_t id, u8 face) const;
