@@ -689,7 +689,7 @@ void Client::step(float dtime)
 		area_offset.X -= area_size.X / 2;
 		area_offset.Y -= area_size.Y / 2;
 		area_offset.Z -= area_size.Z / 2;
-		v3s16 preferred_block_div(2, 2, 2);
+		v3s16 preferred_block_div(4, 4, 4);
 
 		NetworkPacket pkt(TOSERVER_GET_FAR_BLOCKS, 0);
 		/*

@@ -327,10 +327,10 @@ struct CAtlasRegistry: public AtlasRegistry
 						// TODO: This should be variable according to the
 						// camera's height relative to the thing the atlas
 						// segment is representing
-						int edge_size = lod * seg_size.Y / 16;
+						int edge_size = src_size.Y / 16;
 						bool is_edge = (
 								src_p.Y <= edge_size ||
-								src_p.Y >= seg_size.Y - edge_size
+								src_p.Y >= src_size.Y - edge_size
 						);
 						if(flags & ATLAS_LOD_BAKE_SHADOWS){
 							if(is_edge){
@@ -392,23 +392,23 @@ struct CAtlasRegistry: public AtlasRegistry
 								if(flags & ATLAS_LOD_SEMIBRIGHT1_FACE){
 									c.set(
 										c.getAlpha(),
-										c.getRed() * 0.70f,
-										c.getGreen() * 0.70f,
-										c.getBlue() * 0.65f
+										c.getRed() * 0.7f,
+										c.getGreen() * 0.7f,
+										c.getBlue() * 0.7f
 									);
 								} else if(flags & ATLAS_LOD_SEMIBRIGHT2_FACE){
 									c.set(
 										c.getAlpha(),
-										c.getRed() * 0.50f,
-										c.getGreen() * 0.50f,
-										c.getBlue() * 0.50f
+										c.getRed() * 0.7f,
+										c.getGreen() * 0.7f,
+										c.getBlue() * 0.7f
 									);
 								} else {
 									c.set(
 										c.getAlpha(),
-										c.getRed() * 0.5f,
-										c.getGreen() * 0.5f,
-										c.getBlue() * 0.5f
+										c.getRed() * 0.7f,
+										c.getGreen() * 0.7f,
+										c.getBlue() * 0.7f
 									);
 								}
 							}
