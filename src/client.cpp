@@ -681,10 +681,8 @@ void Client::step(float dtime)
 			player_p = floatToInt(player->getPosition(), BS);
 
 		// TODO: This shouldn't be hardcoded in this way probably
-		//v3s16 area_size(64, 16, 64);
-		//v3s16 area_size(32, 4, 32);
-		//v3s16 area_size(48, 4, 48);
-		v3s16 area_size(48, 6, 48);
+		//v3s16 area_size(48, 6, 48);
+		v3s16 area_size(16, 2, 16);
 		v3s16 area_offset = getNodeBlockPos(player_p);
 		// NOTE: I have no idea why area_offset - area_size / 2 doesn't work
 		area_offset.X -= area_size.X / 2;

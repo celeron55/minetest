@@ -180,7 +180,7 @@ static void add_face(MeshCollector *collector,
 {
 	ITextureSource *tsrc = far_map->client->getTextureSource();
 	//IShaderSource *ssrc = far_map->client->getShaderSource();
-	//INodeDefManager *ndef = far_map->client->getNodeDefManager();
+	INodeDefManager *ndef = far_map->client->getNodeDefManager();
 
 	static const u16 indices[] = {0,1,2,2,3,0};
 
@@ -239,10 +239,22 @@ static void add_face(MeshCollector *collector,
 	// Get texture from texture atlas
 	u8 face = dir.Y == 1 ? 0 : dir.Y == -1 ? 1 : 2;
 	const atlas::AtlasSegmentCache *asc = far_map->atlas.getNode(n.id, face);
-	assert(asc);
+	if (!asc) {
+		const ContentFeatures &f = ndef->get(n.id);
+		assert(f.tiledef[0].name == "" && "All nodes that have a texture should"
+				" be found in FarMap's atlas");
+		return; // Makes no faces
+	}
+	assert(asc->texture_pp);
+	assert(*asc->texture_pp);
 
-	/*//std::string tile_name = "unknown_node.png";
-	const ContentFeatures &f = ndef->get(n.id);
+	// Copy texture coordinates
+	x0 = asc->coord0.X;
+	y0 = asc->coord0.Y;
+	w = asc->coord1.X - x0;
+	h = asc->coord1.Y - y0;
+
+	/*const ContentFeatures &f = ndef->get(n.id);
 	const std::string *tile_name = NULL;
 	if(dir.Y == 1) // Top
 		tile_name = &f.tiledef[0].name;
@@ -251,11 +263,26 @@ static void add_face(MeshCollector *collector,
 	else // Side
 		tile_name = &f.tiledef[2].name;*/
 
+	//std::string tile_name = "unknown_node.png";
+
+	// TODO
 	TileSpec t;
+
 	/*t.texture_id = tsrc->getTextureId(*tile_name);
-	t.texture = tsrc->getTexture(t.texture_id);*/
+	t.texture = tsrc->getTexture(t.texture_id);
+	t.texture_id = 0;*/
+
+	/*t.texture_id = tsrc->getTextureId(tile_name);
+	t.texture = tsrc->getTexture(t.texture_id);
+	t.texture_id = 0;*/
+
 	t.texture_id = 0; // atlas::AtlasRegistry doesn't provide this
-	t.texture = *asc->texture;
+	t.texture = *asc->texture_pp;
+
+	/*t.texture = far_map->client->getSceneManager()->getVideoDriver()
+			->getTexture("atlas_FarMap_texture_1");*/
+	/*t.texture = far_map->client->getSceneManager()->getVideoDriver()
+			->getTexture("unknown_node.png");*/
 	t.alpha = alpha;
 	t.material_type = TILE_MATERIAL_BASIC;
 	//t.material_flags &= ~MATERIAL_FLAG_BACKFACE_CULLING;
@@ -671,7 +698,7 @@ atlas::AtlasSegmentReference FarAtlas::addTexture(const std::string &name)
 	def.image_name = name;
 	def.total_segments = v2s32(1, 1);
 	def.select_segment = v2s32(1, 1);
-	def.lod_simulation = 2;
+	//def.lod_simulation = 2; // TODO
 	return atlas->find_or_add_segment(def);
 }
 
@@ -846,9 +873,6 @@ void FarMap::insertGeneratedBlockMesh(v3s16 p, scene::SMesh *mesh,
 		if (mapblock_meshes[i] != NULL) {
 			mapblock_meshes[i]->grab();
 			b->mapblock_meshes[i] = mapblock_meshes[i];
-		} else {
-			warningstream<<"FarMap::insertGenerated: mapblock_meshes["
-					<<i<<"] is NULL"<<std::endl;
 		}
 	}
 
@@ -906,8 +930,8 @@ void FarMap::reportNormallyRenderedBlocks(const BlockAreaBitmap &nrb)
 
 	verbosestream<<"FarMap::reportNormallyRenderedBlocks: "
 			<<"reported area: ";
-	normally_rendered_blocks.blocks_area.print(infostream);
-	infostream<<std::endl;
+	normally_rendered_blocks.blocks_area.print(verbosestream);
+	verbosestream<<std::endl;
 }
 
 void FarMap::createAtlas()
@@ -917,9 +941,9 @@ void FarMap::createAtlas()
 	// TODO
 
 	// Umm... let's just start from zero and see how far we get?
-	for(content_t id=CONTENT_IGNORE+1; ; id++){
+	for(content_t id=0; ; id++){
 		const ContentFeatures &f = ndef->get(id);
-		if(f.name.empty() || f.name == "unknown")
+		if ((f.name.empty() || f.name == "unknown") && id != CONTENT_UNKNOWN)
 			break;
 
 		infostream<<"FarMap: Adding node "<<id<<" = \""<<f.name<<"\""<<std::endl;
@@ -938,6 +962,10 @@ void FarMap::createAtlas()
 		if(id == 65535)
 			break;
 	}
+
+	infostream<<"FarMap: Refreshing atlas textures"<<std::endl;
+
+	atlas.atlas->refresh_textures();
 
 	infostream<<"FarMap: Created atlas out of "<<atlas.node_segrefs.size()
 			<<" nodes";

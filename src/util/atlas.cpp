@@ -61,7 +61,8 @@ struct CAtlasRegistry: public AtlasRegistry
 				texture->getColorFormat(),
 				texture->getSize(),
 				texture->lock(),
-				false  //copy mem
+				false, // ownForeignMemory
+				false // deleteMemory
 		);
 		texture->unlock();
 		return image;
@@ -80,6 +81,7 @@ struct CAtlasRegistry: public AtlasRegistry
 			throw BaseException("CAtlasRegistry::add_segment(): Couldn't "
 					"find image \""+segment_def.image_name+"\" when adding "
 					"segment");
+		seg_img->grab();
 		// Get resolution of texture
 		v2s32 seg_img_size(seg_img->getDimension().Width, seg_img->getDimension().Height);
 		// Try to find a texture atlas for this texture size
@@ -136,13 +138,14 @@ struct CAtlasRegistry: public AtlasRegistry
 			// Add new atlas to cache
 			const size_t &id = atlas_def->id;
 			m_cache.resize(id+1);
-			AtlasCache *cache = &m_cache[id];
-			cache->id = id;
-			cache->image = atlas_img;
-			cache->image->grab();
-			cache->texture_name = std::string()+"atlas_"+m_name+"_texture_"+itos(id);
-			cache->segment_resolution = atlas_def->segment_resolution;
-			cache->total_segments = atlas_def->total_segments;
+			AtlasCache &atlas_cache = m_cache[id];
+			atlas_cache.id = id;
+			atlas_cache.image = atlas_img;
+			atlas_cache.image->grab();
+			atlas_cache.texture = NULL;
+			atlas_cache.texture_name = std::string()+"atlas_"+m_name+"_texture_"+itos(id);
+			atlas_cache.segment_resolution = atlas_def->segment_resolution;
+			atlas_cache.total_segments = atlas_def->total_segments;
 		}
 		// Add this segment to the atlas definition
 		size_t seg_id = atlas_def->segments.size();
@@ -153,6 +156,11 @@ struct CAtlasRegistry: public AtlasRegistry
 		atlas_cache.segments.resize(seg_id + 1);
 		AtlasSegmentCache &seg_cache = atlas_cache.segments[seg_id];
 		update_segment_cache(seg_id, seg_img, seg_cache, segment_def, atlas_cache);
+		// DEBUG
+		static int si = 0;
+		std::string path = std::string()+"/tmp/seg_img_"+itos(si++)+".png";
+		m_driver->writeImageToFile(seg_img, path.c_str(), 0);
+		seg_img->drop();
 		// Return reference to new segment
 		AtlasSegmentReference ref;
 		ref.atlas_id = atlas_def->id;
@@ -202,25 +210,23 @@ struct CAtlasRegistry: public AtlasRegistry
 
 	void update_segment_cache(size_t seg_id, video::IImage *seg_img,
 			AtlasSegmentCache &cache, const AtlasSegmentDefinition &def,
-			const AtlasCache &atlas)
+			const AtlasCache &acache)
 	{
 		// Check if atlas has too many segments
-		size_t max_segments = atlas.total_segments.X * atlas.total_segments.Y;
-		if(atlas.segments.size() > max_segments){
+		size_t max_segments = acache.total_segments.X * acache.total_segments.Y;
+		if(acache.segments.size() > max_segments){
 			throw BaseException("Atlas has too many segments (segments.size()="+
-					itos(atlas.segments.size())+", total_segments=("+
-					itos(atlas.total_segments.X)+", "+
-					itos(atlas.total_segments.Y)+"))");
+					itos(acache.segments.size())+", total_segments=("+
+					itos(acache.total_segments.X)+", "+
+					itos(acache.total_segments.Y)+"))");
 		}
-		// Set segment texture pointer-pointer
-		cache.texture = &atlas.texture;
 		// Calculate segment's position in atlas texture
-		v2s32 total_segs = atlas.total_segments;
+		v2s32 total_segs = acache.total_segments;
 		size_t seg_iy = seg_id / total_segs.X;
 		size_t seg_ix = seg_id - seg_iy * total_segs.X;
 		/*log_d(MODULE, "update_segment_cache(): seg_id=%i, seg_iy=%i, seg_ix=%i",
 				seg_id, seg_iy, seg_ix);*/
-		v2s32 seg_size = atlas.segment_resolution;
+		v2s32 seg_size = acache.segment_resolution;
 		v2s32 dst_p00(
 				seg_ix * seg_size.X * 2,
 				seg_iy * seg_size.Y * 2
@@ -252,7 +258,14 @@ struct CAtlasRegistry: public AtlasRegistry
 					);
 					v2s32 dst_p = dst_p00 + v2s32(x, y);
 					video::SColor c = seg_img->getPixel(src_p.X, src_p.Y);
-					atlas.image->setPixel(dst_p.X, dst_p.Y, c);
+					if (src_p.X % 8 == 0 && src_p.Y % 8 == 0) {
+						infostream<<"seg_img->getPixel("<<src_p.X<<","<<src_p.Y
+								<<") -> r="<<c.getRed()<<",g="<<c.getGreen()
+								<<",b="<<c.getBlue()<<",a="<<c.getAlpha()
+								<<std::endl;
+					}
+					//c.set(255, 128, 128, 128); // DEBUG
+					acache.image->setPixel(dst_p.X, dst_p.Y, c);
 				}
 			}
 		} else {
@@ -270,20 +283,20 @@ struct CAtlasRegistry: public AtlasRegistry
 						video::SColor c = seg_img->getPixel(src_p.X, src_p.Y);
 						if(flags & ATLAS_LOD_BAKE_SHADOWS){
 							c.set(
+								c.getAlpha(),
 								c.getRed() * 0.8f,
 								c.getGreen() * 0.8f,
-								c.getBlue() * 0.8f,
-								c.getAlpha()
+								c.getBlue() * 0.8f
 							);
 						} else {
 							c.set(
+								c.getAlpha(),
 								c.getRed() * 1.0f,
 								c.getGreen() * 1.0f,
-								c.getBlue() * 0.875f,
-								c.getAlpha()
+								c.getBlue() * 0.875f
 							);
 						}
-						atlas.image->setPixel(dst_p.X, dst_p.Y, c);
+						acache.image->setPixel(dst_p.X, dst_p.Y, c);
 					} else {
 						// Simulate sides
 						v2s32 src_p = src_off + v2s32(
@@ -306,96 +319,97 @@ struct CAtlasRegistry: public AtlasRegistry
 							if(is_edge){
 								if(flags & ATLAS_LOD_SEMIBRIGHT1_FACE){
 									c.set(
+										c.getAlpha(),
 										c.getRed() * 0.75f,
 										c.getGreen() * 0.75f,
-										c.getBlue() * 0.8f,
-										c.getAlpha()
+										c.getBlue() * 0.8f
 									);
 								} else if(flags & ATLAS_LOD_SEMIBRIGHT2_FACE){
 									c.set(
+										c.getAlpha(),
 										c.getRed() * 0.75f,
 										c.getGreen() * 0.75f,
-										c.getBlue() * 0.8f,
-										c.getAlpha()
+										c.getBlue() * 0.8f
 									);
 								} else {
 									c.set(
+										c.getAlpha(),
 										c.getRed() * 0.8f * 0.49f,
 										c.getGreen() * 0.8f * 0.49f,
-										c.getBlue() * 0.8f * 0.52f,
-										c.getAlpha()
+										c.getBlue() * 0.8f * 0.52f
 									);
 								}
 							} else {
 								if(flags & ATLAS_LOD_SEMIBRIGHT1_FACE){
 									c.set(
+										c.getAlpha(),
 										c.getRed() * 0.70f * 0.75f,
 										c.getGreen() * 0.70f * 0.75f,
-										c.getBlue() * 0.65f * 0.8f,
-										c.getAlpha()
+										c.getBlue() * 0.65f * 0.8f
 									);
 								} else if(flags & ATLAS_LOD_SEMIBRIGHT2_FACE){
 									c.set(
+										c.getAlpha(),
 										c.getRed() * 0.50f * 0.75f,
 										c.getGreen() * 0.50f * 0.75f,
-										c.getBlue() * 0.50f * 0.8f,
-										c.getAlpha()
+										c.getBlue() * 0.50f * 0.8f
 									);
 								} else {
 									c.set(
+										c.getAlpha(),
 										c.getRed() * 0.5f * 0.15f,
 										c.getGreen() * 0.5f * 0.15f,
-										c.getBlue() * 0.5f * 0.16f,
-										c.getAlpha()
+										c.getBlue() * 0.5f * 0.16f
 									);
 								}
 							}
 						} else {
 							if(is_edge){
 								c.set(
+									c.getAlpha(),
 									c.getRed() * 1.0f,
 									c.getGreen() * 1.0f,
-									c.getBlue() * 0.875f,
-									c.getAlpha()
+									c.getBlue() * 0.875f
 								);
 							} else {
 								if(flags & ATLAS_LOD_SEMIBRIGHT1_FACE){
 									c.set(
+										c.getAlpha(),
 										c.getRed() * 0.70f,
 										c.getGreen() * 0.70f,
-										c.getBlue() * 0.65f,
-										c.getAlpha()
+										c.getBlue() * 0.65f
 									);
 								} else if(flags & ATLAS_LOD_SEMIBRIGHT2_FACE){
 									c.set(
+										c.getAlpha(),
 										c.getRed() * 0.50f,
 										c.getGreen() * 0.50f,
-										c.getBlue() * 0.50f,
-										c.getAlpha()
+										c.getBlue() * 0.50f
 									);
 								} else {
 									c.set(
+										c.getAlpha(),
 										c.getRed() * 0.5f,
 										c.getGreen() * 0.5f,
-										c.getBlue() * 0.5f,
-										c.getAlpha()
+										c.getBlue() * 0.5f
 									);
 								}
 							}
 						}
-						atlas.image->setPixel(dst_p.X, dst_p.Y, c);
+						acache.image->setPixel(dst_p.X, dst_p.Y, c);
 					}
 				}
 			}
 		}
-		// Update atlas texture from atlas image
-		/*if (atlas.texture != NULL) { // TODO
-			infostream<<"Dropping atlas.texture "<<atlas.texture<<std::endl;
-			atlas.texture->drop();
-		}*/
-		atlas.texture = m_driver->addTexture(atlas.texture_name.c_str(), atlas.image);
-		atlas.texture->grab();
-		infostream<<"Created atlas.texture "<<atlas.texture<<std::endl;
+		// Drop old texture so that a new one will be generated
+		if (acache.texture != NULL) {
+			infostream<<"Dropping acache.texture "<<acache.texture<<std::endl;
+			acache.texture->drop();
+			for(size_t i=0; i<acache.segments.size(); i++){
+				AtlasSegmentCache &scache = acache.segments[i];
+				scache.texture_pp = NULL;
+			}
+		}
 
 		// Debug: save atlas image to file
 		/*std::string atlas_img_name = "/tmp/atlas_"+itos(seg_size.X)+"x"+
@@ -403,6 +417,30 @@ struct CAtlasRegistry: public AtlasRegistry
 		// TODO: Port to irrlicht but leave commented out
 		magic::File f(m_context, atlas_img_name.c_str(), magic::FILE_WRITE);
 		atlas.image->Save(f);*/
+	}
+
+	void refresh_textures()
+	{
+		for(size_t i=0; i<m_cache.size(); i++){
+			AtlasCache &acache = m_cache[i];
+			if (acache.texture != NULL)
+				continue;
+			if (acache.image == NULL)
+				continue;
+
+			// For debugging
+			std::string path = std::string()+"/tmp/"+acache.texture_name+".png";
+			m_driver->writeImageToFile(acache.image, path.c_str(), 0);
+
+			acache.texture = m_driver->addTexture(acache.texture_name.c_str(),
+					acache.image);
+			acache.texture->grab();
+			for(size_t i=0; i<acache.segments.size(); i++){
+				AtlasSegmentCache &scache = acache.segments[i];
+				scache.texture_pp = &acache.texture;
+			}
+			infostream<<"Created acache.texture "<<acache.texture<<std::endl;
+		}
 	}
 
 	const AtlasCache* get_atlas_cache(size_t atlas_id)

@@ -73,12 +73,12 @@ namespace atlas
 
 	struct AtlasSegmentCache
 	{
-		video::ITexture **texture;
+		video::ITexture **texture_pp;
 		v2f coord0;
 		v2f coord1;
 
 		AtlasSegmentCache():
-			texture(NULL)
+			texture_pp(NULL)
 		{}
 	};
 
@@ -102,18 +102,28 @@ namespace atlas
 		mutable video::ITexture *texture;
 		v2s32 segment_resolution;
 		v2s32 total_segments;
-		std::vector<AtlasSegmentCache> segments;
+		mutable std::vector<AtlasSegmentCache> segments;
 
 		AtlasCache():
 			id(ATLAS_UNDEFINED),
 			image(NULL),
 			texture(NULL)
 		{}
+		AtlasCache(const AtlasCache &other):
+			id(other.id),
+			image(other.image),
+			texture_name(other.texture_name),
+			texture(other.texture),
+			segment_resolution(other.segment_resolution),
+			total_segments(other.total_segments),
+			segments(other.segments)
+		{
+			if (image)   image->grab();
+			if (texture) texture->grab();
+		}
 		~AtlasCache() {
-			if (image)
-				image->drop();
-			if (texture)
-				texture->drop();
+			if (image)   image->drop();
+			if (texture) texture->drop();
 		}
 	};
 
@@ -131,6 +141,8 @@ namespace atlas
 				size_t atlas_id) = 0;
 		virtual const AtlasSegmentDefinition* get_segment_definition(
 				const AtlasSegmentReference &ref) = 0;
+
+		virtual void refresh_textures() = 0;
 
 		virtual const AtlasCache* get_atlas_cache(size_t atlas_id) = 0;
 
