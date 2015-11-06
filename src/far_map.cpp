@@ -968,6 +968,25 @@ void FarMap::createAtlas()
 			<<" nodes";
 }
 
+// Result is in MapBlock positions. getVolume()=0 if no area to fetch.
+VoxelArea FarMap::suggestAreaToFetch()
+{
+	v3s16 center_block = v3s16_div(normally_rendered_blocks.blocks_area.MaxEdge
+			 + normally_rendered_blocks.blocks_area.MinEdge, 2);
+
+	// TODO: Fetch one FarBlock at a time
+
+	// TODO: This shouldn't be hardcoded in this way probably
+	v3s16 area_size(48, 10, 48);
+	//v3s16 area_size(16, 2, 16); // Good for valgrind
+
+	// NOTE: A working division operator is defined for v3s32; not for v3s16.
+	return VoxelArea(
+		center_block - v3s16_div(area_size, 2),
+		center_block + v3s16_div(area_size, 2)
+	);
+}
+
 void FarMap::updateSettings()
 {
 	config_enable_shaders = g_settings->getBool("enable_shaders");

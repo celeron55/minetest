@@ -203,6 +203,9 @@ public:
 	// Shall be called after the client receives all node definitions
 	void createAtlas();
 
+	// Result is in MapBlock positions. getVolume()=0 if no area to fetch.
+	VoxelArea suggestAreaToFetch();
+
 	// ISceneNode methods
 	void OnRegisterSceneNode();
 	void render();
