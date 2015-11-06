@@ -320,6 +320,8 @@ Client::~Client()
 	}
 
 	delete m_mapper;
+
+	delete m_far_map;
 }
 
 void Client::connect(Address address,
@@ -681,7 +683,8 @@ void Client::step(float dtime)
 			player_p = floatToInt(player->getPosition(), BS);
 
 		// TODO: This shouldn't be hardcoded in this way probably
-		v3s16 area_size(48, 6, 48);
+		v3s16 area_size(48, 10, 48);
+		//v3s16 area_size(48, 6, 48);
 		//v3s16 area_size(32, 4, 32);
 		//v3s16 area_size(16, 2, 16); // Good for valgrind
 		v3s16 area_offset = getNodeBlockPos(player_p);

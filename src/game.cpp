@@ -795,6 +795,7 @@ class GameGlobalShaderConstantSetter : public IShaderConstantSetter
 	Sky *m_sky;
 	bool *m_force_fog_off;
 	f32 *m_fog_range;
+	f32 *m_fog_range_start;
 	Client *m_client;
 	bool m_fogEnabled;
 
@@ -811,10 +812,11 @@ public:
 	}
 
 	GameGlobalShaderConstantSetter(Sky *sky, bool *force_fog_off,
-			f32 *fog_range, Client *client) :
+			f32 *fog_range, f32 *fog_range_start, Client *client) :
 		m_sky(sky),
 		m_force_fog_off(force_fog_off),
 		m_fog_range(fog_range),
+		m_fog_range_start(fog_range_start),
 		m_client(client)
 	{
 		g_settings->registerChangedCallback("enable_fog", SettingsCallback, this);
@@ -845,11 +847,15 @@ public:
 
 		// Fog distance
 		float fog_distance = 10000 * BS;
+		float fog_distance_start = 1000 * BS;
 
-		if (m_fogEnabled && !*m_force_fog_off)
+		if (m_fogEnabled && !*m_force_fog_off) {
 			fog_distance = *m_fog_range;
+			fog_distance_start = *m_fog_range_start;
+		}
 
 		services->setPixelShaderConstant("fogDistance", &fog_distance, 1);
+		services->setPixelShaderConstant("fogDistanceStart", &fog_distance_start, 1);
 
 		// Day-night ratio
 		u32 daynight_ratio = m_client->getEnv().getDayNightRatio();
@@ -1372,6 +1378,7 @@ struct GameRunData {
 	float statustext_time;
 
 	f32 fog_range;
+	f32 fog_range_start;
 
 	v3f update_draw_list_last_cam_dir;
 
@@ -1804,6 +1811,7 @@ void Game::run()
 			sky,
 			&flags.force_fog_off,
 			&runData.fog_range,
+			&runData.fog_range_start,
 			client));
 
 	std::vector<aabb3f> highlight_boxes;
@@ -3888,12 +3896,14 @@ void Game::updateFrame(std::vector<aabb3f> &highlight_boxes,
 
 	if (draw_control->range_all) {
 		runData->fog_range = 100000 * BS;
+		runData->fog_range_start = runData->fog_range * 0.4;
 	} else {
 		// TODO
 		bool farmap_enabled = true;
 		if (farmap_enabled) {
 			// TODO: Get current range from FarMap
-			runData->fog_range = 1000 * BS;
+			runData->fog_range = 800 * BS;
+			runData->fog_range_start = 80 * BS;
 		} else {
 			runData->fog_range = draw_control->wanted_range * BS
 					+ 0.0 * MAP_BLOCKSIZE * BS;
@@ -3901,6 +3911,7 @@ void Game::updateFrame(std::vector<aabb3f> &highlight_boxes,
 					runData->fog_range,
 					(draw_control->farthest_drawn + 20) * BS);
 			runData->fog_range *= 0.9;
+			runData->fog_range_start = runData->fog_range * 0.4;
 		}
 	}
 
@@ -3979,8 +3990,8 @@ void Game::updateFrame(std::vector<aabb3f> &highlight_boxes,
 		driver->setFog(
 				sky->getBgColor(),
 				video::EFT_FOG_LINEAR,
-				runData->fog_range * 0.4,
-				runData->fog_range * 1.0,
+				runData->fog_range_start,
+				runData->fog_range,
 				0.01,
 				false, // pixel fog
 				false // range fog
