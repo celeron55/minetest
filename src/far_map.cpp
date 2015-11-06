@@ -697,7 +697,7 @@ atlas::AtlasSegmentReference FarAtlas::addTexture(const std::string &name)
 	atlas::AtlasSegmentDefinition def;
 	def.image_name = name;
 	def.total_segments = v2s32(1, 1);
-	def.select_segment = v2s32(1, 1);
+	def.select_segment = v2s32(0, 0);
 	//def.lod_simulation = 2; // TODO
 	return atlas->find_or_add_segment(def);
 }

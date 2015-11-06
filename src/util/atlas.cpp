@@ -72,16 +72,14 @@ struct CAtlasRegistry: public AtlasRegistry
 			const AtlasSegmentDefinition &segment_def)
 	{
 		ITextureSource *tsrc = m_gamedef->getTextureSource();
+
 		// TODO: Maybe creating an image out of a texture isn't a very good idea
 		//       as images are the actual in-memory source format
-		//video::IImage *seg_img = tsrc->generateImage(segment_def.image_name);
-		video::ITexture *seg_tex = tsrc->getTexture(segment_def.image_name);
-		video::IImage *seg_img = textureToImage(seg_tex);
-		if(seg_img == NULL)
-			throw BaseException("CAtlasRegistry::add_segment(): Couldn't "
-					"find image \""+segment_def.image_name+"\" when adding "
-					"segment");
-		seg_img->grab();
+		//video::ITexture *seg_tex = tsrc->getTexture(segment_def.image_name);
+		//video::IImage *seg_img = textureToImage(seg_tex);
+
+		video::IImage *seg_img = tsrc->generateImage(segment_def.image_name);
+
 		// Get resolution of texture
 		v2s32 seg_img_size(seg_img->getDimension().Width, seg_img->getDimension().Height);
 		// Try to find a texture atlas for this texture size
@@ -156,10 +154,10 @@ struct CAtlasRegistry: public AtlasRegistry
 		atlas_cache.segments.resize(seg_id + 1);
 		AtlasSegmentCache &seg_cache = atlas_cache.segments[seg_id];
 		update_segment_cache(seg_id, seg_img, seg_cache, segment_def, atlas_cache);
-		// DEBUG
+		/*// DEBUG
 		static int si = 0;
 		std::string path = std::string()+"/tmp/seg_img_"+itos(si++)+".png";
-		m_driver->writeImageToFile(seg_img, path.c_str(), 0);
+		m_driver->writeImageToFile(seg_img, path.c_str(), 0);*/
 		seg_img->drop();
 		// Return reference to new segment
 		AtlasSegmentReference ref;
