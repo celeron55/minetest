@@ -518,6 +518,9 @@ public:
 	bool isMinimapDisabledByServer()
 	{ return m_minimap_disabled_by_server; }
 
+	bool getFarMapVisible();
+	void setFarMapVisible(bool b);
+
 	// IGameDef interface
 	virtual IItemDefManager* getItemDefManager();
 	virtual INodeDefManager* getNodeDefManager();

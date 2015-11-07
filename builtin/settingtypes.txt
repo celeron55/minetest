@@ -221,6 +221,10 @@ keymap_decrease_viewing_range_min (View range decrease key) key -
 #    See http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3
 keymap_print_debug_stacks (Print stacks) key KEY_KEY_P
 
+#    Toggle far map visibility
+#    See http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3
+# keymap_toggle_far_map_visibility (Toggle far map) key
+
 [*Network]
 
 #    Address to connect to.

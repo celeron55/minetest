@@ -1264,6 +1264,7 @@ struct KeyCache {
 		KEYMAP_ID_INCREASE_VIEWING_RANGE,
 		KEYMAP_ID_DECREASE_VIEWING_RANGE,
 		KEYMAP_ID_RANGESELECT,
+		KEYMAP_ID_TOGGLE_FAR_MAP_VISIBILITY,
 
 		KEYMAP_ID_QUICKTUNE_NEXT,
 		KEYMAP_ID_QUICKTUNE_PREV,
@@ -1324,6 +1325,8 @@ void KeyCache::populate()
 			= getKeySetting("keymap_decrease_viewing_range_min");
 	key[KEYMAP_ID_RANGESELECT]
 			= getKeySetting("keymap_rangeselect");
+	key[KEYMAP_ID_TOGGLE_FAR_MAP_VISIBILITY]
+			= getKeySetting("keymap_toggle_far_map_visibility");
 
 	key[KEYMAP_ID_QUICKTUNE_NEXT] = getKeySetting("keymap_quicktune_next");
 	key[KEYMAP_ID_QUICKTUNE_PREV] = getKeySetting("keymap_quicktune_prev");
@@ -1519,6 +1522,7 @@ protected:
 	void increaseViewRange(float *statustext_time);
 	void decreaseViewRange(float *statustext_time);
 	void toggleFullViewRange(float *statustext_time);
+	void toggleFarMapVisible(float *statustext_time);
 
 	void updateCameraDirection(CameraOrientation *cam, VolatileRunFlags *flags);
 	void updateCameraOrientation(CameraOrientation *cam,
@@ -2676,6 +2680,8 @@ void Game::processKeyboardInput(VolatileRunFlags *flags,
 		decreaseViewRange(statustext_time);
 	} else if (input->wasKeyDown(keycache.key[KeyCache::KEYMAP_ID_RANGESELECT])) {
 		toggleFullViewRange(statustext_time);
+	} else if (input->wasKeyDown(keycache.key[KeyCache::KEYMAP_ID_TOGGLE_FAR_MAP_VISIBILITY])) {
+		toggleFarMapVisible(statustext_time);
 	} else if (input->wasKeyDown(keycache.key[KeyCache::KEYMAP_ID_QUICKTUNE_NEXT]))
 		quicktune->next();
 	else if (input->wasKeyDown(keycache.key[KeyCache::KEYMAP_ID_QUICKTUNE_PREV]))
@@ -3043,6 +3049,18 @@ void Game::toggleFullViewRange(float *statustext_time)
 	infostream << msg[draw_control->range_all] << std::endl;
 	statustext = msg[draw_control->range_all];
 	*statustext_time = 0;
+}
+
+void Game::toggleFarMapVisible(float *statustext_time)
+{
+	static const wchar_t *msg[] = {
+		L"Far map hidden",
+		L"Far map visible"
+	};
+
+	client->setFarMapVisible(!client->getFarMapVisible());
+	*statustext_time = 0;
+	statustext = msg[client->getFarMapVisible()];
 }
 
 
@@ -3898,7 +3916,7 @@ void Game::updateFrame(std::vector<aabb3f> &highlight_boxes,
 		runData->fog_range = 100000 * BS;
 		runData->fog_range_start = runData->fog_range * 0.4;
 	} else {
-		if (g_settings->getBool("enable_far_map")) {
+		if (client->getFarMapVisible()) {
 			// TODO: Get current range from FarMap
 			runData->fog_range = 800 * BS;
 			// Fog starts at halfway where normal rendering ends; this makes a

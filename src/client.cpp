@@ -692,7 +692,7 @@ void Client::step(float dtime)
 		if(player)
 			player_p = floatToInt(player->getPosition(), BS);
 
-		if (m_far_map) {
+		if (m_far_map && getFarMapVisible()) {
 			// Get suggested FarBlock positions
 			std::vector<v3s16> suggested_fbs =
 					m_far_map->suggestFarBlocksToFetch(player_p);
@@ -1935,6 +1935,16 @@ float Client::getAvgRate(void)
 {
 	return ( m_con.getLocalStat(con::AVG_INC_RATE) +
 			m_con.getLocalStat(con::AVG_DL_RATE));
+}
+
+bool Client::getFarMapVisible()
+{
+	return !m_far_map ? false : m_far_map->isVisible();
+}
+
+void Client::setFarMapVisible(bool b)
+{
+	m_far_map->setVisible(b);
 }
 
 void Client::makeScreenshot(IrrlichtDevice *device)
