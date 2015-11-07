@@ -714,8 +714,9 @@ void Client::step(float dtime)
 		}
 
 		// Prioritize
+		static const float far_weight = 8.0f;
 		std::sort(wanted_map_send_queue.begin(), wanted_map_send_queue.end(),
-				WMSPriority(player_p, 10.0));
+				WMSPriority(player_p, far_weight));
 
 		NetworkPacket pkt(TOSERVER_SET_WANTED_MAP_SEND_QUEUE, 0);
 		/*
