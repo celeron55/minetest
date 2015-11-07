@@ -267,8 +267,8 @@ public:
 	void SendingBlock(const WantedMapSend &wms);
 
 	void SetBlockNotSent(const WantedMapSend &wms);
-	void SetMapBlockNotSent(v3s16 p){
-			return SetBlockNotSent(WantedMapSend(WMST_MAPBLOCK, p)); }
+	// Also sets the corresponding FarBlock
+	void SetMapBlockNotSent(v3s16 p);
 	void SetMapBlocksNotSent(std::map<v3s16, MapBlock*> &blocks);
 
 	/**

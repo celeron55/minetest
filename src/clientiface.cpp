@@ -514,6 +514,15 @@ void RemoteClient::SetBlockNotSent(const WantedMapSend &wms)
 		m_blocks_sent.erase(wms);
 }
 
+void RemoteClient::SetMapBlockNotSent(v3s16 p)
+{
+	SetBlockNotSent(WantedMapSend(WMST_MAPBLOCK, p));
+
+	// Also set the corresponding FarBlock not sent
+	v3s16 farblock_p = getContainerPos(p, FMP_SCALE);
+	SetBlockNotSent(WantedMapSend(WMST_FARBLOCK, farblock_p));
+}
+
 void RemoteClient::SetMapBlocksNotSent(std::map<v3s16, MapBlock*> &blocks)
 {
 	m_nearest_unsent_d = 0;
@@ -523,12 +532,7 @@ void RemoteClient::SetMapBlocksNotSent(std::map<v3s16, MapBlock*> &blocks)
 			i != blocks.end(); ++i)
 	{
 		v3s16 p = i->first;
-		WantedMapSend wms(WMST_MAPBLOCK, p);
-
-		if(m_blocks_sending.find(wms) != m_blocks_sending.end())
-			m_blocks_sending.erase(wms);
-		if(m_blocks_sent.find(wms) != m_blocks_sent.end())
-			m_blocks_sent.erase(wms);
+		SetMapBlockNotSent(p);
 	}
 }
 

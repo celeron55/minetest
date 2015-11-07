@@ -1351,9 +1351,9 @@ void Server::SetMapBlocksNotSent(std::map<v3s16, MapBlock *>& block)
 	m_clients.lock();
 	// Set the modified blocks unsent for all the clients
 	for (std::vector<u16>::iterator i = clients.begin();
-		 i != clients.end(); ++i) {
-			if (RemoteClient *client = m_clients.lockedGetClientNoEx(*i))
-				client->SetMapBlocksNotSent(block);
+			 i != clients.end(); ++i) {
+		if (RemoteClient *client = m_clients.lockedGetClientNoEx(*i))
+			client->SetMapBlocksNotSent(block);
 	}
 	m_clients.unlock();
 }
