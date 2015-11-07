@@ -1015,7 +1015,7 @@ std::vector<v3s16> FarMap::suggestFarBlocksToFetch(v3s16 camera_p)
 	v3s16 center_mb = getContainerPos(camera_p, MAP_BLOCKSIZE);
 	v3s16 center_fb = getContainerPos(center_mb, FMP_SCALE);
 
-	s32 fetch_distance_nodes = 1000;
+	s32 fetch_distance_nodes = 800;
 	s32 fetch_distance_farblocks =
 			ceilf((float)fetch_distance_nodes / MAP_BLOCKSIZE / FMP_SCALE);
 
