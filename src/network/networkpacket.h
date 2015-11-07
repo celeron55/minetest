@@ -117,6 +117,12 @@ public:
 			return buf;
 		}
 
+		// Same thing for writing. Create a copy of the parameter just so that
+		// it can be implicitly or non-implicitly cast.
+		template<typename T> void write(T v) {
+			*this << v;
+		}
+
 		// Temp, we remove SharedBuffer when migration finished
 		Buffer<u8> oldForgePacket();
 private:
