@@ -689,11 +689,12 @@ void Client::step(float dtime)
 			v3s16 area_offset = area.MinEdge;
 			v3s16 preferred_block_div(4, 4, 4);
 
-			NetworkPacket pkt(TOSERVER_GET_FAR_BLOCKS, 0);
+			NetworkPacket pkt(TOSERVER_SET_WANTED_MAP_SEND_QUEUE, 0);
 			/*
-				v3s16 area_offset
-				v3s16 area_size
-				v3s16 preferred_block_div
+				u32 len
+				for len:
+					u8 type // 1=MapBlock, 2=FarBlock
+					v3s16 p
 			*/
 			pkt << area_offset;
 			pkt << area_size;

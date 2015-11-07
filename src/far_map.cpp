@@ -138,6 +138,14 @@ FarSector::~FarSector()
 	}
 }
 
+FarBlock* FarSector::getBlock(s16 y)
+{
+	std::map<s16, FarBlock*>::iterator i = blocks.find(y);
+	if(i != blocks.end())
+		return i->second;
+	return NULL;
+}
+
 FarBlock* FarSector::getOrCreateBlock(s16 y)
 {
 	std::map<s16, FarBlock*>::iterator i = blocks.find(y);
@@ -761,6 +769,22 @@ FarMap::~FarMap()
 	}
 }
 
+FarSector* FarMap::getSector(v2s16 p)
+{
+	std::map<v2s16, FarSector*>::iterator i = m_sectors.find(p);
+	if(i != m_sectors.end())
+		return i->second;
+	return NULL;
+}
+
+FarBlock* FarMap::getBlock(v3s16 p)
+{
+	v2s16 p2d(p.X, p.Z);
+	FarSector *s = getSector(p2d);
+	if (!s) return NULL;
+	return s->getBlock(p.Y);
+}
+
 FarSector* FarMap::getOrCreateSector(v2s16 p)
 {
 	std::map<v2s16, FarSector*>::iterator i = m_sectors.find(p);
@@ -968,23 +992,48 @@ void FarMap::createAtlas()
 			<<" nodes";
 }
 
-// Result is in MapBlock positions. getVolume()=0 if no area to fetch.
-VoxelArea FarMap::suggestAreaToFetch()
+std::vector<v3s16> FarMap::suggestFarBlocksToFetch();
 {
-	v3s16 center_block = v3s16_div(normally_rendered_blocks.blocks_area.MaxEdge
+	static const s32 wanted_num_results = 10;
+
+	std::vector<v3s16> suggested_fbs;
+
+	v3s16 center_mb = v3s16_div(normally_rendered_blocks.blocks_area.MaxEdge
 			 + normally_rendered_blocks.blocks_area.MinEdge, 2);
 
-	// TODO: Fetch one FarBlock at a time
+	v3s16 center_fb = getContainerPos(center_mb, FMP_SCALE);
 
-	// TODO: This shouldn't be hardcoded in this way probably
-	v3s16 area_size(48, 10, 48);
-	//v3s16 area_size(16, 2, 16); // Good for valgrind
+	s32 fetch_distance_nodes = 1000;
+	s32 fetch_distance_mapblocks = fetch_distance_nodes / MAP_BLOCKSIZE;
+	s32 fetch_distance_farblocks = fetch_distance_mapblocks / FMP_SCALE;
 
-	// NOTE: A working division operator is defined for v3s32; not for v3s16.
-	return VoxelArea(
-		center_block - v3s16_div(area_size, 2),
-		center_block + v3s16_div(area_size, 2)
-	);
+	// Avoid running the algorithm through all the close FarBlocks that probably
+	// have already been fetched, except once in a while to catch up with
+	// possible missed FarBlocks due to player movement or whatever.
+	s16 start_d = m_farblocks_exist_up_to_d; // Start one lower than have to
+	if (++m_farblocks_exist_up_to_d_reset_counter >= 10) {
+		m_farblocks_exist_up_to_d_reset_counter = 0;
+		start_d = 0;
+	}
+	m_farblocks_exist_up_to_d = -1; // Reset and recalculate
+
+	for (s16 d = start_d; d <= fetch_distance_farblocks; d++) {
+		std::vector<v3s16> ps = FacePositionCache::getFacePositions(d);
+		for (size_t i=0; i<ps.size(); i++) {
+			v3s16 p = center_fb + ps[i];
+			FarBlock *b = getBlock(p);
+			if (b == NULL)
+				continue;
+			if (m_farblocks_exist_up_to_d == -1)
+				m_farblocks_exist_up_to_d = d - 1;
+			suggested_fbs.push_back(p);
+			if (suggested_fbs.size() >= wanted_num_results)
+				goto done;
+		}
+	}
+done:
+
+	return suggested_fbs;
 }
 
 void FarMap::updateSettings()

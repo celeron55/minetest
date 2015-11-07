@@ -100,6 +100,7 @@ struct FarSector
 	FarSector(v2s16 p);
 	~FarSector();
 
+	FarBlock* getBlock(s16 p);
 	FarBlock* getOrCreateBlock(s16 p);
 };
 
@@ -183,6 +184,8 @@ public:
 	);
 	~FarMap();
 
+	FarSector* getSector(v2s16 p);
+	FarBlock* getBlock(v3s16 p);
 	FarSector* getOrCreateSector(v2s16 p);
 	FarBlock* getOrCreateBlock(v3s16 p);
 
@@ -203,8 +206,7 @@ public:
 	// Shall be called after the client receives all node definitions
 	void createAtlas();
 
-	// Result is in MapBlock positions. getVolume()=0 if no area to fetch.
-	VoxelArea suggestAreaToFetch();
+	std::vector<v3s16> suggestFarBlocksToFetch();
 
 	// ISceneNode methods
 	void OnRegisterSceneNode();
@@ -233,6 +235,10 @@ private:
 	// Rendering stuff
 	core::aabbox3d<f32> m_bounding_box;
 	v3s16 m_camera_offset;
+
+	// Miscellaneous
+	s16 m_farblocks_exist_up_to_d;
+	s16 m_farblocks_exist_up_to_d_reset_counter;
 };
 
 #endif
