@@ -2049,6 +2049,8 @@ void Server::handleCommand_SetWantedMapSendQueue(NetworkPacket* pkt_in)
 	*pkt_in >> wanted_map_send_queue_len;
 	infostream << "wanted_map_send_queue_len=" << wanted_map_send_queue_len << std::endl;
 
+	// Use a vector, because this is not really strictly a queue. It's more like
+	// a pre-prioritized list.
 	std::vector<WantedMapSend> wanted_map_send_queue;
 	wanted_map_send_queue.reserve(wanted_map_send_queue_len);
 	for (u32 i=0; i<wanted_map_send_queue_len; i++) {
@@ -2058,6 +2060,11 @@ void Server::handleCommand_SetWantedMapSendQueue(NetworkPacket* pkt_in)
 		wanted_map_send_queue.push_back(wms);
 	}
 
+	// Set the value in RemoteClient; data transfer is handled elsewhere.
+	RemoteClient* client = getClient(pkt_in->getPeerId(), CS_Created);
+	client->setMapSendQueue(wanted_map_send_queue);
+
+#if 0
 	// For testing, just send everything in one go
 	for (size_t i=0; i<wanted_map_send_queue.size(); i++) {
 		const WantedMapSend &wms = wanted_map_send_queue[i];
@@ -2119,6 +2126,9 @@ void Server::handleCommand_SetWantedMapSendQueue(NetworkPacket* pkt_in)
 				//MapBlock *b = m_env->getMap().getBlockNoCreateNoEx(bp);
 				// Use emergeBlock(*, false) to load from disk if possible
 				MapBlock *b = m_env->getMap().emergeBlock(bp, false);
+
+				// TODO: Don't send FarBlock if all MapBlocks inside it haven't
+				//       been generated
 
 				v3s16 dp; // Position inside block (division)
 				for (dp.Z=0; dp.Z<divs_per_mb.Z; dp.Z++)
@@ -2195,5 +2205,6 @@ void Server::handleCommand_SetWantedMapSendQueue(NetworkPacket* pkt_in)
 			Send(&pkt);
 		}
 	}
+#endif
 }
 

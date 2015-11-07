@@ -63,12 +63,109 @@ void RemoteClient::ResendBlockIfOnWire(v3s16 p)
 
 void RemoteClient::GetNextBlocks (
 		ServerEnvironment *env,
-		EmergeManager * emerge,
+		EmergeManager *emerge,
 		float dtime,
-		std::vector<PrioritySortedBlockTransfer> &dest)
+		std::vector<WantedMapSendToPlayer> &dest)
+{
+	// Use legacy algorithm if map send queue is not being used
+	if (!m_map_send_queue_is_being_used) {
+		return GetNextBlocksLegacy(env, emerge, dtime, dest);
+	}
+
+	for (size_t i=0; i<m_map_send_queue.size(); i++) {
+		const WantedMapSend &wms = m_map_send_queue[i];
+		if (wms.type == WMST_MAPBLOCK) {
+			/*verbosestream << "Server: Client "<<peer_id<<" wants MapBlock ("
+					<<wms.p.X<<","<<wms.p.Y<<","<<wms.p.Z<<")"
+					<< std::endl;*/
+
+			// If the MapBlock is not loaded, it will be queued to be loaded or
+			// generated. Otherwise it will be added to 'dest'.
+
+			MapBlock *block = env->getMap().getBlockNoCreateNoEx(wms.p);
+
+			bool surely_not_found_on_disk = false;
+			bool block_is_invalid = false;
+			if(block != NULL)
+			{
+				// Reset usage timer, this block will be of use in the future.
+				block->resetUsageTimer();
+
+				// Block is dummy if data doesn't exist.
+				// It means it has been not found from disk and not generated
+				if(block->isDummy())
+					surely_not_found_on_disk = true;
+
+				// Block is valid if lighting is up-to-date and data exists
+				if(block->isValid() == false)
+					block_is_invalid = true;
+
+				if(block->isGenerated() == false)
+					block_is_invalid = true;
+
+				// This check is disabled because it mis-guesses sea floors to
+				// not be worth transferring to the client, while they are.
+				/*if (d >= 4 && block->getDayNightDiff() == false)
+					continue;*/
+			}
+
+			if(surely_not_found_on_disk == true) {
+				// TODO: There needs to be some new way or limiting which
+				// positions are allowed to be generated, because we aren't
+				// going to look up the player's position and compare it with
+				// max_block_generate_distance anymore. Maybe a configured set
+				// of allowed areas, or maybe a callback to Lua.
+
+				// NOTE: If we wanted to avoid generating new blocks based on
+				// some criterion, that check woould go here and we would call
+				// 'continue' if the check is positive.
+
+				// NOTE: There may need to be a way to tell the client that this
+				// block will not be transferred to it no matter how nicely it
+				// asks. Otherwise the requested send queue is going to get
+				// filled up by these and less important blocks further away
+				// that happen to have been already generated will not transfer.
+			}
+
+			/*
+				If block does not exist, add it to the emerge queue.
+			*/
+			if(block == NULL || surely_not_found_on_disk || block_is_invalid)
+			{
+				bool allow_generate = true;
+				if (!emerge->enqueueBlockEmerge(peer_id, wms.p, allow_generate)) {
+					// EmergeThread's queue is full; maybe it's not full on the
+					// next time this is called.
+				}
+
+				// This block is not available now; hopefully it appears on some
+				// next call to this function.
+				continue;
+			}
+
+			// The block is loaded; put it in dest so that if we're lucky, it
+			// will be transferred to the client
+			dest.push_back(WantedMapSendToPlayer(wms, peer_id));
+		}
+		if (wms.type == WMST_FARBLOCK) {
+			/*verbosestream << "Server: Client "<<peer_id<<" wants FarBlock ("
+					<<wms.p.X<<","<<wms.p.Y<<","<<wms.p.Z<<")"
+					<< std::endl;*/
+			// TODO
+			errorstream << "Server: Client "<<peer_id<<" wants FarBlock ("
+					<<wms.p.X<<","<<wms.p.Y<<","<<wms.p.Z<<")"
+					<< std::endl;
+		}
+	}
+}
+
+void RemoteClient::GetNextBlocksLegacy (
+		ServerEnvironment *env,
+		EmergeManager *emerge,
+		float dtime,
+		std::vector<WantedMapSendToPlayer> &dest)
 {
 	DSTACK(FUNCTION_NAME);
-
 
 	// Increment timers
 	m_nothing_to_send_pause_timer -= dtime;
@@ -337,9 +434,9 @@ void RemoteClient::GetNextBlocks (
 			/*
 				Add block to send queue
 			*/
-			PrioritySortedBlockTransfer q((float)d, p, peer_id);
+			WantedMapSendToPlayer wms(WMST_MAPBLOCK, p, peer_id);
 
-			dest.push_back(q);
+			dest.push_back(wms);
 
 			num_blocks_selected += 1;
 		}

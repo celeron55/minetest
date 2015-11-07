@@ -950,6 +950,15 @@ struct WantedMapSend
 
 	WantedMapSend(WantedMapSendType type=WMST_INVALID, v3s16 p=v3s16(0,0,0)):
 		type(type), p(p) {}
+
+	// This is for insertion in an std::map or std::set
+	/*bool operator < (const WantedMapSend &other) const
+	{
+		if (type < other.type) return true;
+		if (type > other.type) return false;
+		if (p < other.p) return true;
+		return false;
+	}*/
 };
 
 #endif

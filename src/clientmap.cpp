@@ -841,6 +841,10 @@ std::vector<v3s16> ClientMap::suggestMapBlocksToFetch(v3s16 camera_p,
 {
 	std::vector<v3s16> suggested_mbs;
 
+	// TODO: Add some prediction based on player's current speed so that we are
+	//       getting stuff from the correct location compared to where the
+	//       player will be after a while?
+
 	v3s16 center_mb = getContainerPos(camera_p, MAP_BLOCKSIZE);
 
 	s32 fetch_distance_nodes = 1000;
@@ -865,12 +869,19 @@ std::vector<v3s16> ClientMap::suggestMapBlocksToFetch(v3s16 camera_p,
 		std::vector<v3s16> ps = FacePositionCache::getFacePositions(d);
 		for (size_t i=0; i<ps.size(); i++) {
 			v3s16 p = center_mb + ps[i];
+
 			MapBlock *b = getBlockNoCreateNoEx(p);
+
 			// TODO: Not sure if this conditional is exactly correct
 			if (b != NULL && !b->isDummy())
 				continue; // Exists
+
 			if (m_mapblocks_exist_up_to_d == -1)
 				m_mapblocks_exist_up_to_d = d - 1;
+
+			// TODO: Frustum culling?
+			// TODO: Occlusion culling?
+
 			suggested_mbs.push_back(p);
 			if (suggested_mbs.size() >= wanted_num_results)
 				goto done;

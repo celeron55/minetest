@@ -696,7 +696,7 @@ void Client::step(float dtime)
 
 		// Figure out maximum number for queued MapBlocks
 		static const s32 max_mut_queue_size = 20;
-		static const s32 max_suggested_mbs = 20;
+		static const s32 max_suggested_mbs = 50;
 		s32 num_suggested_mbs = max_suggested_mbs;
 		s32 mesh_queue_size = m_mesh_update_thread.queueSize();
 		if (mesh_queue_size > max_mut_queue_size) {

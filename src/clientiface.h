@@ -199,25 +199,20 @@ enum ClientStateEvent
 };
 
 /*
-	Used for queueing and sorting block transfers in containers
-
-	Lower priority number means higher priority.
+	Used for queuing and sorting block transfers
 */
-struct PrioritySortedBlockTransfer
+struct WantedMapSendToPlayer: public WantedMapSend
 {
-	PrioritySortedBlockTransfer(float a_priority, v3s16 a_pos, u16 a_peer_id)
-	{
-		priority = a_priority;
-		pos = a_pos;
-		peer_id = a_peer_id;
-	}
-	bool operator < (const PrioritySortedBlockTransfer &other) const
-	{
-		return priority < other.priority;
-	}
-	float priority;
-	v3s16 pos;
 	u16 peer_id;
+
+	WantedMapSendToPlayer(const WantedMapSend &wms,
+			u16 peer_id=PEER_ID_INEXISTENT):
+		WantedMapSend(wms), peer_id(peer_id)
+	{}
+	WantedMapSendToPlayer(WantedMapSendType type=WMST_INVALID,
+			v3s16 p=v3s16(0,0,0), u16 peer_id=PEER_ID_INEXISTENT):
+		WantedMapSend(type, p), peer_id(peer_id)
+	{}
 };
 
 class RemoteClient
@@ -256,6 +251,7 @@ public:
 		m_time_from_building(9999),
 		m_pending_serialization_version(SER_FMT_VER_INVALID),
 		m_state(CS_Created),
+		m_map_send_queue_is_being_used(0),
 		m_nearest_unsent_d(0),
 		m_nearest_unsent_reset_timer(0.0),
 		m_excess_gotblocks(0),
@@ -273,13 +269,14 @@ public:
 	{
 	}
 
-	/*
-		Finds block that should be sent next to the client.
-		Environment should be locked when this is called.
-		dtime is used for resetting send radius at slow interval
-	*/
+	// Finds block that should be sent next to the client.
+	// Environment should be locked when this is called.
 	void GetNextBlocks(ServerEnvironment *env, EmergeManager* emerge,
-			float dtime, std::vector<PrioritySortedBlockTransfer> &dest);
+			float dtime, std::vector<WantedMapSendToPlayer> &dest);
+
+	// dtime is used for resetting send radius at slow interval
+	void GetNextBlocksLegacy(ServerEnvironment *env, EmergeManager* emerge,
+			float dtime, std::vector<WantedMapSendToPlayer> &dest);
 
 	void GotBlock(v3s16 p);
 
@@ -296,9 +293,17 @@ public:
 	 */
 	void ResendBlockIfOnWire(v3s16 p);
 
+	// Total number of MapBlocks and FarBlocks on the wire
 	s32 SendingCount()
 	{
 		return m_blocks_sending.size();
+	}
+
+	void setMapSendQueue(const std::vector<WantedMapSend> &map_send_queue)
+	{
+		m_map_send_queue = map_send_queue;
+		// Enable new algorithm
+		m_map_send_queue_is_being_used = true;
 	}
 
 	// Increments timeouts and removes timed-out blocks from list
@@ -372,6 +377,16 @@ private:
 	ClientState m_state;
 
 	/*
+		Improved version of map sending; in this one, the client periodically
+		gives the server this prioritized list and the server attempts to send
+		everything listed on it.
+
+		If this is non-empty, this takes precedence over the previous algorithm.
+	*/
+	std::vector<WantedMapSend> m_map_send_queue;
+	bool m_map_send_queue_is_being_used;
+
+	/*
 		Blocks that have been sent to client.
 		- These don't have to be sent again.
 		- A block is cleared from here when client says it has
@@ -381,6 +396,10 @@ private:
 		No MapBlock* is stored here because the blocks can get deleted.
 	*/
 	std::set<v3s16> m_blocks_sent;
+
+	/*
+		Stuff for the legacy map sending algorithm.
+	*/
 	s16 m_nearest_unsent_d;
 	v3s16 m_last_center;
 	float m_nearest_unsent_reset_timer;

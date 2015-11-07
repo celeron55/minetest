@@ -1008,7 +1008,7 @@ std::vector<v3s16> FarMap::suggestFarBlocksToFetch(v3s16 camera_p)
 	if (m_worker_thread.getQueueLength() >= 10)
 		return std::vector<v3s16>();
 
-	static const size_t wanted_num_results = 10;
+	static const size_t wanted_num_results = 20;
 
 	std::vector<v3s16> suggested_fbs;
 
