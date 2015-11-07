@@ -279,6 +279,9 @@ enable_clouds (Clouds) bool true
 #    Use 3D cloud look instead of flat.
 enable_3d_clouds (3D clouds) bool true
 
+#    Enable low level-of-detail rendering at large distances
+enable_far_map (Far Map) bool true
+
 [***Filtering]
 
 #    Use mip mapping to scale textures. May slightly increase performance.

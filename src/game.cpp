@@ -3898,9 +3898,7 @@ void Game::updateFrame(std::vector<aabb3f> &highlight_boxes,
 		runData->fog_range = 100000 * BS;
 		runData->fog_range_start = runData->fog_range * 0.4;
 	} else {
-		// TODO
-		bool farmap_enabled = true;
-		if (farmap_enabled) {
+		if (g_settings->getBool("enable_far_map")) {
 			// TODO: Get current range from FarMap
 			runData->fog_range = 800 * BS;
 			// Fog starts at halfway where normal rendering ends; this makes a

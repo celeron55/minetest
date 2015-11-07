@@ -231,8 +231,7 @@ Client::Client(
 	m_con(PROTOCOL_ID, 512, CONNECTION_TIMEOUT, ipv6, this),
 	m_device(device),
 	m_minimap_disabled_by_server(false),
-	m_far_map(new FarMap(this, device->getSceneManager()->getRootSceneNode(),
-			device->getSceneManager(), 667)),
+	m_far_map(NULL),
 	m_server_ser_ver(SER_FMT_VER_INVALID),
 	m_proto_ver(0),
 	m_playeritem(0),
@@ -269,6 +268,12 @@ Client::Client(
 
 	m_cache_smooth_lighting = g_settings->getBool("smooth_lighting");
 	m_cache_enable_shaders  = g_settings->getBool("enable_shaders");
+
+	if (g_settings->getBool("enable_far_map")) {
+		m_far_map = new FarMap(this,
+				device->getSceneManager()->getRootSceneNode(),
+				device->getSceneManager(), 667);
+	}
 }
 
 void Client::Stop()
@@ -322,7 +327,8 @@ Client::~Client()
 
 	delete m_mapper;
 
-	m_far_map->drop();
+	if (m_far_map)
+		m_far_map->drop();
 }
 
 void Client::connect(Address address,
@@ -686,12 +692,14 @@ void Client::step(float dtime)
 		if(player)
 			player_p = floatToInt(player->getPosition(), BS);
 
-		// Get suggested FarBlock positions
-		std::vector<v3s16> suggested_fbs =
-				m_far_map->suggestFarBlocksToFetch(player_p);
-		for (size_t i=0; i<suggested_fbs.size(); i++) {
-			v3s16 fb = suggested_fbs[i];
-			wanted_map_send_queue.push_back(WantedMapSend(WMST_FARBLOCK, fb));
+		if (m_far_map) {
+			// Get suggested FarBlock positions
+			std::vector<v3s16> suggested_fbs =
+					m_far_map->suggestFarBlocksToFetch(player_p);
+			for (size_t i=0; i<suggested_fbs.size(); i++) {
+				v3s16 fb = suggested_fbs[i];
+				wanted_map_send_queue.push_back(WantedMapSend(WMST_FARBLOCK, fb));
+			}
 		}
 
 		// Figure out maximum number for queued MapBlocks
@@ -734,8 +742,10 @@ void Client::step(float dtime)
 		Send(&pkt);
 	}
 
-	// Update FarMap
-	m_far_map->update();
+	if (m_far_map) {
+		// Update FarMap
+		m_far_map->update();
+	}
 }
 
 bool Client::loadMedia(const std::string &data, const std::string &filename)
@@ -1756,7 +1766,9 @@ void Client::updateCameraOffset(v3s16 camera_offset)
 {
 	m_mesh_update_thread.m_camera_offset = camera_offset;
 
-	m_far_map->updateCameraOffset(camera_offset);
+	if (m_far_map) {
+		m_far_map->updateCameraOffset(camera_offset);
+	}
 }
 
 ClientEvent Client::getClientEvent()
@@ -1885,13 +1897,15 @@ void Client::afterContentReceived(IrrlichtDevice *device)
 		delete[] text;
 	}
 
-	// Create FarMap atlas
 	if (m_far_map) {
-		infostream<<"- Creating FarMap atlas"<<std::endl;
-		text = wgettext("Creating FarMap atlas...");
-		draw_load_screen(text, device, guienv, 0, 100);
-		m_far_map->createAtlas();
-		delete[] text;
+		// Create FarMap atlas
+		if (m_far_map) {
+			infostream<<"- Creating FarMap atlas"<<std::endl;
+			text = wgettext("Creating FarMap atlas...");
+			draw_load_screen(text, device, guienv, 0, 100);
+			m_far_map->createAtlas();
+			delete[] text;
+		}
 	}
 
 	// Start mesh update thread after setting up content definitions

@@ -300,6 +300,9 @@
 #    type: bool
 # enable_3d_clouds = true
 
+#    Enable low level-of-detail rendering at large distances
+#enable_far_map = true
+
 #### Filtering
 
 #    Use mip mapping to scale textures. May slightly increase performance.
