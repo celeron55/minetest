@@ -173,6 +173,7 @@ void translateMesh(scene::IMesh *mesh, v3f vec)
 			bbox.addInternalBox(buf->getBoundingBox());
 	}
 	mesh->setBoundingBox(bbox);
+	mesh->setDirty(scene::EBT_VERTEX);
 }
 
 
