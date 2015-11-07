@@ -847,9 +847,9 @@ std::vector<v3s16> ClientMap::suggestMapBlocksToFetch(v3s16 camera_p,
 
 	v3s16 center_mb = getContainerPos(camera_p, MAP_BLOCKSIZE);
 
-	s32 fetch_distance_nodes = 1000;
+	s32 fetch_distance_nodes = m_control.wanted_range;
 	s32 fetch_distance_mapblocks =
-			ceilf((float)fetch_distance_nodes / MAP_BLOCKSIZE);
+			roundf((float)fetch_distance_nodes / MAP_BLOCKSIZE);
 
 	// Avoid running the algorithm through all the close MapBlocks that probably
 	// have already been fetched, except once in a while to catch up with
@@ -869,6 +869,19 @@ std::vector<v3s16> ClientMap::suggestMapBlocksToFetch(v3s16 camera_p,
 		std::vector<v3s16> ps = FacePositionCache::getFacePositions(d);
 		for (size_t i=0; i<ps.size(); i++) {
 			v3s16 p = center_mb + ps[i];
+
+			v3s16 blockpos_nodes = p * MAP_BLOCKSIZE;
+			v3s16 blockpos_center(
+					blockpos_nodes.X + MAP_BLOCKSIZE/2,
+					blockpos_nodes.Y + MAP_BLOCKSIZE/2,
+					blockpos_nodes.Z + MAP_BLOCKSIZE/2
+			);
+			v3s16 blockpos_relative = blockpos_center - camera_p;
+			f32 distance = blockpos_relative.getLength();
+			// Limit fetched MapBlocks to a ball radius instead of a square
+			// because that is how they are limited when drawing too
+			if (distance > fetch_distance_nodes)
+				continue; // Not in range
 
 			MapBlock *b = getBlockNoCreateNoEx(p);
 
