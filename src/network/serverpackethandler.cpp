@@ -2108,6 +2108,7 @@ void Server::handleCommand_SetWantedMapSendQueue(NetworkPacket* pkt_in)
 			for (bp.Y=area_offset_mb.Y; bp.Y<area_offset_mb.Y+area_size_mb.Y; bp.Y++)
 			for (bp.X=area_offset_mb.X; bp.X<area_offset_mb.X+area_size_mb.X; bp.X++) {
 				//MapBlock *b = m_env->getMap().getBlockNoCreateNoEx(bp);
+				// Use emergeBlock(*, false) to load from disk if possible
 				MapBlock *b = m_env->getMap().emergeBlock(bp, false);
 
 				v3s16 dp; // Position inside block (division)
