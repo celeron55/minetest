@@ -80,7 +80,7 @@ void RemoteClient::GetNextBlocks (
 					<< std::endl;*/
 
 			// Don't send blocks that are currently being transferred
-			if (m_blocks_sending.find(wms.p) != m_blocks_sending.end())
+			if (m_blocks_sending.find(wms) != m_blocks_sending.end())
 				continue;
 
 			// Do not go over-limit
@@ -302,6 +302,7 @@ void RemoteClient::GetNextBlocksLegacy (
 		std::vector<v3s16>::iterator li;
 		for(li = list.begin(); li != list.end(); ++li) {
 			v3s16 p = *li + center;
+			WantedMapSend wms(WMST_MAPBLOCK, p);
 
 			/*
 				Send throttling
@@ -325,7 +326,7 @@ void RemoteClient::GetNextBlocksLegacy (
 			}
 
 			// Don't send blocks that are currently being transferred
-			if (m_blocks_sending.find(p) != m_blocks_sending.end())
+			if (m_blocks_sending.find(wms) != m_blocks_sending.end())
 				continue;
 
 			/*
@@ -363,7 +364,7 @@ void RemoteClient::GetNextBlocksLegacy (
 				Don't send already sent blocks
 			*/
 			{
-				if(m_blocks_sent.find(p) != m_blocks_sent.end())
+				if(m_blocks_sent.find(wms) != m_blocks_sent.end())
 				{
 					continue;
 				}
@@ -445,7 +446,6 @@ void RemoteClient::GetNextBlocksLegacy (
 			/*
 				Add block to send queue
 			*/
-			WantedMapSend wms(WMST_MAPBLOCK, p);
 
 			dest.push_back(wms);
 
@@ -476,21 +476,21 @@ queue_full_break:
 		m_nearest_unsent_d = new_nearest_unsent_d;
 }
 
-void RemoteClient::GotBlock(v3s16 p)
+void RemoteClient::GotBlock(const WantedMapSend &wms)
 {
-	if(m_blocks_sending.find(p) != m_blocks_sending.end())
-		m_blocks_sending.erase(p);
+	if(m_blocks_sending.find(wms) != m_blocks_sending.end())
+		m_blocks_sending.erase(wms);
 	else
 	{
 		m_excess_gotblocks++;
 	}
-	m_blocks_sent.insert(p);
+	m_blocks_sent.insert(wms);
 }
 
-void RemoteClient::SentBlock(v3s16 p)
+void RemoteClient::SentBlock(const WantedMapSend &wms)
 {
-	if(m_blocks_sending.find(p) == m_blocks_sending.end())
-		m_blocks_sending[p] = 0.0;
+	if(m_blocks_sending.find(wms) == m_blocks_sending.end())
+		m_blocks_sending[wms] = 0.0;
 	else
 		infostream<<"RemoteClient::SentBlock(): Sent block"
 				" already in m_blocks_sending"<<std::endl;
@@ -515,11 +515,12 @@ void RemoteClient::SetMapBlocksNotSent(std::map<v3s16, MapBlock*> &blocks)
 			i != blocks.end(); ++i)
 	{
 		v3s16 p = i->first;
+		WantedMapSend wms(WMST_MAPBLOCK, p);
 
-		if(m_blocks_sending.find(p) != m_blocks_sending.end())
-			m_blocks_sending.erase(p);
-		if(m_blocks_sent.find(p) != m_blocks_sent.end())
-			m_blocks_sent.erase(p);
+		if(m_blocks_sending.find(wms) != m_blocks_sending.end())
+			m_blocks_sending.erase(wms);
+		if(m_blocks_sent.find(wms) != m_blocks_sent.end())
+			m_blocks_sent.erase(wms);
 	}
 }
 

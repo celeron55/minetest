@@ -263,13 +263,12 @@ public:
 	void GetNextBlocksLegacy(ServerEnvironment *env, EmergeManager* emerge,
 			float dtime, std::vector<WantedMapSend> &dest);
 
-	void GotBlock(v3s16 p);
-
-	void SentBlock(v3s16 p);
+	void GotBlock(const WantedMapSend &wms);
+	void SentBlock(const WantedMapSend &wms);
 
 	void SetBlockNotSent(const WantedMapSend &wms);
 	void SetMapBlockNotSent(v3s16 p){
-			return SetBlockNotSent(WantedMapSend(WMST_MAPBLOCK, p); }
+			return SetBlockNotSent(WantedMapSend(WMST_MAPBLOCK, p)); }
 	void SetMapBlocksNotSent(std::map<v3s16, MapBlock*> &blocks);
 
 	/**
@@ -279,6 +278,8 @@ public:
 	 * @param wms position of modified block
 	 */
 	void ResendBlockIfOnWire(const WantedMapSend &wms);
+	void ResendMapBlockIfOnWire(v3s16 p){
+			return ResendBlockIfOnWire(WantedMapSend(WMST_MAPBLOCK, p)); }
 
 	// Total number of MapBlocks and FarBlocks on the wire
 	s32 SendingCount()
@@ -382,7 +383,7 @@ private:
 		Key is position, value is dummy.
 		No MapBlock* is stored here because the blocks can get deleted.
 	*/
-	std::set<v3s16> m_blocks_sent;
+	std::set<WantedMapSend> m_blocks_sent;
 
 	/*
 		Stuff for the legacy map sending algorithm.

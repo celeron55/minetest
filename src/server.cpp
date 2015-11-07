@@ -633,7 +633,7 @@ void Server::AsyncRunStep(bool initial_step)
 		*/
 		if(!modified_blocks.empty())
 		{
-			SetBlocksNotSent(modified_blocks);
+			SetMapBlocksNotSent(modified_blocks);
 		}
 	}
 	m_clients.step(dtime);
@@ -943,7 +943,7 @@ void Server::AsyncRunStep(bool initial_step)
 				Set blocks not sent to far players
 			*/
 			if(!far_players.empty()) {
-				// Convert list format to that wanted by SetBlocksNotSent
+				// Convert list format to that wanted by SetMapBlocksNotSent
 				std::map<v3s16, MapBlock*> modified_blocks2;
 				for(std::set<v3s16>::iterator
 						i = event->modified_blocks.begin();
@@ -957,7 +957,7 @@ void Server::AsyncRunStep(bool initial_step)
 						i = far_players.begin();
 						i != far_players.end(); ++i) {
 					if(RemoteClient *client = getClient(*i))
-						client->SetBlocksNotSent(modified_blocks2);
+						client->SetMapBlocksNotSent(modified_blocks2);
 				}
 			}
 
@@ -1345,7 +1345,7 @@ void Server::setInventoryModified(const InventoryLocation &loc, bool playerSend)
 	}
 }
 
-void Server::SetBlocksNotSent(std::map<v3s16, MapBlock *>& block)
+void Server::SetMapBlocksNotSent(std::map<v3s16, MapBlock *>& block)
 {
 	std::vector<u16> clients = m_clients.getClientIDs();
 	m_clients.lock();
@@ -1353,7 +1353,7 @@ void Server::SetBlocksNotSent(std::map<v3s16, MapBlock *>& block)
 	for (std::vector<u16>::iterator i = clients.begin();
 		 i != clients.end(); ++i) {
 			if (RemoteClient *client = m_clients.lockedGetClientNoEx(*i))
-				client->SetBlocksNotSent(block);
+				client->SetMapBlocksNotSent(block);
 	}
 	m_clients.unlock();
 }
@@ -2110,7 +2110,7 @@ void Server::sendAddNode(v3s16 p, MapNode n, u16 ignore_id,
 				if (client->net_proto_version <= 21) {
 					// Old clients always clear metadata; fix it
 					// by sending the full block again.
-					client->SetBlockNotSent(getNodeBlockPos(p));
+					client->SetMapBlockNotSent(getNodeBlockPos(p));
 				}
 			}
 		}
@@ -2129,7 +2129,7 @@ void Server::setBlockNotSent(v3s16 p)
 	for(std::vector<u16>::iterator i = clients.begin();
 		i != clients.end(); ++i) {
 		RemoteClient *client = m_clients.lockedGetClientNoEx(*i);
-		client->SetBlockNotSent(p);
+		client->SetMapBlockNotSent(p);
 	}
 	m_clients.unlock();
 }
@@ -2244,7 +2244,7 @@ void Server::SendBlocks(float dtime)
 				continue;
 			SendBlockNoLock(peer_id, block, client->serialization_version,
 					client->net_proto_version);
-			client->SentBlock(wms.p);
+			client->SentBlock(wms);
 			total_sending++;
 		}
 		if (wms.type == WMST_FARBLOCK) {

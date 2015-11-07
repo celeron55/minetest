@@ -684,7 +684,7 @@ void *EmergeThread::run()
 			modified_blocks[pos] = block;
 
 		if (modified_blocks.size() > 0)
-			m_server->SetBlocksNotSent(modified_blocks);
+			m_server->SetMapBlocksNotSent(modified_blocks);
 	}
 	} catch (VersionMismatchException &e) {
 		std::ostringstream err;

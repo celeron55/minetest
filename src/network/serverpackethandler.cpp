@@ -766,11 +766,12 @@ void Server::handleCommand_GotBlocks(NetworkPacket* pkt)
 		if ((s16)pkt->getSize() < 1 + (i + 1) * 6)
 			throw con::InvalidIncomingDataException
 				("GOTBLOCKS length is too short");
+		// TODO: WantedMapSend
 		v3s16 p;
 
 		*pkt >> p;
 
-		client->GotBlock(p);
+		client->GotBlock(WantedMapSend(WMST_MAPBLOCK, p));
 	}
 }
 
@@ -872,7 +873,7 @@ void Server::handleCommand_DeletedBlocks(NetworkPacket* pkt)
 		v3s16 p;
 		*pkt >> p;
 
-		client->SetBlockNotSent(p);
+		client->SetMapBlockNotSent(p);
 	}
 }
 
@@ -1370,7 +1371,7 @@ void Server::handleCommand_Interact(NetworkPacket* pkt)
 			// Re-send block to revert change on client-side
 			RemoteClient *client = getClient(pkt->getPeerId());
 			v3s16 blockpos = getNodeBlockPos(floatToInt(pointed_pos_under, BS));
-			client->SetBlockNotSent(blockpos);
+			client->SetMapBlockNotSent(blockpos);
 			// Call callbacks
 			m_script->on_cheat(playersao, "interacted_too_far");
 			// Do nothing else
@@ -1390,12 +1391,12 @@ void Server::handleCommand_Interact(NetworkPacket* pkt)
 		// Digging completed -> under
 		if (action == 2) {
 			v3s16 blockpos = getNodeBlockPos(floatToInt(pointed_pos_under, BS));
-			client->SetBlockNotSent(blockpos);
+			client->SetMapBlockNotSent(blockpos);
 		}
 		// Placement -> above
 		if (action == 3) {
 			v3s16 blockpos = getNodeBlockPos(floatToInt(pointed_pos_above, BS));
-			client->SetBlockNotSent(blockpos);
+			client->SetMapBlockNotSent(blockpos);
 		}
 		return;
 	}
@@ -1573,10 +1574,10 @@ void Server::handleCommand_Interact(NetworkPacket* pkt)
 			// Send unusual result (that is, node not being removed)
 			if (m_env->getMap().getNodeNoEx(p_under).getContent() != CONTENT_AIR) {
 				// Re-send block to revert change on client-side
-				client->SetBlockNotSent(blockpos);
+				client->SetMapBlockNotSent(blockpos);
 			}
 			else {
-				client->ResendBlockIfOnWire(blockpos);
+				client->ResendMapBlockIfOnWire(blockpos);
 			}
 		}
 	} // action == 2
@@ -1622,15 +1623,15 @@ void Server::handleCommand_Interact(NetworkPacket* pkt)
 		v3s16 blockpos = getNodeBlockPos(floatToInt(pointed_pos_above, BS));
 		v3s16 blockpos2 = getNodeBlockPos(floatToInt(pointed_pos_under, BS));
 		if (item.getDefinition(m_itemdef).node_placement_prediction != "") {
-			client->SetBlockNotSent(blockpos);
+			client->SetMapBlockNotSent(blockpos);
 			if (blockpos2 != blockpos) {
-				client->SetBlockNotSent(blockpos2);
+				client->SetMapBlockNotSent(blockpos2);
 			}
 		}
 		else {
-			client->ResendBlockIfOnWire(blockpos);
+			client->ResendMapBlockIfOnWire(blockpos);
 			if (blockpos2 != blockpos) {
-				client->ResendBlockIfOnWire(blockpos2);
+				client->ResendMapBlockIfOnWire(blockpos2);
 			}
 		}
 	} // action == 3
