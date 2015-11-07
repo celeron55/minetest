@@ -108,6 +108,15 @@ public:
 		NetworkPacket& operator>>(video::SColor& dst);
 		NetworkPacket& operator<<(video::SColor src);
 
+		// Aaaand then the only useful read function in this whole class where
+		// you can actually control the format you are reading for vs. the
+		// type you are putting your result into. Use for enums and stuff.
+		template<typename T> T read() {
+			T buf;
+			*this >> buf;
+			return buf;
+		}
+
 		// Temp, we remove SharedBuffer when migration finished
 		Buffer<u8> oldForgePacket();
 private:
