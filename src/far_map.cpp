@@ -1121,6 +1121,8 @@ static void renderBlock(FarMap *far_map, FarBlock *b,
 big_break:;
 
 	if (fb_being_normally_rendered) {
+		ScopeProfiler sp(g_profiler,
+				"Far: render time: mb-parts (avg)", SPT_AVG);
 		for (mp0.Z=0; mp0.Z<FMP_SCALE; mp0.Z++)
 		for (mp0.Y=0; mp0.Y<FMP_SCALE; mp0.Y++)
 		for (mp0.X=0; mp0.X<FMP_SCALE; mp0.X++) {
@@ -1137,6 +1139,8 @@ big_break:;
 			(*profiler_num_rendered_fbmbparts)++;
 		}
 	} else {
+		ScopeProfiler sp(g_profiler,
+				"Far: render time: full meshes (avg)", SPT_AVG);
 		scene::SMesh *mesh = b->mesh;
 		if (mesh) {
 			renderMesh(far_map, mesh, driver);
