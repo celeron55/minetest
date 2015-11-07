@@ -217,7 +217,7 @@ public:
 	void handleCommand_FirstSrp(NetworkPacket* pkt);
 	void handleCommand_SrpBytesA(NetworkPacket* pkt);
 	void handleCommand_SrpBytesM(NetworkPacket* pkt);
-	void handleCommand_GetFarBlocks(NetworkPacket* pkt);
+	void handleCommand_SetWantedMapSendQueue(NetworkPacket* pkt);
 
 	void ProcessData(NetworkPacket *pkt);
 

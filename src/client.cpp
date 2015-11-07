@@ -673,35 +673,41 @@ void Client::step(float dtime)
 	/*
 		Request far blocks
 	*/
-	if(m_far_blocks_request_interval.step(dtime, 5.0))
+	if(m_far_blocks_request_interval.step(dtime, 1.0))
 	{
 		verbosestream<<"Client: Requesting far blocks"<<std::endl;
 
-		v3s16 player_p;
+		/*v3s16 player_p;
 		Player *player = m_env.getLocalPlayer();
 		if(player)
-			player_p = floatToInt(player->getPosition(), BS);
+			player_p = floatToInt(player->getPosition(), BS);*/
 
-		// Area in MapBlocks
-		VoxelArea area = m_far_map->suggestAreaToFetch();
-		if (area.getVolume() != 0) {
-			v3s16 area_size = area.getExtent();
-			v3s16 area_offset = area.MinEdge;
-			v3s16 preferred_block_div(4, 4, 4);
+		// TODO: Also mix in MapBlock requests and prioritize everything based
+		//       on their distance from the player or camera, maybe also doing
+		//       view frustum culling
 
-			NetworkPacket pkt(TOSERVER_SET_WANTED_MAP_SEND_QUEUE, 0);
-			/*
-				u32 len
-				for len:
-					u8 type // 1=MapBlock, 2=FarBlock
-					v3s16 p
-			*/
-			pkt << area_offset;
-			pkt << area_size;
-			pkt << preferred_block_div;
+		std::vector<WantedMapSend> wanted_map_send_queue;
 
-			Send(&pkt);
+		std::vector<v3s16> suggested_fbs = m_far_map->suggestFarBlocksToFetch();
+		for (size_t i=0; i<suggested_fbs.size(); i++) {
+			v3s16 fb = suggested_fbs[i];
+			wanted_map_send_queue.push_back(WantedMapSend(WMST_FARBLOCK, fb));
 		}
+
+		NetworkPacket pkt(TOSERVER_SET_WANTED_MAP_SEND_QUEUE, 0);
+		/*
+			u32 len
+			for len:
+				u8 type // 1=MapBlock, 2=FarBlock
+				v3s16 p
+		*/
+		pkt << (u32) wanted_map_send_queue.size();
+		for (size_t i=0; i<wanted_map_send_queue.size(); i++) {
+			const WantedMapSend &wms = wanted_map_send_queue[i];
+			pkt << (u8) wms.type;
+			pkt << (v3s16) wms.p;
+		}
+		Send(&pkt);
 	}
 
 	// Update FarMap

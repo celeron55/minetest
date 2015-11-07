@@ -1225,8 +1225,7 @@ void Client::handleCommand_SrpBytesSandB(NetworkPacket* pkt)
 
 void Client::handleCommand_FarBlocksResult(NetworkPacket* pkt_in)
 {
-	// TODO
-	infostream << "Client::handleCommand_FarBlocksResult: TODO" << std::endl;
+	infostream << "Client: Received FAR_BLOCKS_RESULT" << std::endl;
 
 	/*
 		v3s16 area_offset (blocks)

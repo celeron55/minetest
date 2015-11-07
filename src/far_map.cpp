@@ -627,6 +627,9 @@ void FarMapWorkerThread::sync()
 		try {
 			FarMapTask *t = m_queue_sync.pop_front(0);
 			infostream<<"FarMapWorkerThread: Running task in sync"<<std::endl;
+			// TODO: Spread these sync() calls as thin as possible, because if a
+			// bunch of them is called in a single frame, screen updates become
+			// choppy
 			t->sync();
 			delete t;
 			g_profiler->add("Far: tasks finished", 1);
@@ -640,13 +643,13 @@ void FarMapWorkerThread::doUpdate()
 {
 	for(;;){
 		try {
-			s32 length = --m_queue_in_length;
-			g_profiler->avg("Far: task queue length (avg)", length);
-
 			FarMapTask *t = m_queue_in.pop_front(250);
 			infostream<<"FarMapWorkerThread: Running task in thread"<<std::endl;
 			t->inThread();
 			m_queue_sync.push_back(t);
+
+			s32 length = --m_queue_in_length;
+			g_profiler->avg("Far: task queue length (avg)", length);
 		} catch(ItemNotFoundException &e){
 			break;
 		}
@@ -992,9 +995,15 @@ void FarMap::createAtlas()
 			<<" nodes";
 }
 
-std::vector<v3s16> FarMap::suggestFarBlocksToFetch();
+std::vector<v3s16> FarMap::suggestFarBlocksToFetch()
 {
-	static const s32 wanted_num_results = 10;
+	// Don't fetch anything if the task queue length is too high
+	verbosestream << "FarMap: m_worker_thread.getQueueLength()="
+			<< m_worker_thread.getQueueLength() << std::endl;
+	if (m_worker_thread.getQueueLength() >= 10)
+		return std::vector<v3s16>();
+
+	static const size_t wanted_num_results = 10;
 
 	std::vector<v3s16> suggested_fbs;
 
@@ -1004,8 +1013,8 @@ std::vector<v3s16> FarMap::suggestFarBlocksToFetch();
 	v3s16 center_fb = getContainerPos(center_mb, FMP_SCALE);
 
 	s32 fetch_distance_nodes = 1000;
-	s32 fetch_distance_mapblocks = fetch_distance_nodes / MAP_BLOCKSIZE;
-	s32 fetch_distance_farblocks = fetch_distance_mapblocks / FMP_SCALE;
+	s32 fetch_distance_farblocks =
+			ceilf((float)fetch_distance_nodes / MAP_BLOCKSIZE / FMP_SCALE);
 
 	// Avoid running the algorithm through all the close FarBlocks that probably
 	// have already been fetched, except once in a while to catch up with
@@ -1016,14 +1025,16 @@ std::vector<v3s16> FarMap::suggestFarBlocksToFetch();
 		start_d = 0;
 	}
 	m_farblocks_exist_up_to_d = -1; // Reset and recalculate
+	if (start_d < 0)
+		start_d = 0;
 
 	for (s16 d = start_d; d <= fetch_distance_farblocks; d++) {
 		std::vector<v3s16> ps = FacePositionCache::getFacePositions(d);
 		for (size_t i=0; i<ps.size(); i++) {
 			v3s16 p = center_fb + ps[i];
 			FarBlock *b = getBlock(p);
-			if (b == NULL)
-				continue;
+			if (b != NULL)
+				continue; // Exists
 			if (m_farblocks_exist_up_to_d == -1)
 				m_farblocks_exist_up_to_d = d - 1;
 			suggested_fbs.push_back(p);
@@ -1033,6 +1044,7 @@ std::vector<v3s16> FarMap::suggestFarBlocksToFetch();
 	}
 done:
 
+	infostream << "suggested_fbs.size()=" << suggested_fbs.size() << std::endl;
 	return suggested_fbs;
 }
 

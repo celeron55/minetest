@@ -32,9 +32,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 class Client;
 struct FarMap;
 
-// FarBlock size in MapBlocks in every dimension
-#define FMP_SCALE 8
-
 struct FarNode
 {
 	u16 id;
@@ -133,6 +130,7 @@ public:
 
 	void addTask(FarMapTask *task);
 	void sync();
+	s32 getQueueLength() { return m_queue_in_length; }
 
 private:
 	void doUpdate();

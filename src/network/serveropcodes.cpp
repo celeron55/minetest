@@ -108,7 +108,7 @@ const ToServerCommandHandler toServerCommandTable[TOSERVER_NUM_MSG_TYPES] =
 	{ "TOSERVER_SRP_BYTES_A",        TOSERVER_STATE_NOT_CONNECTED, &Server::handleCommand_SrpBytesA }, // 0x51
 	{ "TOSERVER_SRP_BYTES_M",        TOSERVER_STATE_NOT_CONNECTED, &Server::handleCommand_SrpBytesM }, // 0x52
 	null_command_handler, // 0x53
-	{ "TOSERVER_GET_FAR_BLOCKS",     TOSERVER_STATE_INGAME, &Server::handleCommand_GetFarBlocks }, // 0x54
+	{ "TOSERVER_SET_WANTED_MAP_SEND_QUEUE", TOSERVER_STATE_INGAME, &Server::handleCommand_SetWantedMapSendQueue }, // 0x54
 };
 
 const static ClientCommandFactory null_command_factory = { "TOCLIENT_NULL", 0, false };
@@ -199,7 +199,7 @@ const ClientCommandFactory clientCommandFactoryTable[TOCLIENT_NUM_MSG_TYPES] =
 	{ "TOCLIENT_LOCAL_PLAYER_ANIMATIONS",  0, true }, // 0x51
 	{ "TOCLIENT_EYE_OFFSET",               0, true }, // 0x52
 	{ "TOCLIENT_DELETE_PARTICLESPAWNER",   0, true }, // 0x53
-	{ "TOCLIENT_FAR_BLOCKS_RESULT",        0, true }, // 0x54
+	{ "TOCLIENT_FAR_BLOCKS_RESULT",        2, true }, // 0x54
 	null_command_factory,
 	null_command_factory,
 	null_command_factory,

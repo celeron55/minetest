@@ -874,11 +874,12 @@ enum ToServerCommand
 		std::string bytes_M
 	*/
 
-	TOSERVER_GET_FAR_BLOCKS = 0x54,
+	TOSERVER_SET_WANTED_MAP_SEND_QUEUE = 0x54,
 	/*
-		v3s16 area_offset
-		v3s16 area_size
-		v3s16 preferred_block_div
+		u32 len
+		for len:
+			u8 type // 1=MapBlock, 2=FarBlock
+			v3s16 p
 	*/
 
 	TOSERVER_NUM_MSG_TYPES = 0x55,
@@ -934,6 +935,21 @@ const static std::string accessDeniedStrings[SERVER_ACCESSDENIED_MAX] = {
 	"",
 	"Server shutting down.",
 	"This server has experienced an internal error. You will now be disconnected."
+};
+
+enum WantedMapSendType {
+	WMST_INVALID = 0,
+	WMST_MAPBLOCK = 1,
+	WMST_FARBLOCK = 2,
+};
+
+struct WantedMapSend
+{
+	WantedMapSendType type; // Sent as u8
+	v3s16 p;
+
+	WantedMapSend(WantedMapSendType type=WMST_INVALID, v3s16 p=v3s16(0,0,0)):
+		type(type), p(p) {}
 };
 
 #endif

@@ -1957,7 +1957,7 @@ void Server::handleCommand_SrpBytesM(NetworkPacket* pkt)
 
 	bool wantSudo = (cstate == CS_Active);
 
-	verbosestream << "Server: Recieved TOCLIENT_SRP_BYTES_M." << std::endl;
+	verbosestream << "Server: Received TOCLIENT_SRP_BYTES_M." << std::endl;
 
 	if (!((cstate == CS_HelloSent) || (cstate == CS_Active))) {
 		actionstream << "Server: got SRP _M packet in wrong state "
@@ -2034,127 +2034,156 @@ void Server::handleCommand_SrpBytesM(NetworkPacket* pkt)
 	acceptAuth(pkt->getPeerId(), wantSudo);
 }
 
-void Server::handleCommand_GetFarBlocks(NetworkPacket* pkt_in)
+void Server::handleCommand_SetWantedMapSendQueue(NetworkPacket* pkt_in)
 {
-	// TODO
-	infostream << "Server::handleCommand_GetFarBlocks: TODO" << std::endl;
+	infostream << "Server: Received SET_WANTED_MAP_SEND_QUEUE" << std::endl;
 
-	v3s16 area_offset;
-	v3s16 area_size;
-	v3s16 preferred_block_div;
-	*pkt_in >> area_offset;
-	*pkt_in >> area_size;
-	*pkt_in >> preferred_block_div;
+	/*
+		u32 len
+		for len:
+			u8 type // 1=MapBlock, 2=FarBlock
+			v3s16 p
+	*/
 
-	v3s16 block_div = preferred_block_div;
+	u32 wanted_map_send_queue_len;
+	*pkt_in >> wanted_map_send_queue_len;
+	infostream << "wanted_map_send_queue_len=" << wanted_map_send_queue_len << std::endl;
 
-	v3s16 total_size(
-			area_size.X * block_div.X,
-			area_size.Y * block_div.Y,
-			area_size.Z * block_div.Z);
+	std::vector<WantedMapSend> wanted_map_send_queue;
+	wanted_map_send_queue.reserve(wanted_map_send_queue_len);
+	for (u32 i=0; i<wanted_map_send_queue_len; i++) {
+		WantedMapSend wms;
+		wms.type = (WantedMapSendType)pkt_in->read<u8>();
+		wms.p = pkt_in->read<v3s16>();
+		wanted_map_send_queue.push_back(wms);
+	}
 
-	size_t total_size_n = total_size.X * total_size.Y * total_size.Z;
+	// For testing, just send everything in one go
+	for (size_t i=0; i<wanted_map_send_queue.size(); i++) {
+		const WantedMapSend &wms = wanted_map_send_queue[i];
+		infostream << "wms.type=" << wms.type << std::endl;
+		if (wms.type == WMST_FARBLOCK) {
+			// FarBlock area in divisions (FarNodes)
+			static const v3s16 divs_per_mb(4, 4, 4);
 
-	// Output area in divisions
-	v3s16 out_div_area_p0(
-		area_offset.X * block_div.X,
-		area_offset.Y * block_div.Y,
-		area_offset.Z * block_div.Z
-	);
-	v3s16 out_div_area_p1 = out_div_area_p0 + v3s16(
-		area_size.X * block_div.X,
-		area_size.Y * block_div.Y,
-		area_size.Z * block_div.Z
-	);
-	// This can be used for indexing node_ids and lights
-	VoxelArea out_div_area(out_div_area_p0, out_div_area_p1 - v3s16(1,1,1));
-	assert(out_div_area.getVolume() == (s32)total_size_n);
-
-	std::vector<u16> node_ids;
-	node_ids.resize(total_size_n);
-
-	std::vector<u8> lights;
-	lights.resize(total_size_n);
-
-	v3s16 bp;
-	for (bp.Z=area_offset.Z; bp.Z<area_offset.Z+area_size.Z; bp.Z++)
-	for (bp.Y=area_offset.Y; bp.Y<area_offset.Y+area_size.Y; bp.Y++)
-	for (bp.X=area_offset.X; bp.X<area_offset.X+area_size.X; bp.X++) {
-		//MapBlock *b = m_env->getMap().getBlockNoCreateNoEx(bp);
-		MapBlock *b = m_env->getMap().emergeBlock(bp, false);
-
-		v3s16 dp; // Position inside block (division)
-		for (dp.Z=0; dp.Z<block_div.Z; dp.Z++)
-		for (dp.Y=0; dp.Y<block_div.Y; dp.Y++)
-		for (dp.X=0; dp.X<block_div.X; dp.X++) {
-			// Block's origin coordinates in global division coordinates
-			v3s16 dp0(
-				bp.X * block_div.X,
-				bp.Y * block_div.Y,
-				bp.Z * block_div.Z
+			v3s16 area_offset_mb(
+				FMP_SCALE * wms.p.X,
+				FMP_SCALE * wms.p.Y,
+				FMP_SCALE * wms.p.Z
 			);
 
-			v3s16 dp1 = dp0 + dp;
-			assert(out_div_area.contains(dp1));
-			size_t i = out_div_area.index(dp1);
+			v3s16 area_size_mb(FMP_SCALE, FMP_SCALE, FMP_SCALE);
 
-			u16 node_id = 0;
-			u8 light = 0;
+			v3s16 out_size(
+				area_size_mb.X * divs_per_mb.X,
+				area_size_mb.Y * divs_per_mb.Y,
+				area_size_mb.Z * divs_per_mb.Z
+			);
 
-			if(b){
-				// Node at center of division (horizontally)
-				v3s16 np(
-					dp.X * block_div.X + MAP_BLOCKSIZE/block_div.X/2,
-					dp.Y * block_div.Y + MAP_BLOCKSIZE/block_div.Y/2,
-					dp.Z * block_div.Z + MAP_BLOCKSIZE/block_div.Z/2);
-				for(s32 i=0; i<MAP_BLOCKSIZE/block_div.Y+1; i++){
-					MapNode n = b->getNodeNoEx(np);
-					if(n.getContent() == CONTENT_IGNORE)
-						break;
-					const ContentFeatures &f = getNodeDefManager()->get(n);
-					if (!f.name.empty() && f.param_type == CPT_LIGHT) {
-						light = n.param1;
-						if(node_id == 0){
-							node_id = n.getContent();
+			size_t out_size_n = out_size.X * out_size.Y * out_size.Z;
+
+			// Output area in divisions
+			v3s16 out_div_area_p0(
+				area_offset_mb.X * divs_per_mb.X,
+				area_offset_mb.Y * divs_per_mb.Y,
+				area_offset_mb.Z * divs_per_mb.Z
+			);
+			v3s16 out_div_area_p1 = out_div_area_p0 + v3s16(
+				area_size_mb.X * divs_per_mb.X,
+				area_size_mb.Y * divs_per_mb.Y,
+				area_size_mb.Z * divs_per_mb.Z
+			);
+			// This can be used for indexing node_ids and lights
+			VoxelArea out_div_area(out_div_area_p0, out_div_area_p1 - v3s16(1,1,1));
+			assert(out_div_area.getVolume() == (s32)out_size_n);
+
+			std::vector<u16> node_ids;
+			node_ids.resize(out_size_n);
+
+			std::vector<u8> lights;
+			lights.resize(out_size_n);
+
+			v3s16 bp;
+			for (bp.Z=area_offset_mb.Z; bp.Z<area_offset_mb.Z+area_size_mb.Z; bp.Z++)
+			for (bp.Y=area_offset_mb.Y; bp.Y<area_offset_mb.Y+area_size_mb.Y; bp.Y++)
+			for (bp.X=area_offset_mb.X; bp.X<area_offset_mb.X+area_size_mb.X; bp.X++) {
+				//MapBlock *b = m_env->getMap().getBlockNoCreateNoEx(bp);
+				MapBlock *b = m_env->getMap().emergeBlock(bp, false);
+
+				v3s16 dp; // Position inside block (division)
+				for (dp.Z=0; dp.Z<divs_per_mb.Z; dp.Z++)
+				for (dp.Y=0; dp.Y<divs_per_mb.Y; dp.Y++)
+				for (dp.X=0; dp.X<divs_per_mb.X; dp.X++) {
+					// Block's origin coordinates in global division coordinates
+					v3s16 dp0(
+						bp.X * divs_per_mb.X,
+						bp.Y * divs_per_mb.Y,
+						bp.Z * divs_per_mb.Z
+					);
+
+					v3s16 dp1 = dp0 + dp;
+					assert(out_div_area.contains(dp1));
+					size_t i = out_div_area.index(dp1);
+
+					u16 node_id = 0;
+					u8 light = 0;
+
+					if(b){
+						// Node at center of division (horizontally)
+						v3s16 np(
+							dp.X * divs_per_mb.X + MAP_BLOCKSIZE/divs_per_mb.X/2,
+							dp.Y * divs_per_mb.Y + MAP_BLOCKSIZE/divs_per_mb.Y/2,
+							dp.Z * divs_per_mb.Z + MAP_BLOCKSIZE/divs_per_mb.Z/2);
+						for(s32 i=0; i<MAP_BLOCKSIZE/divs_per_mb.Y+1; i++){
+							MapNode n = b->getNodeNoEx(np);
+							if(n.getContent() == CONTENT_IGNORE)
+								break;
+							const ContentFeatures &f = getNodeDefManager()->get(n);
+							if (!f.name.empty() && f.param_type == CPT_LIGHT) {
+								light = n.param1;
+								if(node_id == 0){
+									node_id = n.getContent();
+								}
+								break;
+							} else {
+								// TODO: Get light of a nearby node; something that defines
+								//       how brightly this division should be rendered
+								light = (15) | (15<<4);
+								node_id = n.getContent();
+							}
+							np.Y++;
 						}
-						break;
-					} else {
-						// TODO: Get light of a nearby node; something that defines
-						//       how brightly this division should be rendered
-						light = (15) | (15<<4);
-						node_id = n.getContent();
 					}
-					np.Y++;
+
+					node_ids[i] = node_id;
+					lights[i] = light;
 				}
 			}
 
-			node_ids[i] = node_id;
-			lights[i] = light;
+			NetworkPacket pkt(TOCLIENT_FAR_BLOCKS_RESULT, 0, pkt_in->getPeerId());
+			/*
+				v3s16 area_offset_mb (blocks)
+				v3s16 area_size_mb (blocks)
+				v3s16 divs_per_mb (amount of divisions per block)
+				TODO: Compress
+				for each division (for(Y) for(X) for(Z)):
+					u16 node_id
+				for each division (for(Y) for(X) for(Z)):
+					u8 light (both lightbanks; raw value)
+			*/
+
+			pkt << area_offset_mb;
+			pkt << area_size_mb;
+			pkt << divs_per_mb;
+			for(size_t i=0; i<node_ids.size(); i++)
+				pkt << (u16) node_ids[i];
+			for(size_t i=0; i<lights.size(); i++)
+				pkt << (u8) lights[i];
+
+			infostream << "FAR_BLOCKS_RESULT packet size: " << pkt.getSize() << std::endl;
+
+			Send(&pkt);
 		}
 	}
-
-	NetworkPacket pkt(TOCLIENT_FAR_BLOCKS_RESULT, 0, pkt_in->getPeerId());
-	/*
-		v3s16 area_offset (blocks)
-		v3s16 area_size (blocks)
-		v3s16 block_div (amount of divisions per block)
-		TODO: Compress
-		for each division (for(Y) for(X) for(Z)):
-			u16 node_id
-		for each division (for(Y) for(X) for(Z)):
-			u8 light (both lightbanks; raw value)
-	*/
-
-	pkt << area_offset;
-	pkt << area_size;
-	pkt << block_div;
-	for(size_t i=0; i<node_ids.size(); i++)
-		pkt << (u16) node_ids[i];
-	for(size_t i=0; i<lights.size(); i++)
-		pkt << (u8) lights[i];
-
-	infostream << "FAR_BLOCKS_RESULT packet size: " << pkt.getSize() << std::endl;
-
-	Send(&pkt);
 }
 

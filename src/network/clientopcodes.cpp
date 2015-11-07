@@ -211,5 +211,5 @@ const ServerCommandFactory serverCommandFactoryTable[TOSERVER_NUM_MSG_TYPES] =
 	{ "TOSERVER_SRP_BYTES_A",        1, true }, // 0x51
 	{ "TOSERVER_SRP_BYTES_M",        1, true }, // 0x52
 	null_command_factory, // 0x53
-	{ "TOSERVER_GET_FAR_BLOCKS",     1, true }, // 0x54
+	{ "TOSERVER_SET_WANTED_MAP_SEND_QUEUE", 2, true }, // 0x54
 };
