@@ -93,18 +93,21 @@ void FarBlock::resize(v3s16 new_block_div)
 
 void FarBlock::updateCameraOffset(v3s16 camera_offset)
 {
-	if (!mesh) return;
+	if (camera_offset == current_camera_offset)
+		return;
 
-	if (camera_offset != current_camera_offset) {
+	if (mesh) {
 		translateMesh(mesh, intToFloat(current_camera_offset-camera_offset, BS));
+
 		for (size_t i=0; i<mapblock_meshes.size(); i++) {
 			if (!mapblock_meshes[i])
 				continue;
 			translateMesh(mapblock_meshes[i],
 					intToFloat(current_camera_offset-camera_offset, BS));
 		}
-		current_camera_offset = camera_offset;
 	}
+
+	current_camera_offset = camera_offset;
 }
 
 void FarBlock::resetCameraOffset(v3s16 camera_offset)
