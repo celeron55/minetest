@@ -2357,9 +2357,8 @@ void Server::SendBlocks(float dtime)
 
 			NetworkPacket pkt(TOCLIENT_FAR_BLOCKS_RESULT, 0, peer_id);
 			/*
-				v3s16 area_offset_mb (blocks)
-				v3s16 area_size_mb (blocks)
-				v3s16 divs_per_mb (amount of divisions per block)
+				v3s16 p (position in farblocks)
+				v3s16 divs_per_mb (amount of divisions per mapblock)
 				TODO: Compress
 				for each division (for(Y) for(X) for(Z)):
 					u16 node_id
@@ -2367,8 +2366,7 @@ void Server::SendBlocks(float dtime)
 					u8 light (both lightbanks; raw value)
 			*/
 
-			pkt << area_offset_mb;
-			pkt << area_size_mb;
+			pkt << wms.p;
 			pkt << divs_per_mb;
 			for(size_t i=0; i<node_ids.size(); i++)
 				pkt << (u16) node_ids[i];

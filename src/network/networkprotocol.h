@@ -586,9 +586,8 @@ enum ToClientCommand
 
 	TOCLIENT_FAR_BLOCKS_RESULT = 0x54,
 	/*
-		v3s16 area_offset (blocks)
-		v3s16 area_size (blocks)
-		v3s16 block_div (amount of divisions per block)
+		v3s16 p (position in farblocks)
+		v3s16 divs_per_mb (amount of divisions per mapblock)
 		TODO: Compress
 		for each division (for(Y) for(X) for(Z)):
 			u16 node_id
@@ -656,11 +655,13 @@ enum ToServerCommand
 
 	TOSERVER_GOTBLOCKS = 0x24,
 	/*
-		[0] u16 command
-		[2] u8 count
-		[3] v3s16 pos_0
-		[3+6] v3s16 pos_1
-		...
+		u8 count_mb
+		for count_mb:
+			v3s16 mapblock_p
+		# Following added mid of version 26
+		u8 count_fb
+		for count_fb
+			v3s16 farblock_p
 	*/
 
 	TOSERVER_DELETEDBLOCKS = 0x25,

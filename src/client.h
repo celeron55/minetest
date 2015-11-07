@@ -570,7 +570,8 @@ private:
 	void sendInit(const std::string &playerName);
 	void startAuth(AuthMechanism chosen_auth_mechanism);
 	void sendDeletedBlocks(std::vector<v3s16> &blocks);
-	void sendGotBlocks(v3s16 block);
+	void sendGotMapBlock(v3s16 block);
+	void sendGotFarBlock(v3s16 block);
 	void sendRemovedSounds(std::vector<s32> &soundList);
 
 	// Helper function

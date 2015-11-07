@@ -574,7 +574,7 @@ void Client::step(float dtime)
 					[0] u8 count
 					[1] v3s16 pos_0
 				*/
-				sendGotBlocks(r.p);
+				sendGotMapBlock(r.p);
 			}
 		}
 
@@ -1162,10 +1162,21 @@ void Client::sendDeletedBlocks(std::vector<v3s16> &blocks)
 	Send(&pkt);
 }
 
-void Client::sendGotBlocks(v3s16 block)
+void Client::sendGotMapBlock(v3s16 block)
 {
-	NetworkPacket pkt(TOSERVER_GOTBLOCKS, 1 + 6);
-	pkt << (u8) 1 << block;
+	NetworkPacket pkt(TOSERVER_GOTBLOCKS, 1 + 6 + 1);
+	pkt << (u8) 1;
+	pkt << block;
+	pkt << (u8) 0;
+	Send(&pkt);
+}
+
+void Client::sendGotFarBlock(v3s16 block)
+{
+	NetworkPacket pkt(TOSERVER_GOTBLOCKS, 1 + 1 + 6);
+	pkt << (u8) 0;
+	pkt << (u8) 1;
+	pkt << block;
 	Send(&pkt);
 }
 

@@ -1228,28 +1228,28 @@ void Client::handleCommand_FarBlocksResult(NetworkPacket* pkt_in)
 	infostream << "Client: Received FAR_BLOCKS_RESULT" << std::endl;
 
 	/*
-		v3s16 area_offset (blocks)
-		v3s16 area_size (blocks)
-		v3s16 block_div (amount of divisions per block)
+		v3s16 p (position in farblocks)
+		v3s16 divs_per_mb (amount of divisions per mapblock)
 		TODO: Compress
 		for each division (for(Y) for(X) for(Z)):
 			u16 node_id
 		for each division (for(Y) for(X) for(Z)):
-			u8 light
-		for each division (for(Y) for(X) for(Z)):
-			u8 light_night
+			u8 light (both lightbanks; raw value)
 	*/
-	v3s16 area_offset;
-	v3s16 area_size;
-	v3s16 block_div;
-	*pkt_in >> area_offset;
-	*pkt_in >> area_size;
-	*pkt_in >> block_div;
+	v3s16 p         = pkt_in->read<v3s16>();
+	v3s16 divs_per_mb = pkt_in->read<v3s16>();
+
+	v3s16 area_offset_mb(
+			FMP_SCALE * p.X,
+			FMP_SCALE * p.Y,
+			FMP_SCALE * p.Z);
+
+	v3s16 area_size_mb(FMP_SCALE, FMP_SCALE, FMP_SCALE);
 
 	v3s16 total_size(
-			area_size.X * block_div.X,
-			area_size.Y * block_div.Y,
-			area_size.Z * block_div.Z);
+			area_size_mb.X * divs_per_mb.X,
+			area_size_mb.Y * divs_per_mb.Y,
+			area_size_mb.Z * divs_per_mb.Z);
 
 	size_t total_size_n = total_size.X * total_size.Y * total_size.Z;
 
@@ -1265,9 +1265,10 @@ void Client::handleCommand_FarBlocksResult(NetworkPacket* pkt_in)
 		*pkt_in >> lights[i];
 
 	// Shove the data into FarMap to be rendered efficiently
-	m_far_map->insertData(area_offset, area_size, block_div, node_ids, lights);
+	m_far_map->insertData(area_offset_mb, area_size_mb, divs_per_mb,
+			node_ids, lights);
 
-	// TODO: Change packet format so that it always transfer one FarBlock
-	// TODO: Report to server that the FarBlock was received
+	// Report to server that the FarBlock was received
+	sendGotFarBlock(p);
 }
 

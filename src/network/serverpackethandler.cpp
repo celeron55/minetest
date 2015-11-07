@@ -750,28 +750,31 @@ void Server::handleCommand_GotBlocks(NetworkPacket* pkt)
 		return;
 
 	/*
-		[0] u16 command
-		[2] u8 count
-		[3] v3s16 pos_0
-		[3+6] v3s16 pos_1
-		...
+		u8 count_mb
+		for count_mb:
+			v3s16 mapblock_p
+		# Following added mid of version 26
+		u8 count_fb
+		for count_fb
+			v3s16 farblock_p
 	*/
 
-	u8 count;
-	*pkt >> count;
+	u8 count = pkt->read<u8>();
 
 	RemoteClient *client = getClient(pkt->getPeerId());
 
 	for (u16 i = 0; i < count; i++) {
-		if ((s16)pkt->getSize() < 1 + (i + 1) * 6)
-			throw con::InvalidIncomingDataException
-				("GOTBLOCKS length is too short");
-		// TODO: WantedMapSend
-		v3s16 p;
-
-		*pkt >> p;
-
+		v3s16 p = pkt->read<v3s16>();
 		client->GotBlock(WantedMapSend(WMST_MAPBLOCK, p));
+	}
+
+	try {
+		u8 farblock_count = pkt->read<u8>();
+		for (u16 i = 0; i < farblock_count; i++) {
+			v3s16 p = pkt->read<v3s16>();
+			client->GotBlock(WantedMapSend(WMST_FARBLOCK, p));
+		}
+	} catch(SerializationError &e) {
 	}
 }
 
