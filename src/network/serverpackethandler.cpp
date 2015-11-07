@@ -2061,8 +2061,17 @@ void Server::handleCommand_SetWantedMapSendQueue(NetworkPacket* pkt_in)
 	// For testing, just send everything in one go
 	for (size_t i=0; i<wanted_map_send_queue.size(); i++) {
 		const WantedMapSend &wms = wanted_map_send_queue[i];
-		infostream << "wms.type=" << wms.type << std::endl;
+		if (wms.type == WMST_MAPBLOCK) {
+			infostream << "Server: Client wants MapBlock ("
+					<<wms.p.X<<","<<wms.p.Y<<","<<wms.p.Z<<")"
+					<< std::endl;
+			// TODO
+		}
 		if (wms.type == WMST_FARBLOCK) {
+			infostream << "Server: Client wants FarBlock ("
+					<<wms.p.X<<","<<wms.p.Y<<","<<wms.p.Z<<")"
+					<< std::endl;
+
 			// FarBlock area in divisions (FarNodes)
 			static const v3s16 divs_per_mb(4, 4, 4);
 

@@ -132,6 +132,9 @@ public:
 	// For debug printing
 	virtual void PrintInfo(std::ostream &out);
 	
+	std::vector<v3s16> suggestMapBlocksToFetch(v3s16 camera_p,
+			size_t wanted_num_results);
+
 private:
 	Client *m_client;
 	
@@ -150,6 +153,10 @@ private:
 	bool m_cache_trilinear_filter;
 	bool m_cache_bilinear_filter;
 	bool m_cache_anistropic_filter;
+
+	// Fetch suggestion algorithm
+	s16 m_mapblocks_exist_up_to_d;
+	s16 m_mapblocks_exist_up_to_d_reset_counter;
 };
 
 #endif

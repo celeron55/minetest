@@ -127,6 +127,8 @@ public:
 
 	void enqueueUpdate(v3s16 p, MeshMakeData *data,
 			bool ack_block_to_server, bool urgent);
+	u32 queueSize() { return m_queue_in.size(); }
+
 	MutexedQueue<MeshUpdateResult> m_queue_out;
 
 	v3s16 m_camera_offset;

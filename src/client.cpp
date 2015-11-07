@@ -1,6 +1,6 @@
 /*
 Minetest
-Copyright (C) 2013 celeron55, Perttu Ahola <celeron55@gmail.com>
+Copyright (C) 2013-2015 celeron55, Perttu Ahola <celeron55@gmail.com>
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
@@ -53,6 +53,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "database-sqlite3.h"
 #include "serialization.h"
 #include "guiscalingfilter.h"
+#include "network/wms_priority.h"
 
 extern gui::IGUIEnvironment* guienv;
 
@@ -671,28 +672,50 @@ void Client::step(float dtime)
 	}
 
 	/*
-		Request far blocks
+		Request blocks
 	*/
 	if(m_far_blocks_request_interval.step(dtime, 1.0))
 	{
 		verbosestream<<"Client: Requesting far blocks"<<std::endl;
 
-		/*v3s16 player_p;
-		Player *player = m_env.getLocalPlayer();
-		if(player)
-			player_p = floatToInt(player->getPosition(), BS);*/
-
-		// TODO: Also mix in MapBlock requests and prioritize everything based
-		//       on their distance from the player or camera, maybe also doing
-		//       view frustum culling
-
 		std::vector<WantedMapSend> wanted_map_send_queue;
 
-		std::vector<v3s16> suggested_fbs = m_far_map->suggestFarBlocksToFetch();
+		// Get player position (used for prioritizing requests)
+		v3s16 player_p;
+		Player *player = m_env.getLocalPlayer();
+		if(player)
+			player_p = floatToInt(player->getPosition(), BS);
+
+		// Get suggested FarBlock positions
+		std::vector<v3s16> suggested_fbs =
+				m_far_map->suggestFarBlocksToFetch(player_p);
 		for (size_t i=0; i<suggested_fbs.size(); i++) {
 			v3s16 fb = suggested_fbs[i];
 			wanted_map_send_queue.push_back(WantedMapSend(WMST_FARBLOCK, fb));
 		}
+
+		// Figure out maximum number for queued MapBlocks
+		static const s32 max_mut_queue_size = 20;
+		static const s32 max_suggested_mbs = 20;
+		s32 num_suggested_mbs = max_suggested_mbs;
+		s32 mesh_queue_size = m_mesh_update_thread.queueSize();
+		if (mesh_queue_size > max_mut_queue_size) {
+			float mesh_queue_fill = (float)mesh_queue_size / max_mut_queue_size;
+			num_suggested_mbs = max_suggested_mbs * mesh_queue_fill;
+		}
+
+		// Get suggested MapBlock positions
+		ClientMap *map = &m_env.getClientMap();
+		std::vector<v3s16> suggested_mbs = map->suggestMapBlocksToFetch(
+				player_p, num_suggested_mbs);
+		for (size_t i=0; i<suggested_mbs.size(); i++) {
+			v3s16 mb = suggested_mbs[i];
+			wanted_map_send_queue.push_back(WantedMapSend(WMST_MAPBLOCK, mb));
+		}
+
+		// Prioritize
+		std::sort(wanted_map_send_queue.begin(), wanted_map_send_queue.end(),
+				WMSPriority(player_p, 10.0));
 
 		NetworkPacket pkt(TOSERVER_SET_WANTED_MAP_SEND_QUEUE, 0);
 		/*

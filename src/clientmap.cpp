@@ -49,7 +49,9 @@ ClientMap::ClientMap(
 	m_control(control),
 	m_camera_position(0,0,0),
 	m_camera_direction(0,0,1),
-	m_camera_fov(M_PI)
+	m_camera_fov(M_PI),
+	m_mapblocks_exist_up_to_d(0),
+	m_mapblocks_exist_up_to_d_reset_counter(0)
 {
 	m_box = core::aabbox3d<f32>(-BS*1000000,-BS*1000000,-BS*1000000,
 			BS*1000000,BS*1000000,BS*1000000);
@@ -185,7 +187,7 @@ void ClientMap::updateDrawList(video::IVideoDriver* driver)
 			p_nodes_max.Y / MAP_BLOCKSIZE + 1,
 			p_nodes_max.Z / MAP_BLOCKSIZE + 1);
 
-	// Set up a BlockAreaBitmap for reporting to FarMap
+	// Set up a BlockAreaBitmap for reporting to Map
 	VoxelArea nrb_area(p_blocks_min, p_blocks_max);
 	BlockAreaBitmap normally_rendered_blocks;
 	normally_rendered_blocks.reset(nrb_area);
@@ -833,4 +835,50 @@ void ClientMap::PrintInfo(std::ostream &out)
 	out<<"ClientMap: ";
 }
 
+
+std::vector<v3s16> ClientMap::suggestMapBlocksToFetch(v3s16 camera_p,
+		size_t wanted_num_results)
+{
+	std::vector<v3s16> suggested_mbs;
+
+	v3s16 center_mb = getContainerPos(camera_p, MAP_BLOCKSIZE);
+
+	s32 fetch_distance_nodes = 1000;
+	s32 fetch_distance_mapblocks =
+			ceilf((float)fetch_distance_nodes / MAP_BLOCKSIZE);
+
+	// Avoid running the algorithm through all the close MapBlocks that probably
+	// have already been fetched, except once in a while to catch up with
+	// possible missed MapBlocks due to player movement or whatever.
+	// TODO: Lower this according to the distance the player has moved since
+	//       last time this was called
+	s16 start_d = m_mapblocks_exist_up_to_d; // Start one lower than have to
+	if (++m_mapblocks_exist_up_to_d_reset_counter >= 10) {
+		m_mapblocks_exist_up_to_d_reset_counter = 0;
+		start_d = 0;
+	}
+	m_mapblocks_exist_up_to_d = -1; // Reset and recalculate
+	if (start_d < 0)
+		start_d = 0;
+
+	for (s16 d = start_d; d <= fetch_distance_mapblocks; d++) {
+		std::vector<v3s16> ps = FacePositionCache::getFacePositions(d);
+		for (size_t i=0; i<ps.size(); i++) {
+			v3s16 p = center_mb + ps[i];
+			MapBlock *b = getBlockNoCreateNoEx(p);
+			// TODO: Not sure if this conditional is exactly correct
+			if (b != NULL && !b->isDummy())
+				continue; // Exists
+			if (m_mapblocks_exist_up_to_d == -1)
+				m_mapblocks_exist_up_to_d = d - 1;
+			suggested_mbs.push_back(p);
+			if (suggested_mbs.size() >= wanted_num_results)
+				goto done;
+		}
+	}
+done:
+
+	infostream << "suggested_mbs.size()=" << suggested_mbs.size() << std::endl;
+	return suggested_mbs;
+}
 

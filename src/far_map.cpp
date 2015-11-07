@@ -752,7 +752,9 @@ FarMap::FarMap(
 	scene::ISceneNode(parent, mgr, id),
 	client(client),
 	atlas(this),
-	farblock_shader_id(0)
+	farblock_shader_id(0),
+	m_farblocks_exist_up_to_d(0),
+	m_farblocks_exist_up_to_d_reset_counter(0)
 {
 	m_bounding_box = core::aabbox3d<f32>(-BS*1000000,-BS*1000000,-BS*1000000,
 			BS*1000000,BS*1000000,BS*1000000);
@@ -998,7 +1000,7 @@ void FarMap::createAtlas()
 			<<" nodes";
 }
 
-std::vector<v3s16> FarMap::suggestFarBlocksToFetch()
+std::vector<v3s16> FarMap::suggestFarBlocksToFetch(v3s16 camera_p)
 {
 	// Don't fetch anything if the task queue length is too high
 	verbosestream << "FarMap: m_worker_thread.getQueueLength()="
@@ -1010,9 +1012,7 @@ std::vector<v3s16> FarMap::suggestFarBlocksToFetch()
 
 	std::vector<v3s16> suggested_fbs;
 
-	v3s16 center_mb = v3s16_div(normally_rendered_blocks.blocks_area.MaxEdge
-			 + normally_rendered_blocks.blocks_area.MinEdge, 2);
-
+	v3s16 center_mb = getContainerPos(camera_p, MAP_BLOCKSIZE);
 	v3s16 center_fb = getContainerPos(center_mb, FMP_SCALE);
 
 	s32 fetch_distance_nodes = 1000;

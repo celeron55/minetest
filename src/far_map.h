@@ -204,7 +204,7 @@ public:
 	// Shall be called after the client receives all node definitions
 	void createAtlas();
 
-	std::vector<v3s16> suggestFarBlocksToFetch();
+	std::vector<v3s16> suggestFarBlocksToFetch(v3s16 camera_p);
 
 	// ISceneNode methods
 	void OnRegisterSceneNode();
@@ -234,7 +234,7 @@ private:
 	core::aabbox3d<f32> m_bounding_box;
 	v3s16 m_camera_offset;
 
-	// Miscellaneous
+	// Fetch suggestion algorithm
 	s16 m_farblocks_exist_up_to_d;
 	s16 m_farblocks_exist_up_to_d_reset_counter;
 };
