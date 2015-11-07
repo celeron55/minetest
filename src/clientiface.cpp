@@ -79,12 +79,16 @@ void RemoteClient::GetNextBlocks (
 					<<wms.p.X<<","<<wms.p.Y<<","<<wms.p.Z<<")"
 					<< std::endl;*/
 
+			// Do not go over-limit
+			if (blockpos_over_limit(wms.p))
+				continue;
+
 			// Don't send blocks that are currently being transferred
 			if (m_blocks_sending.find(wms) != m_blocks_sending.end())
 				continue;
 
-			// Do not go over-limit
-			if (blockpos_over_limit(wms.p))
+			// Don't send blocks that have already been sent
+			if (m_blocks_sent.find(wms) != m_blocks_sent.end())
 				continue;
 
 			// If the MapBlock is not loaded, it will be queued to be loaded or

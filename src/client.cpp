@@ -686,6 +686,7 @@ void Client::step(float dtime)
 		if(player)
 			player_p = floatToInt(player->getPosition(), BS);
 
+		// TODO: Enable
 		/*// Get suggested FarBlock positions
 		std::vector<v3s16> suggested_fbs =
 				m_far_map->suggestFarBlocksToFetch(player_p);
