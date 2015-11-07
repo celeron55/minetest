@@ -264,7 +264,7 @@ public:
 			float dtime, std::vector<WantedMapSend> &dest);
 
 	void GotBlock(const WantedMapSend &wms);
-	void SentBlock(const WantedMapSend &wms);
+	void SendingBlock(const WantedMapSend &wms);
 
 	void SetBlockNotSent(const WantedMapSend &wms);
 	void SetMapBlockNotSent(v3s16 p){

@@ -2238,20 +2238,154 @@ void Server::SendBlocks(float dtime)
 			MapBlock *block = m_env->getMap().getBlockNoCreateNoEx(wms.p);
 			if (!block)
 				continue;
+
+			// Send it if possible
 			RemoteClient *client = m_clients.lockedGetClientNoEx(
 					peer_id, CS_Active);
 			if(!client)
 				continue;
 			SendBlockNoLock(peer_id, block, client->serialization_version,
 					client->net_proto_version);
-			client->SentBlock(wms);
+			client->SendingBlock(wms);
 			total_sending++;
 		}
 		if (wms.type == WMST_FARBLOCK) {
 			infostream << "Server: Sending to "<<peer_id<<": FarBlock ("
 					<<wms.p.X<<","<<wms.p.Y<<","<<wms.p.Z<<")"
 					<< std::endl;
-			// TODO
+
+			// FarBlock area in divisions (FarNodes)
+			static const v3s16 divs_per_mb(4, 4, 4);
+
+			v3s16 area_offset_mb(
+				FMP_SCALE * wms.p.X,
+				FMP_SCALE * wms.p.Y,
+				FMP_SCALE * wms.p.Z
+			);
+
+			v3s16 area_size_mb(FMP_SCALE, FMP_SCALE, FMP_SCALE);
+
+			v3s16 out_size(
+				area_size_mb.X * divs_per_mb.X,
+				area_size_mb.Y * divs_per_mb.Y,
+				area_size_mb.Z * divs_per_mb.Z
+			);
+
+			size_t out_size_n = out_size.X * out_size.Y * out_size.Z;
+
+			// Output area in divisions
+			v3s16 out_div_area_p0(
+				area_offset_mb.X * divs_per_mb.X,
+				area_offset_mb.Y * divs_per_mb.Y,
+				area_offset_mb.Z * divs_per_mb.Z
+			);
+			v3s16 out_div_area_p1 = out_div_area_p0 + v3s16(
+				area_size_mb.X * divs_per_mb.X,
+				area_size_mb.Y * divs_per_mb.Y,
+				area_size_mb.Z * divs_per_mb.Z
+			);
+			// This can be used for indexing node_ids and lights
+			VoxelArea out_div_area(out_div_area_p0, out_div_area_p1 - v3s16(1,1,1));
+			assert(out_div_area.getVolume() == (s32)out_size_n);
+
+			std::vector<u16> node_ids;
+			node_ids.resize(out_size_n);
+
+			std::vector<u8> lights;
+			lights.resize(out_size_n);
+
+			v3s16 bp;
+			for (bp.Z=area_offset_mb.Z; bp.Z<area_offset_mb.Z+area_size_mb.Z; bp.Z++)
+			for (bp.Y=area_offset_mb.Y; bp.Y<area_offset_mb.Y+area_size_mb.Y; bp.Y++)
+			for (bp.X=area_offset_mb.X; bp.X<area_offset_mb.X+area_size_mb.X; bp.X++) {
+				//MapBlock *b = m_env->getMap().getBlockNoCreateNoEx(bp);
+				// Use emergeBlock(*, false) to load from disk if possible
+				MapBlock *b = m_env->getMap().emergeBlock(bp, false);
+
+				// TODO: Don't send FarBlock if all MapBlocks inside it haven't
+				//       been generated
+
+				v3s16 dp; // Position inside block (division)
+				for (dp.Z=0; dp.Z<divs_per_mb.Z; dp.Z++)
+				for (dp.Y=0; dp.Y<divs_per_mb.Y; dp.Y++)
+				for (dp.X=0; dp.X<divs_per_mb.X; dp.X++) {
+					// Block's origin coordinates in global division coordinates
+					v3s16 dp0(
+						bp.X * divs_per_mb.X,
+						bp.Y * divs_per_mb.Y,
+						bp.Z * divs_per_mb.Z
+					);
+
+					v3s16 dp1 = dp0 + dp;
+					assert(out_div_area.contains(dp1));
+					size_t i = out_div_area.index(dp1);
+
+					u16 node_id = 0;
+					u8 light = 0;
+
+					if(b){
+						// Node at center of division (horizontally)
+						v3s16 np(
+							dp.X * divs_per_mb.X + MAP_BLOCKSIZE/divs_per_mb.X/2,
+							dp.Y * divs_per_mb.Y + MAP_BLOCKSIZE/divs_per_mb.Y/2,
+							dp.Z * divs_per_mb.Z + MAP_BLOCKSIZE/divs_per_mb.Z/2);
+						for(s32 i=0; i<MAP_BLOCKSIZE/divs_per_mb.Y+1; i++){
+							MapNode n = b->getNodeNoEx(np);
+							if(n.getContent() == CONTENT_IGNORE)
+								break;
+							const ContentFeatures &f = getNodeDefManager()->get(n);
+							if (!f.name.empty() && f.param_type == CPT_LIGHT) {
+								light = n.param1;
+								if(node_id == 0){
+									node_id = n.getContent();
+								}
+								break;
+							} else {
+								// TODO: Get light of a nearby node; something that defines
+								//       how brightly this division should be rendered
+								light = (15) | (15<<4);
+								node_id = n.getContent();
+							}
+							np.Y++;
+						}
+					}
+
+					node_ids[i] = node_id;
+					lights[i] = light;
+				}
+			}
+
+			NetworkPacket pkt(TOCLIENT_FAR_BLOCKS_RESULT, 0, peer_id);
+			/*
+				v3s16 area_offset_mb (blocks)
+				v3s16 area_size_mb (blocks)
+				v3s16 divs_per_mb (amount of divisions per block)
+				TODO: Compress
+				for each division (for(Y) for(X) for(Z)):
+					u16 node_id
+				for each division (for(Y) for(X) for(Z)):
+					u8 light (both lightbanks; raw value)
+			*/
+
+			pkt << area_offset_mb;
+			pkt << area_size_mb;
+			pkt << divs_per_mb;
+			for(size_t i=0; i<node_ids.size(); i++)
+				pkt << (u16) node_ids[i];
+			for(size_t i=0; i<lights.size(); i++)
+				pkt << (u8) lights[i];
+
+			infostream << "FAR_BLOCKS_RESULT packet size: " << pkt.getSize()
+					<< std::endl;
+
+			// Send it if possible
+			RemoteClient *client = m_clients.lockedGetClientNoEx(
+					peer_id, CS_Active);
+			if(!client)
+				continue;
+			Send(&pkt);
+			client->SendingBlock(wms);
+			total_sending++;
 		}
 	}
 	m_clients.unlock();

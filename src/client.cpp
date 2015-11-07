@@ -686,14 +686,13 @@ void Client::step(float dtime)
 		if(player)
 			player_p = floatToInt(player->getPosition(), BS);
 
-		// TODO: Enable
-		/*// Get suggested FarBlock positions
+		// Get suggested FarBlock positions
 		std::vector<v3s16> suggested_fbs =
 				m_far_map->suggestFarBlocksToFetch(player_p);
 		for (size_t i=0; i<suggested_fbs.size(); i++) {
 			v3s16 fb = suggested_fbs[i];
 			wanted_map_send_queue.push_back(WantedMapSend(WMST_FARBLOCK, fb));
-		}*/
+		}
 
 		// Figure out maximum number for queued MapBlocks
 		static const s32 max_mut_queue_size = 20;

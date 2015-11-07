@@ -170,6 +170,10 @@ void RemoteClient::GetNextBlocks (
 			infostream << "Server: Client "<<peer_id<<" wants FarBlock ("
 					<<wms.p.X<<","<<wms.p.Y<<","<<wms.p.Z<<")"
 					<< std::endl;
+
+			// Put the block in dest so that if we're lucky, it will be
+			// transferred to the client
+			dest.push_back(wms);
 		}
 	}
 }
@@ -491,12 +495,12 @@ void RemoteClient::GotBlock(const WantedMapSend &wms)
 	m_blocks_sent.insert(wms);
 }
 
-void RemoteClient::SentBlock(const WantedMapSend &wms)
+void RemoteClient::SendingBlock(const WantedMapSend &wms)
 {
 	if(m_blocks_sending.find(wms) == m_blocks_sending.end())
 		m_blocks_sending[wms] = 0.0;
 	else
-		infostream<<"RemoteClient::SentBlock(): Sent block"
+		infostream<<"RemoteClient::SendingBlock(): Sent block"
 				" already in m_blocks_sending"<<std::endl;
 }
 
