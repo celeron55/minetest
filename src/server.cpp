@@ -2156,79 +2156,105 @@ void Server::SendBlockNoLock(u16 peer_id, MapBlock *block, u8 ver, u16 net_proto
 	Send(&pkt);
 }
 
+struct WantedMapSendQueue
+{
+	std::vector<WantedMapSend> wms;
+	size_t i;
+
+	WantedMapSendQueue(): i(0) {}
+};
+
 void Server::SendBlocks(float dtime)
 {
 	DSTACK(FUNCTION_NAME);
 
 	MutexAutoLock envlock(m_env_mutex);
 	//TODO check if one big lock could be faster then multiple small ones
+	//     ^ is this referring to m_clients.lock/unlock()? -celeron55
 
 	ScopeProfiler sp(g_profiler, "Server: sel and send blocks to clients");
 
-	std::vector<PrioritySortedBlockTransfer> queue;
-
 	s32 total_sending = 0;
 
+	// Fill this with whatever each RemoteClient thinks they need
+	std::map<u16, WantedMapSendQueue> wanted_map_sends_to_players;
 	{
 		ScopeProfiler sp(g_profiler, "Server: selecting blocks for sending");
 
 		std::vector<u16> clients = m_clients.getClientIDs();
 
 		m_clients.lock();
-		for(std::vector<u16>::iterator i = clients.begin();
-			i != clients.end(); ++i) {
-			RemoteClient *client = m_clients.lockedGetClientNoEx(*i, CS_Active);
+		for (size_t i=0; i<clients.size(); i++) {
+			u16 peer_id = clients[i];
+			RemoteClient *client = m_clients.lockedGetClientNoEx(
+					peer_id, CS_Active);
 
 			if (client == NULL)
 				continue;
 
 			total_sending += client->SendingCount();
-			client->GetNextBlocks(m_env,m_emerge, dtime, queue);
+
+			std::vector<WantedMapSend> &wanted_map_sends =
+					wanted_map_sends_to_players[peer_id].wms;
+			client->GetNextBlocks(m_env, m_emerge, dtime, wanted_map_sends);
+			infostream<<"wanted_map_sends.size()="<<wanted_map_sends.size()
+					<<std::endl;
 		}
 		m_clients.unlock();
 	}
 
-	// Sort.
-	// Lowest priority number comes first.
-	// Lowest is most important.
-	std::sort(queue.begin(), queue.end());
+	// Create a random order in which to handle clients in order to treat each
+	// of them fairly no matter how tight the budget
+	std::vector<u16> random_order;
+	random_order.reserve(wanted_map_sends_to_players.size());
+	for (std::map<u16, WantedMapSendQueue>::iterator
+			it = wanted_map_sends_to_players.begin();
+			it != wanted_map_sends_to_players.end(); ++it) {
+		random_order.push_back(it->first);
+	}
+	std::random_shuffle(random_order.begin(), random_order.end());
 
+	bool max_simultaneous_block_sends_server_total =
+			g_settings->getS32("max_simultaneous_block_sends_server_total");
+
+	// Send stuff to alternating clients until we have no stuff to send or we
+	// are sending maximum amount of stuff
 	m_clients.lock();
-	for(u32 i=0; i<queue.size(); i++)
-	{
-		//TODO: Calculate limit dynamically
-		if(total_sending >= g_settings->getS32
-				("max_simultaneous_block_sends_server_total"))
+	for (size_t i=0; i<random_order.size(); i++) {
+		if (total_sending >= max_simultaneous_block_sends_server_total)
 			break;
 
-		PrioritySortedBlockTransfer q = queue[i];
+		u16 peer_id = random_order[i];
 
-		MapBlock *block = NULL;
-		try
-		{
-			block = m_env->getMap().getBlockNoCreate(q.pos);
-		}
-		catch(InvalidPositionException &e)
-		{
+		WantedMapSendQueue &wmsq = wanted_map_sends_to_players[peer_id];
+		if (wmsq.i >= wmsq.wms.size())
 			continue;
+		const WantedMapSend &wms = wmsq.wms[wmsq.i++];
+
+		if (wms.type == WMST_MAPBLOCK) {
+			infostream << "Server: Sending to "<<peer_id<<": MapBlock ("
+					<<wms.p.X<<","<<wms.p.Y<<","<<wms.p.Z<<")"
+					<< std::endl;
+			MapBlock *block = m_env->getMap().getBlockNoCreateNoEx(wms.p);
+			if (!block)
+				continue;
+			RemoteClient *client = m_clients.lockedGetClientNoEx(
+					peer_id, CS_Active);
+			if(!client)
+				continue;
+			SendBlockNoLock(peer_id, block, client->serialization_version,
+					client->net_proto_version);
+			client->SentBlock(wms.p);
+			total_sending++;
 		}
-
-		RemoteClient *client = m_clients.lockedGetClientNoEx(q.peer_id, CS_Active);
-
-		if(!client)
-			continue;
-
-		SendBlockNoLock(q.peer_id, block, client->serialization_version, client->net_proto_version);
-
-		client->SentBlock(q.pos);
-		total_sending++;
+		if (wms.type == WMST_FARBLOCK) {
+			infostream << "Server: Sending to "<<peer_id<<": FarBlock ("
+					<<wms.p.X<<","<<wms.p.Y<<","<<wms.p.Z<<")"
+					<< std::endl;
+			// TODO
+		}
 	}
 	m_clients.unlock();
-
-	// TODO
-	/*m_clients.lock();
-	NetworkPacket pkt(TOCLIENT_FARBLOCKS, 0, peer_id);
-	m_clients.unlock();*/
 }
 
 void Server::fillMediaCache()

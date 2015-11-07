@@ -53,11 +53,11 @@ std::string ClientInterface::state2Name(ClientState state)
 	return statenames[state];
 }
 
-void RemoteClient::ResendBlockIfOnWire(v3s16 p)
+void RemoteClient::ResendBlockIfOnWire(const WantedMapSend &wms)
 {
 	// if this block is on wire, mark it for sending again as soon as possible
-	if (m_blocks_sending.find(p) != m_blocks_sending.end()) {
-		SetBlockNotSent(p);
+	if (m_blocks_sending.find(wms) != m_blocks_sending.end()) {
+		SetBlockNotSent(wms);
 	}
 }
 
@@ -65,7 +65,7 @@ void RemoteClient::GetNextBlocks (
 		ServerEnvironment *env,
 		EmergeManager *emerge,
 		float dtime,
-		std::vector<WantedMapSendToPlayer> &dest)
+		std::vector<WantedMapSend> &dest)
 {
 	// Use legacy algorithm if map send queue is not being used
 	if (!m_map_send_queue_is_being_used) {
@@ -78,6 +78,14 @@ void RemoteClient::GetNextBlocks (
 			/*verbosestream << "Server: Client "<<peer_id<<" wants MapBlock ("
 					<<wms.p.X<<","<<wms.p.Y<<","<<wms.p.Z<<")"
 					<< std::endl;*/
+
+			// Don't send blocks that are currently being transferred
+			if (m_blocks_sending.find(wms.p) != m_blocks_sending.end())
+				continue;
+
+			// Do not go over-limit
+			if (blockpos_over_limit(wms.p))
+				continue;
 
 			// If the MapBlock is not loaded, it will be queued to be loaded or
 			// generated. Otherwise it will be added to 'dest'.
@@ -136,6 +144,9 @@ void RemoteClient::GetNextBlocks (
 				if (!emerge->enqueueBlockEmerge(peer_id, wms.p, allow_generate)) {
 					// EmergeThread's queue is full; maybe it's not full on the
 					// next time this is called.
+					infostream<<"Emerging MapBlock ("
+							<<wms.p.X<<","<<wms.p.Y<<","<<wms.p.Z<<")"
+							<<std::endl;
 				}
 
 				// This block is not available now; hopefully it appears on some
@@ -145,14 +156,14 @@ void RemoteClient::GetNextBlocks (
 
 			// The block is loaded; put it in dest so that if we're lucky, it
 			// will be transferred to the client
-			dest.push_back(WantedMapSendToPlayer(wms, peer_id));
+			dest.push_back(wms);
 		}
 		if (wms.type == WMST_FARBLOCK) {
 			/*verbosestream << "Server: Client "<<peer_id<<" wants FarBlock ("
 					<<wms.p.X<<","<<wms.p.Y<<","<<wms.p.Z<<")"
 					<< std::endl;*/
 			// TODO
-			errorstream << "Server: Client "<<peer_id<<" wants FarBlock ("
+			infostream << "Server: Client "<<peer_id<<" wants FarBlock ("
 					<<wms.p.X<<","<<wms.p.Y<<","<<wms.p.Z<<")"
 					<< std::endl;
 		}
@@ -163,7 +174,7 @@ void RemoteClient::GetNextBlocksLegacy (
 		ServerEnvironment *env,
 		EmergeManager *emerge,
 		float dtime,
-		std::vector<WantedMapSendToPlayer> &dest)
+		std::vector<WantedMapSend> &dest)
 {
 	DSTACK(FUNCTION_NAME);
 
@@ -434,7 +445,7 @@ void RemoteClient::GetNextBlocksLegacy (
 			/*
 				Add block to send queue
 			*/
-			WantedMapSendToPlayer wms(WMST_MAPBLOCK, p, peer_id);
+			WantedMapSend wms(WMST_MAPBLOCK, p);
 
 			dest.push_back(wms);
 
@@ -485,17 +496,17 @@ void RemoteClient::SentBlock(v3s16 p)
 				" already in m_blocks_sending"<<std::endl;
 }
 
-void RemoteClient::SetBlockNotSent(v3s16 p)
+void RemoteClient::SetBlockNotSent(const WantedMapSend &wms)
 {
 	m_nearest_unsent_d = 0;
 
-	if(m_blocks_sending.find(p) != m_blocks_sending.end())
-		m_blocks_sending.erase(p);
-	if(m_blocks_sent.find(p) != m_blocks_sent.end())
-		m_blocks_sent.erase(p);
+	if(m_blocks_sending.find(wms) != m_blocks_sending.end())
+		m_blocks_sending.erase(wms);
+	if(m_blocks_sent.find(wms) != m_blocks_sent.end())
+		m_blocks_sent.erase(wms);
 }
 
-void RemoteClient::SetBlocksNotSent(std::map<v3s16, MapBlock*> &blocks)
+void RemoteClient::SetMapBlocksNotSent(std::map<v3s16, MapBlock*> &blocks)
 {
 	m_nearest_unsent_d = 0;
 

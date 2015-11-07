@@ -198,23 +198,6 @@ enum ClientStateEvent
 	CSE_Disconnect
 };
 
-/*
-	Used for queuing and sorting block transfers
-*/
-struct WantedMapSendToPlayer: public WantedMapSend
-{
-	u16 peer_id;
-
-	WantedMapSendToPlayer(const WantedMapSend &wms,
-			u16 peer_id=PEER_ID_INEXISTENT):
-		WantedMapSend(wms), peer_id(peer_id)
-	{}
-	WantedMapSendToPlayer(WantedMapSendType type=WMST_INVALID,
-			v3s16 p=v3s16(0,0,0), u16 peer_id=PEER_ID_INEXISTENT):
-		WantedMapSend(type, p), peer_id(peer_id)
-	{}
-};
-
 class RemoteClient
 {
 public:
@@ -271,27 +254,31 @@ public:
 
 	// Finds block that should be sent next to the client.
 	// Environment should be locked when this is called.
+	// Result shall be appended to dest with the most important one first.
 	void GetNextBlocks(ServerEnvironment *env, EmergeManager* emerge,
-			float dtime, std::vector<WantedMapSendToPlayer> &dest);
+			float dtime, std::vector<WantedMapSend> &dest);
 
+	// Called by the previous function when appropriate.
 	// dtime is used for resetting send radius at slow interval
 	void GetNextBlocksLegacy(ServerEnvironment *env, EmergeManager* emerge,
-			float dtime, std::vector<WantedMapSendToPlayer> &dest);
+			float dtime, std::vector<WantedMapSend> &dest);
 
 	void GotBlock(v3s16 p);
 
 	void SentBlock(v3s16 p);
 
-	void SetBlockNotSent(v3s16 p);
-	void SetBlocksNotSent(std::map<v3s16, MapBlock*> &blocks);
+	void SetBlockNotSent(const WantedMapSend &wms);
+	void SetMapBlockNotSent(v3s16 p){
+			return SetBlockNotSent(WantedMapSend(WMST_MAPBLOCK, p); }
+	void SetMapBlocksNotSent(std::map<v3s16, MapBlock*> &blocks);
 
 	/**
 	 * tell client about this block being modified right now.
 	 * this information is required to requeue the block in case it's "on wire"
 	 * while modification is processed by server
-	 * @param p position of modified block
+	 * @param wms position of modified block
 	 */
-	void ResendBlockIfOnWire(v3s16 p);
+	void ResendBlockIfOnWire(const WantedMapSend &wms);
 
 	// Total number of MapBlocks and FarBlocks on the wire
 	s32 SendingCount()
@@ -412,7 +399,7 @@ private:
 		Block is removed when GOTBLOCKS is received.
 		Value is time from sending. (not used at the moment)
 	*/
-	std::map<v3s16, float> m_blocks_sending;
+	std::map<WantedMapSend, float> m_blocks_sending;
 
 	/*
 		Count of excess GotBlocks().

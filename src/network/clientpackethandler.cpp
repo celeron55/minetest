@@ -1266,5 +1266,8 @@ void Client::handleCommand_FarBlocksResult(NetworkPacket* pkt_in)
 
 	// Shove the data into FarMap to be rendered efficiently
 	m_far_map->insertData(area_offset, area_size, block_div, node_ids, lights);
+
+	// TODO: Change packet format so that it always transfer one FarBlock
+	// TODO: Report to server that the FarBlock was received
 }
 
