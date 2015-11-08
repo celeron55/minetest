@@ -240,6 +240,8 @@ public:
 		m_autosend_far_weight(8.0f),
 		m_autosend_fov(72.0f),
 		m_nearest_unsent_d(0),
+		m_fov_limit_enabled(true),
+		m_nothing_sent_timer(0.0),
 		m_nearest_unsent_reset_timer(0.0),
 		m_nothing_to_send_pause_timer(0.0),
 		m_fallback_autosend_active(true),
@@ -390,6 +392,8 @@ private:
 	float m_autosend_fov; // Updated by the client; 0 disables FOV limit.
 	s16 m_nearest_unsent_d;
 	v3s16 m_last_focus_point;
+	bool m_fov_limit_enabled; // Automatically turned off to transfer the rest
+	float m_nothing_sent_timer;
 	float m_nearest_unsent_reset_timer;
 	float m_nothing_to_send_pause_timer; // CPU usage optimization
 	bool m_fallback_autosend_active;

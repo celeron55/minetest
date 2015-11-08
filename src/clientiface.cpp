@@ -231,8 +231,9 @@ void RemoteClient::GetNextAutosendBlocks (
 	DSTACK(FUNCTION_NAME);
 
 	// Increment timers
-	m_nothing_to_send_pause_timer -= dtime;
+	m_nothing_sent_timer += dtime;
 	m_nearest_unsent_reset_timer += dtime;
+	m_nothing_to_send_pause_timer -= dtime;
 
 	if (m_nothing_to_send_pause_timer >= 0)
 		return;
@@ -301,11 +302,19 @@ void RemoteClient::GetNextAutosendBlocks (
 
 	// We will start from a radius that still has unsent MapBlocks
 	s16 d_start = m_nearest_unsent_d >= 0 ? m_nearest_unsent_d : 0;
+
 	//infostream<<"d_start="<<d_start<<std::endl;
 
 	// Don't loop very much at a time. This function is called each server tick
-	// so just a step or two will work fine.
-	s16 d_max = d_start + 2;
+	// so just a few steps will work fine (+2 is 3 steps per call).
+	s16 d_max = 0;
+	if (d_start < 5)
+		d_max = d_start + 2;
+	else if (d_max < 8)
+		d_max = d_start + 1;
+	else
+		d_max = d_start; // These iterations start to be rather heavy
+
 	if (d_max > max_block_send_distance)
 		d_max = max_block_send_distance;
 
@@ -314,7 +323,10 @@ void RemoteClient::GetNextAutosendBlocks (
 	s32 nearest_emergequeued_d = INT32_MAX;
 	s32 nearest_emergefull_d = INT32_MAX;
 	s32 nearest_sendqueued_d = INT32_MAX;
-	//bool queue_is_full = false;
+
+	// Out-of-FOV distance limit
+	s16 fov_limit_activation_distance = m_fov_limit_enabled ?
+			max_block_send_distance / 2 : max_block_send_distance;
 
 	// TODO: Get FarBlocks
 
@@ -341,7 +353,6 @@ void RemoteClient::GetNextAutosendBlocks (
 
 			// Don't select too many blocks for sending
 			if (num_blocks_selected >= max_simultaneous_block_sends) {
-				//queue_is_full = true;
 				goto queue_full_break;
 			}
 
@@ -365,8 +376,8 @@ void RemoteClient::GetNextAutosendBlocks (
 			if (abs(p.Y - focus_point.Y) > max_block_send_distance / 2)
 				continue;*/
 
-			// Don't generate or send if not in sight
-			if (m_autosend_fov != 0.0f && d > max_block_send_distance / 2) {
+			if (d >= fov_limit_activation_distance) {
+				// Don't generate or send if not in sight
 				if(isBlockInSight(p, camera_p, camera_dir, m_autosend_fov,
 						10000*BS) == false)
 				{
@@ -393,15 +404,11 @@ void RemoteClient::GetNextAutosendBlocks (
 				// Block is dummy if data doesn't exist.
 				// It means it has been not found from disk and not generated
 				if(block->isDummy())
-				{
 					surely_not_found_on_disk = true;
-				}
 
 				// Block is valid if lighting is up-to-date and data exists
 				if(block->isValid() == false)
-				{
 					block_is_invalid = true;
-				}
 
 				if(block->isGenerated() == false)
 					block_is_invalid = true;
@@ -458,9 +465,15 @@ void RemoteClient::GetNextAutosendBlocks (
 			dest.push_back(wms);
 
 			num_blocks_selected += 1;
+			m_nothing_sent_timer = 0.0f;
 		}
 	}
 queue_full_break:
+
+	/*infostream << "nearest_emergequeued_d = "<<nearest_emergequeued_d
+			<<", nearest_emergefull_d = "<<nearest_emergefull_d
+			<<", nearest_sendqueued_d = "<<nearest_sendqueued_d
+			<<std::endl;*/
 
 	// Because none of the things we queue for sending or emerging or anything
 	// will necessarily be sent or anything, next time we need to continue
@@ -478,11 +491,31 @@ queue_full_break:
 		// We did something that requires a result to be checked later. Continue
 		// from that on the next time.
 		m_nearest_unsent_d = closest_required_re_check;
+
+		// If nothing has been sent in a moment, indicating that the emerge
+		// thread is not finding anything on disk anymore, start a fresh pass
+		// without the FOV limit.
+		if (m_nothing_sent_timer >= 3.0f && m_autosend_fov != 0.0f &&
+				m_fov_limit_enabled) {
+			m_nearest_unsent_d = 0;
+			m_fov_limit_enabled = false;
+			// Have to be reset in order to not trigger this immediately again
+			m_nothing_sent_timer = 0.0f;
+		}
 	} else if (d > max_block_send_distance) {
 		// We iterated all the way through to the end of the send radius, if you
-		// can believe that. Start from the beginning after a short idle delay.
-		m_nearest_unsent_d = 0;
-		m_nothing_to_send_pause_timer = 2.0;
+		// can believe that.
+		if (m_autosend_fov != 0.0f && m_fov_limit_enabled) {
+			// Do a second pass with FOV limiting disabled
+			m_nearest_unsent_d = 0;
+			m_fov_limit_enabled = false;
+		} else {
+			// Start from the beginning after a short idle delay, with FOV
+			// limiting enabled because nobody knows what the future holds.
+			m_nearest_unsent_d = 0;
+			m_fov_limit_enabled = true;
+			m_nothing_to_send_pause_timer = 2.0;
+		}
 	} else {
 		// Absolutely nothing interesting happened. Next time we will continue
 		// iterating from the next radius.
