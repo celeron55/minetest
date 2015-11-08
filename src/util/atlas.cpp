@@ -84,12 +84,10 @@ struct CAtlasRegistry: public AtlasRegistry
 		v2s32 seg_img_size(seg_img->getDimension().Width, seg_img->getDimension().Height);
 		if (segment_def.lod_simulation >= 2) {
 			seg_img_size *= segment_def.lod_simulation;
-			// We don't need a completely huge size; it would just degrade
-			// performance for no good reason
-			if (seg_img_size.X > 64)
-				seg_img_size.X = 64;
-			if (seg_img_size.Y > 64)
-				seg_img_size.Y = 64;
+			// Force the same size for everything in order to optimize number of
+			// texture atlases
+			seg_img_size.X = 64;
+			seg_img_size.Y = 64;
 		}
 		// Try to find a texture atlas for this texture size
 		AtlasDefinition *atlas_def = NULL;
