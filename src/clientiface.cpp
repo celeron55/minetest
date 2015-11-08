@@ -67,9 +67,28 @@ void RemoteClient::GetNextBlocks (
 		float dtime,
 		std::vector<WantedMapSend> &dest)
 {
-	// Use legacy algorithm if map send queue is not being used
+	// If the client has not indicated it supports the new algorithm, fill in
+	// autosend parameters and things should work fine
 	if (!m_new_block_sending_active) {
-		return GetNextBlocksLegacy(env, emerge, dtime, dest);
+		Player *player = env->getPlayer(peer_id);
+		if (!player) {
+			// Well we can't because we have no focus position; just cancel
+			// everything
+			return;
+		}
+		v3s16 player_p = floatToInt(player->getPosition(), BS);
+
+		s16 asmbr = g_settings->getS16("max_block_send_distance");
+		VoxelArea mapblocks_area(
+				getContainerPos(player_p, MAP_BLOCKSIZE) - asmbr,
+				getContainerPos(player_p, MAP_BLOCKSIZE) + asmbr);
+
+		// Old client would not understand FarBlocks
+		VoxelArea farblocks_area;
+
+		setAutosendParameters(player_p, mapblocks_area, farblocks_area);
+
+		// Now continue as if nothing weird is happening.
 	}
 
 	// TODO: Auto-send stuff
