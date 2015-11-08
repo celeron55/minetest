@@ -206,6 +206,7 @@ public:
 
 	std::vector<v3s16> suggestFarBlocksToFetch(v3s16 camera_p);
 	s16 suggestAutosendFarblocksRadius(); // Result in FarBlocks
+	float suggestFogDistance();
 
 	// ISceneNode methods
 	void OnRegisterSceneNode();
@@ -218,7 +219,8 @@ public:
 	bool config_enable_shaders;
 	bool config_trilinear_filter;
 	bool config_bilinear_filter;
-	bool config_anistropic_filter;
+	bool config_anisotropic_filter;
+	s16 config_far_map_range;
 
 	u32 farblock_shader_id;
 	BlockAreaBitmap normally_rendered_blocks;
@@ -236,7 +238,6 @@ private:
 	v3s16 m_camera_offset;
 
 	// Fetch suggestion algorithm
-	s16 m_fetch_distance_nodes;
 	s16 m_farblocks_exist_up_to_d;
 	s16 m_farblocks_exist_up_to_d_reset_counter;
 };

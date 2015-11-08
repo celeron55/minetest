@@ -224,6 +224,10 @@
 #    type: key
 # keymap_decrease_viewing_range_min = -
 
+#    Modifier key for altering the far map range instead of viewing range
+#    See http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3
+#keymap_far_range_modifier = KEY_LCONTROL
+
 #    Key for printing debug stacks. Used for development.
 #    See http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3
 #    type: key
@@ -307,6 +311,9 @@
 
 #    Enable low level-of-detail rendering at large distances
 #enable_far_map = true
+
+#    Far map rendering range in nodes
+#far_map_range = 500
 
 #### Filtering
 

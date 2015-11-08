@@ -520,6 +520,7 @@ public:
 
 	bool getFarMapVisible();
 	void setFarMapVisible(bool b);
+	float getFarMapFogDistance();
 
 	// IGameDef interface
 	virtual IItemDefManager* getItemDefManager();

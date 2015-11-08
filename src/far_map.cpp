@@ -724,8 +724,12 @@ FarMap::FarMap(
 	scene::ISceneNode(parent, mgr, id),
 	client(client),
 	atlas(this),
+	config_enable_shaders(false),
+	config_trilinear_filter(false),
+	config_bilinear_filter(false),
+	config_anisotropic_filter(false),
+	config_far_map_range(800),
 	farblock_shader_id(0),
-	m_fetch_distance_nodes(800),
 	m_farblocks_exist_up_to_d(0),
 	m_farblocks_exist_up_to_d_reset_counter(0)
 {
@@ -989,7 +993,7 @@ std::vector<v3s16> FarMap::suggestFarBlocksToFetch(v3s16 camera_p)
 	v3s16 center_fb = getContainerPos(center_mb, FMP_SCALE);
 
 	s16 fetch_distance_farblocks =
-			ceilf((float)m_fetch_distance_nodes / MAP_BLOCKSIZE / FMP_SCALE);
+			ceilf((float)config_far_map_range / MAP_BLOCKSIZE / FMP_SCALE);
 
 	// Avoid running the algorithm through all the close FarBlocks that probably
 	// have already been fetched, except once in a while to catch up with
@@ -1026,8 +1030,13 @@ done:
 s16 FarMap::suggestAutosendFarblocksRadius()
 {
 	s16 fetch_distance_farblocks =
-			ceilf((float)m_fetch_distance_nodes / MAP_BLOCKSIZE / FMP_SCALE);
+			ceilf((float)config_far_map_range / MAP_BLOCKSIZE / FMP_SCALE);
 	return fetch_distance_farblocks;
+}
+
+float FarMap::suggestFogDistance()
+{
+	return config_far_map_range * BS;
 }
 
 void FarMap::updateSettings()
@@ -1035,7 +1044,12 @@ void FarMap::updateSettings()
 	config_enable_shaders = g_settings->getBool("enable_shaders");
 	config_trilinear_filter = g_settings->getBool("trilinear_filter");
 	config_bilinear_filter = g_settings->getBool("bilinear_filter");
-	config_anistropic_filter = g_settings->getBool("anisotropic_filter");
+	config_anisotropic_filter = g_settings->getBool("anisotropic_filter");
+	config_far_map_range = g_settings->getS16("far_map_range");
+
+	// Sanitize these a bit
+	if (config_far_map_range < 100)
+		config_far_map_range = 100;
 }
 
 static void renderMesh(FarMap *far_map, scene::SMesh *mesh,
@@ -1052,7 +1066,7 @@ static void renderMesh(FarMap *far_map, scene::SMesh *mesh,
 		buf->getMaterial().setFlag(video::EMF_BILINEAR_FILTER,
 				far_map->config_bilinear_filter);
 		buf->getMaterial().setFlag(video::EMF_ANISOTROPIC_FILTER,
-				far_map->config_anistropic_filter);
+				far_map->config_anisotropic_filter);
 
 		const video::SMaterial& material = buf->getMaterial();
 

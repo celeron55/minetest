@@ -1964,6 +1964,11 @@ void Client::setFarMapVisible(bool b)
 	m_far_map->setVisible(b);
 }
 
+float Client::getFarMapFogDistance()
+{
+	m_far_map->suggestFogDistance();
+}
+
 void Client::makeScreenshot(IrrlichtDevice *device)
 {
 	irr::video::IVideoDriver *driver = device->getVideoDriver();

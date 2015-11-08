@@ -217,6 +217,10 @@ keymap_increase_viewing_range_min (View range increase key) key +
 #    See http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3
 keymap_decrease_viewing_range_min (View range decrease key) key -
 
+#    Modifier key for altering the far map range instead of viewing range
+#    See http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3
+keymap_far_range_modifier (Far range modifier key) key KEY_LCONTROL
+
 #    Key for printing debug stacks. Used for development.
 #    See http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3
 keymap_print_debug_stacks (Print stacks) key KEY_KEY_P
@@ -285,6 +289,9 @@ enable_3d_clouds (3D clouds) bool true
 
 #    Enable low level-of-detail rendering at large distances
 enable_far_map (Far Map) bool true
+
+#    Far map rendering range in nodes
+far_map_range (Far Map) int 500
 
 [***Filtering]
 

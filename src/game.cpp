@@ -1263,6 +1263,7 @@ struct KeyCache {
 		KEYMAP_ID_CAMERA_MODE,
 		KEYMAP_ID_INCREASE_VIEWING_RANGE,
 		KEYMAP_ID_DECREASE_VIEWING_RANGE,
+		KEYMAP_ID_FAR_RANGE_MODIFIER,
 		KEYMAP_ID_RANGESELECT,
 		KEYMAP_ID_TOGGLE_FAR_MAP_VISIBILITY,
 
@@ -1323,6 +1324,8 @@ void KeyCache::populate()
 			= getKeySetting("keymap_increase_viewing_range_min");
 	key[KEYMAP_ID_DECREASE_VIEWING_RANGE]
 			= getKeySetting("keymap_decrease_viewing_range_min");
+	key[KEYMAP_ID_FAR_RANGE_MODIFIER]
+			= getKeySetting("keymap_far_range_modifier");
 	key[KEYMAP_ID_RANGESELECT]
 			= getKeySetting("keymap_rangeselect");
 	key[KEYMAP_ID_TOGGLE_FAR_MAP_VISIBILITY]
@@ -1521,6 +1524,8 @@ protected:
 
 	void increaseViewRange(float *statustext_time);
 	void decreaseViewRange(float *statustext_time);
+	void increaseFarRange(float *statustext_time);
+	void decreaseFarRange(float *statustext_time);
 	void toggleFullViewRange(float *statustext_time);
 	void toggleFarMapVisible(float *statustext_time);
 
@@ -2675,9 +2680,15 @@ void Game::processKeyboardInput(VolatileRunFlags *flags,
 	} else if (input->wasKeyDown(keycache.key[KeyCache::KEYMAP_ID_TOGGLE_PROFILER])) {
 		toggleProfiler(statustext_time, profiler_current_page, profiler_max_page);
 	} else if (input->wasKeyDown(keycache.key[KeyCache::KEYMAP_ID_INCREASE_VIEWING_RANGE])) {
-		increaseViewRange(statustext_time);
+		if (input->isKeyDown(keycache.key[KeyCache::KEYMAP_ID_FAR_RANGE_MODIFIER]))
+			increaseFarRange(statustext_time);
+		else
+			increaseViewRange(statustext_time);
 	} else if (input->wasKeyDown(keycache.key[KeyCache::KEYMAP_ID_DECREASE_VIEWING_RANGE])) {
-		decreaseViewRange(statustext_time);
+		if (input->isKeyDown(keycache.key[KeyCache::KEYMAP_ID_FAR_RANGE_MODIFIER]))
+			decreaseFarRange(statustext_time);
+		else
+			decreaseViewRange(statustext_time);
 	} else if (input->wasKeyDown(keycache.key[KeyCache::KEYMAP_ID_RANGESELECT])) {
 		toggleFullViewRange(statustext_time);
 	} else if (input->wasKeyDown(keycache.key[KeyCache::KEYMAP_ID_TOGGLE_FAR_MAP_VISIBILITY])) {
@@ -3034,6 +3045,30 @@ void Game::decreaseViewRange(float *statustext_time)
 	g_settings->set("viewing_range_nodes_min", itos(range_new));
 	statustext = utf8_to_wide("Minimum viewing range changed to "
 			+ itos(range_new));
+	*statustext_time = 0;
+}
+
+
+void Game::increaseFarRange(float *statustext_time)
+{
+	s16 range = g_settings->getS16("far_map_range");
+	s16 range_new = range + 100;
+	g_settings->set("far_map_range", itos(range_new));
+	statustext = utf8_to_wide("Far map range changed to " + itos(range_new));
+	*statustext_time = 0;
+}
+
+
+void Game::decreaseFarRange(float *statustext_time)
+{
+	s16 range = g_settings->getS16("far_map_range");
+	s16 range_new = range - 100;
+
+	if (range_new < 100)
+		range_new = range;
+
+	g_settings->set("far_map_range", itos(range_new));
+	statustext = utf8_to_wide("Far map range changed to " + itos(range_new));
 	*statustext_time = 0;
 }
 
@@ -3917,8 +3952,7 @@ void Game::updateFrame(std::vector<aabb3f> &highlight_boxes,
 		runData->fog_range_start = runData->fog_range * 0.4;
 	} else {
 		if (client->getFarMapVisible()) {
-			// TODO: Get current range from FarMap
-			runData->fog_range = 800 * BS;
+			runData->fog_range = client->getFarMapFogDistance();
 			// Fog starts at halfway where normal rendering ends; this makes a
 			// good effect
 			runData->fog_range_start = draw_control->wanted_range * BS / 2;
