@@ -123,14 +123,6 @@ void FarBlock::resetCameraOffset(v3s16 camera_offset)
 FarSector::FarSector(v2s16 p):
 	p(p)
 {
-	v2s16 bp0(p.X * FMP_SCALE, p.Y * FMP_SCALE);
-	v2s16 bp1 = bp0 + v2s16(FMP_SCALE, FMP_SCALE); // Exclusive
-
-	v2s16 bp;
-	for (bp.X=bp0.X; bp.X<bp1.X; bp.X++)
-	for (bp.Y=bp0.Y; bp.Y<bp1.Y; bp.Y++) {
-		mapsectors_covered.push_back(bp);
-	}
 }
 
 FarSector::~FarSector()

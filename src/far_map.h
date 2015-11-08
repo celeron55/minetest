@@ -86,13 +86,13 @@ struct FarBlock
 	}
 };
 
+// For some reason sectors seem to be faster than just a plain std::map<v3s16,
+// FarBlock*>, so that's what we use here.
 struct FarSector
 {
 	v2s16 p;
 
 	std::map<s16, FarBlock*> blocks;
-
-	std::vector<v2s16> mapsectors_covered;
 
 	FarSector(v2s16 p);
 	~FarSector();
