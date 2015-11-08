@@ -575,11 +575,8 @@ void Client::step(float dtime)
 				m_mapper->addBlock(r.p, minimap_mapblock);
 
 			if (r.ack_block_to_server) {
-				/*
-					Acknowledge block
-					[0] u8 count
-					[1] v3s16 pos_0
-				*/
+				// Acknowledgement is done after mesh generation in order to
+				// optimally throttle the transfer rate of MapBlocks.
 				sendGotMapBlock(r.p);
 			}
 		}

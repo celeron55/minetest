@@ -235,11 +235,11 @@ public:
 		m_time_from_building(9999),
 		m_pending_serialization_version(SER_FMT_VER_INVALID),
 		m_state(CS_Created),
-		m_new_block_sending_active(0),
 		m_nearest_unsent_d(0),
 		m_nearest_unsent_reset_timer(0.0),
-		m_excess_gotblocks(0),
 		m_nothing_to_send_pause_timer(0.0),
+		m_fallback_autosend_active(true),
+		m_excess_gotblocks(0),
 		m_name(""),
 		m_version_major(0),
 		m_version_minor(0),
@@ -259,9 +259,8 @@ public:
 	void GetNextBlocks(ServerEnvironment *env, EmergeManager* emerge,
 			float dtime, std::vector<WantedMapSend> &dest);
 
-	// Called by the previous function when appropriate.
-	// dtime is used for resetting send radius at slow interval
-	void GetNextBlocksLegacy(ServerEnvironment *env, EmergeManager* emerge,
+	// Called by GetNextBlocks
+	void GetNextAutosendBlocks(ServerEnvironment *env, EmergeManager* emerge,
 			float dtime, std::vector<WantedMapSend> &dest);
 
 	void GotBlock(const WantedMapSend &wms);
@@ -288,6 +287,14 @@ public:
 		return m_blocks_sending.size();
 	}
 
+	void setMapSendQueue(const std::vector<WantedMapSend> &map_send_queue)
+	{
+		m_map_send_queue = map_send_queue;
+
+		// Disable fallback algorithm
+		m_fallback_autosend_active = false;
+	}
+
 	void setAutosendParameters(v3s16 autosend_focus_p,
 			const VoxelArea &autosend_mapblocks_area,
 			const VoxelArea &autosend_farblocks_area)
@@ -295,13 +302,9 @@ public:
 		m_autosend_focus_p = autosend_focus_p;
 		m_autosend_mapblocks_area = autosend_mapblocks_area;
 		m_autosend_farblocks_area = autosend_farblocks_area;
-	}
 
-	void setMapSendQueue(const std::vector<WantedMapSend> &map_send_queue)
-	{
-		m_map_send_queue = map_send_queue;
-		// Enable new algorithm
-		m_new_block_sending_active = true;
+		// Disable fallback algorithm
+		m_fallback_autosend_active = false;
 	}
 
 	// Increments timeouts and removes timed-out blocks from list
@@ -374,19 +377,26 @@ private:
 	/* current state of client */
 	ClientState m_state;
 
+
 	/*
-		Improved version of map sending; in this one, the client periodically
-		gives the server this prioritized list and the server attempts to send
-		everything listed on it.
-
-		If this is non-empty, this takes precedence over the previous algorithm.
+		Autosend algorithm
 	*/
-	bool m_new_block_sending_active;
-
 	v3s16 m_autosend_focus_p;
 	VoxelArea m_autosend_mapblocks_area;
 	VoxelArea m_autosend_farblocks_area;
 
+	s16 m_nearest_unsent_d;
+	v3s16 m_last_center;
+	float m_nearest_unsent_reset_timer;
+	float m_nothing_to_send_pause_timer; // CPU usage optimization
+
+	bool m_fallback_autosend_active;
+
+	/*
+		Client can periodically update this queue to do custom map transfers.
+
+		Autosend always takes priority over this.
+	*/
 	std::vector<WantedMapSend> m_map_send_queue;
 
 	/*
@@ -399,13 +409,6 @@ private:
 		No MapBlock* is stored here because the blocks can get deleted.
 	*/
 	std::set<WantedMapSend> m_blocks_sent;
-
-	/*
-		Stuff for the legacy map sending algorithm.
-	*/
-	s16 m_nearest_unsent_d;
-	v3s16 m_last_center;
-	float m_nearest_unsent_reset_timer;
 
 	/*
 		Blocks that are currently on the line.
@@ -425,9 +428,6 @@ private:
 		This is resetted by PrintInfo()
 	*/
 	u32 m_excess_gotblocks;
-
-	// CPU usage optimization
-	float m_nothing_to_send_pause_timer;
 
 	/*
 		name of player using this client
