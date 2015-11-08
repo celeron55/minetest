@@ -40,6 +40,7 @@ FarBlock::FarBlock(v3s16 p):
 	mesh(NULL)
 {
 	mapblock_meshes.resize(FMP_SCALE * FMP_SCALE * FMP_SCALE);
+	mapblock2_meshes.resize(FMP_SCALE/2 * FMP_SCALE/2 * FMP_SCALE/2);
 }
 
 FarBlock::~FarBlock()
@@ -50,6 +51,10 @@ FarBlock::~FarBlock()
 	for (size_t i=0; i<mapblock_meshes.size(); i++) {
 		if(mapblock_meshes[i])
 			mapblock_meshes[i]->drop();
+	}
+	for (size_t i=0; i<mapblock2_meshes.size(); i++) {
+		if(mapblock2_meshes[i])
+			mapblock2_meshes[i]->drop();
 	}
 }
 
@@ -103,6 +108,12 @@ void FarBlock::updateCameraOffset(v3s16 camera_offset)
 			if (!mapblock_meshes[i])
 				continue;
 			translateMesh(mapblock_meshes[i],
+					intToFloat(current_camera_offset-camera_offset, BS));
+		}
+		for (size_t i=0; i<mapblock2_meshes.size(); i++) {
+			if (!mapblock2_meshes[i])
+				continue;
+			translateMesh(mapblock2_meshes[i],
 					intToFloat(current_camera_offset-camera_offset, BS));
 		}
 	}
@@ -168,6 +179,9 @@ FarBlockMeshGenerateTask::FarBlockMeshGenerateTask(
 	for (size_t i=0; i<block.mapblock_meshes.size(); i++) {
 		block.mapblock_meshes[i] = NULL;
 	}
+	for (size_t i=0; i<block.mapblock2_meshes.size(); i++) {
+		block.mapblock2_meshes[i] = NULL;
+	}
 }
 
 FarBlockMeshGenerateTask::~FarBlockMeshGenerateTask()
@@ -222,10 +236,10 @@ static void add_face(MeshCollector *collector,
 
 	u8 alpha = 255;
 
-	u8 light_day_4 = n.light % 0x0f;
+	/*u8 light_day_4 = n.light % 0x0f;
 	u8 light_night_4 = (n.light & 0xf0) >> 4;
 	u8 light_day_8 = decode_light(light_day_4);
-	u8 light_night_8 = decode_light(light_night_4);
+	u8 light_night_8 = decode_light(light_night_4);*/
 	// Both lightbanks as 16-bit values from decode_light() as produced by
 	// getFaceLight (day | (night << 8))
 	// TODO
@@ -530,19 +544,79 @@ void FarBlockMeshGenerateTask::inThread()
 					block.mapblock_meshes[mi], far_map, &collector);
 		}
 	}
+
+	// 2x2x2-MapBlock-sized meshes
+	VoxelArea mapblock2_meshes_area(
+		v3s16(0, 0, 0),
+		v3s16(FMP_SCALE/2-1, FMP_SCALE/2-1, FMP_SCALE/2-1)
+	);
+	for (mp.Z=0; mp.Z<FMP_SCALE/2; mp.Z++)
+	for (mp.Y=0; mp.Y<FMP_SCALE/2; mp.Y++)
+	for (mp.X=0; mp.X<FMP_SCALE/2; mp.X++) {
+		// Index to mapblock2_meshes
+		size_t mi = mapblock2_meshes_area.index(mp);
+
+		MeshCollector collector;
+
+		VoxelArea gen_area( // effective
+			block.dp00 + v3s16(
+				block.block_div.X * mp.X * 2,
+				block.block_div.Y * mp.Y * 2,
+				block.block_div.Z * mp.Z * 2
+			),
+			block.dp00 + v3s16(
+				block.block_div.X * mp.X * 2 + block.block_div.X * 2 - 1,
+				block.block_div.Y * mp.Y * 2 + block.block_div.Y * 2 - 1,
+				block.block_div.Z * mp.Z * 2 + block.block_div.Z * 2 - 1
+			)
+		);
+		VoxelArea content_buf_area(
+			gen_area.MinEdge - v3s16(1,1,1),
+			gen_area.MaxEdge + v3s16(1,1,1)
+		);
+		content_buf.resize(content_buf_area.getVolume());
+		v3s16 p;
+		// Fill in everything but the edges
+		for (p.Y=gen_area.MinEdge.Y; p.Y<=gen_area.MaxEdge.Y; p.Y++)
+		for (p.X=gen_area.MinEdge.X; p.X<=gen_area.MaxEdge.X; p.X++)
+		for (p.Z=gen_area.MinEdge.Z; p.Z<=gen_area.MaxEdge.Z; p.Z++) {
+			content_buf[content_buf_area.index(p)] =
+					block.content[block.content_area.index(p)];
+		}
+
+		size_t num_faces_added = 0;
+
+		extract_faces(&collector, content_buf, content_buf_area,
+				gen_area, block.block_div, far_map,
+				&num_faces_added);
+
+		g_profiler->avg("Far: num faces per mb mesh", num_faces_added);
+		g_profiler->add("Far: num mb meshes generated", 1);
+
+		if (num_faces_added > 0) {
+			block.mapblock2_meshes[mi] = create_farblock_mesh(
+					block.mapblock2_meshes[mi], far_map, &collector);
+		}
+	}
 }
 
 void FarBlockMeshGenerateTask::sync()
 {
 	if(block.mesh){
 		far_map->insertGeneratedBlockMesh(block.p, block.mesh,
-				block.mapblock_meshes);
+				block.mapblock_meshes, block.mapblock2_meshes);
 		block.mesh->drop();
 		block.mesh = NULL;
 		for (size_t i=0; i<block.mapblock_meshes.size(); i++) {
 			if (block.mapblock_meshes[i] != NULL) {
 				block.mapblock_meshes[i]->drop();
 				block.mapblock_meshes[i] = NULL;
+			}
+		}
+		for (size_t i=0; i<block.mapblock2_meshes.size(); i++) {
+			if (block.mapblock2_meshes[i] != NULL) {
+				block.mapblock2_meshes[i]->drop();
+				block.mapblock2_meshes[i] = NULL;
 			}
 		}
 	} else {
@@ -851,7 +925,8 @@ void FarMap::startGeneratingBlockMesh(FarBlock *b)
 }
 
 void FarMap::insertGeneratedBlockMesh(v3s16 p, scene::SMesh *mesh,
-		const std::vector<scene::SMesh*> &mapblock_meshes)
+		const std::vector<scene::SMesh*> &mapblock_meshes,
+		const std::vector<scene::SMesh*> &mapblock2_meshes)
 {
 	FarBlock *b = getOrCreateBlock(p);
 
@@ -874,9 +949,22 @@ void FarMap::insertGeneratedBlockMesh(v3s16 p, scene::SMesh *mesh,
 		}
 	}
 
+	for (size_t i=0; i<b->mapblock2_meshes.size(); i++) {
+		if(b->mapblock2_meshes[i])
+			b->mapblock2_meshes[i]->drop();
+		b->mapblock2_meshes[i] = NULL;
+	}
+	b->mapblock2_meshes.resize(mapblock2_meshes.size());
+	for (size_t i=0; i<mapblock2_meshes.size(); i++) {
+		if (mapblock2_meshes[i] != NULL) {
+			mapblock2_meshes[i]->grab();
+			b->mapblock2_meshes[i] = mapblock2_meshes[i];
+		}
+	}
+
 	b->resetCameraOffset(m_camera_offset);
 
-	g_profiler->add("Far: generated farblocks meshes", 1);
+	g_profiler->add("Far: generated farblock meshes", 1);
 }
 
 void FarMap::update()
@@ -1071,7 +1159,8 @@ static void renderMesh(FarMap *far_map, scene::SMesh *mesh,
 static void renderBlock(FarMap *far_map, FarBlock *b,
 		video::IVideoDriver* driver,
 		size_t *profiler_num_rendered_farblocks,
-		size_t *profiler_num_rendered_fbmbparts)
+		size_t *profiler_num_rendered_fbmbparts,
+		size_t *profiler_num_rendered_fbmb2parts)
 {
 	if(!b->mesh){
 		//infostream<<"FarMap::renderBlock: "<<PP(b->p)<<": No mesh"<<std::endl;
@@ -1088,6 +1177,10 @@ static void renderBlock(FarMap *far_map, FarBlock *b,
 	VoxelArea area_in_mapblocks(
 		area_in_mapblocks_from_origin.MinEdge + fb_origin_mapblock,
 		area_in_mapblocks_from_origin.MaxEdge + fb_origin_mapblock
+	);
+	VoxelArea area_in_mapblock2x2x2s_from_origin(
+		v3s16(0, 0, 0),
+		v3s16(FMP_SCALE/2-1, FMP_SCALE/2-1, FMP_SCALE/2-1)
 	);
 
 	// If some of the MapBlocks inside this FarBlock are rendered normally, we
@@ -1111,21 +1204,46 @@ big_break:;
 	if (fb_being_normally_rendered) {
 		ScopeProfiler sp(g_profiler,
 				"Far: render time: mb-parts (avg)", SPT_AVG);
-		v3s16 mp0;
-		for (mp0.Z=0; mp0.Z<FMP_SCALE; mp0.Z++)
-		for (mp0.Y=0; mp0.Y<FMP_SCALE; mp0.Y++)
-		for (mp0.X=0; mp0.X<FMP_SCALE; mp0.X++) {
-			v3s16 mp = fb_origin_mapblock + mp0;
-			if (far_map->normally_rendered_blocks.get(mp))
-				continue;
-			assert(area_in_mapblocks.contains(mp));
-			// Index to mapblock_meshes
-			size_t mi = area_in_mapblocks.index(mp);
-			scene::SMesh *mesh = b->mapblock_meshes[mi];
-			if (!mesh)
-				continue;
-			renderMesh(far_map, mesh, driver);
-			(*profiler_num_rendered_fbmbparts)++;
+		v3s16 mp20;
+		for (mp20.Z=0; mp20.Z<FMP_SCALE/2; mp20.Z++)
+		for (mp20.Y=0; mp20.Y<FMP_SCALE/2; mp20.Y++)
+		for (mp20.X=0; mp20.X<FMP_SCALE/2; mp20.X++) {
+			v3s16 mp0 = mp20 * 2;
+			v3s16 mp1 = fb_origin_mapblock + mp0;
+			if (!far_map->normally_rendered_blocks.get(mp1 + v3s16(1,0,0)) &&
+				!far_map->normally_rendered_blocks.get(mp1 + v3s16(1,1,0)) &&
+				!far_map->normally_rendered_blocks.get(mp1 + v3s16(0,1,0)) &&
+				!far_map->normally_rendered_blocks.get(mp1 + v3s16(0,0,0)) &&
+				!far_map->normally_rendered_blocks.get(mp1 + v3s16(1,0,1)) &&
+				!far_map->normally_rendered_blocks.get(mp1 + v3s16(1,1,1)) &&
+				!far_map->normally_rendered_blocks.get(mp1 + v3s16(0,1,1)) &&
+				!far_map->normally_rendered_blocks.get(mp1 + v3s16(0,0,1)))
+			{
+				// Index to mapblock2_meshes
+				size_t mi = area_in_mapblock2x2x2s_from_origin.index(mp20);
+				scene::SMesh *mesh = b->mapblock2_meshes[mi];
+				if (!mesh)
+					continue;
+				renderMesh(far_map, mesh, driver);
+				(*profiler_num_rendered_fbmb2parts)++;
+			} else {
+				v3s16 mp01;
+				for (mp01.Z=0; mp01.Z<2; mp01.Z++)
+				for (mp01.Y=0; mp01.Y<2; mp01.Y++)
+				for (mp01.X=0; mp01.X<2; mp01.X++) {
+					v3s16 mp = mp1 + mp01;
+					if (far_map->normally_rendered_blocks.get(mp))
+						continue;
+					assert(area_in_mapblocks.contains(mp));
+					// Index to mapblock_meshes
+					size_t mi = area_in_mapblocks.index(mp);
+					scene::SMesh *mesh = b->mapblock_meshes[mi];
+					if (!mesh)
+						continue;
+					renderMesh(far_map, mesh, driver);
+					(*profiler_num_rendered_fbmbparts)++;
+				}
+			}
 		}
 	} else {
 		ScopeProfiler sp(g_profiler,
@@ -1147,6 +1265,7 @@ void FarMap::render()
 	size_t profiler_num_total_farblocks = 0;
 	size_t profiler_num_rendered_farblocks = 0;
 	size_t profiler_num_rendered_fbmbparts = 0;
+	size_t profiler_num_rendered_fbmb2parts = 0;
 
 	//ClientEnvironment *client_env = &client->getEnv();
 	//ClientMap *map = &client_env->getClientMap();
@@ -1162,16 +1281,19 @@ void FarMap::render()
 
 			renderBlock(this, b, driver,
 					&profiler_num_rendered_farblocks,
-					&profiler_num_rendered_fbmbparts);
+					&profiler_num_rendered_fbmbparts,
+					&profiler_num_rendered_fbmb2parts);
 		}
 	}
 
 	g_profiler->avg("Far: total number of farblocks",
 			profiler_num_total_farblocks);
-	g_profiler->avg("Far: rendered farblocks per frame",
+	g_profiler->avg("Far: rendered farblocks /frame",
 			profiler_num_rendered_farblocks);
-	g_profiler->avg("Far: rendered farblock-mb-parts frame",
+	g_profiler->avg("Far: rendered farblock-mb-parts /frame",
 			profiler_num_rendered_fbmbparts);
+	g_profiler->avg("Far: rendered farblock-mb2-parts /frame",
+			profiler_num_rendered_fbmb2parts);
 }
 
 void FarMap::OnRegisterSceneNode()

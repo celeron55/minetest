@@ -70,6 +70,11 @@ struct FarBlock
 	// being rendered from the regular Map and the whole mesh cannnot be used
 	std::vector<scene::SMesh*> mapblock_meshes;
 
+	// An array of 2x2x2-MapBlock-sized meshes to be used when the area is
+	// partly being rendered from the regular Map and the whole mesh cannnot be
+	// used
+	std::vector<scene::SMesh*> mapblock2_meshes;
+
 	v3s16 current_camera_offset;
 
 	FarBlock(v3s16 p);
@@ -194,7 +199,8 @@ public:
 
 	void startGeneratingBlockMesh(FarBlock *b);
 	void insertGeneratedBlockMesh(v3s16 p, scene::SMesh *mesh,
-			const std::vector<scene::SMesh*> &mapblock_meshes);
+			const std::vector<scene::SMesh*> &mapblock_meshes,
+			const std::vector<scene::SMesh*> &mapblock2_meshes);
 
 	void update();
 	void updateCameraOffset(v3s16 camera_offset);
