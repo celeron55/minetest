@@ -677,12 +677,17 @@ void Client::step(float dtime)
 	/*
 		Request blocks
 	*/
-	if(m_far_blocks_request_interval.step(dtime, 1.0))
+	static const float fmr_interval_s = 2.0f; // TODO: Configurable
+	if(m_far_blocks_request_interval.step(dtime, fmr_interval_s))
 	{
 		verbosestream<<"Client: Requesting far blocks"<<std::endl;
 
+		ClientMap *map = &m_env.getClientMap();
+		static const float far_weight = 8.0f; // TODO: Configurable
+
 		std::vector<WantedMapSend> wanted_map_send_queue;
 
+#if 0
 		// Get player position (used for prioritizing requests)
 		v3s16 player_p;
 		Player *player = m_env.getLocalPlayer();
@@ -710,7 +715,6 @@ void Client::step(float dtime)
 		}
 
 		// Get suggested MapBlock positions
-		ClientMap *map = &m_env.getClientMap();
 		std::vector<v3s16> suggested_mbs = map->suggestMapBlocksToFetch(
 				player_p, num_suggested_mbs);
 		for (size_t i=0; i<suggested_mbs.size(); i++) {
@@ -719,14 +723,15 @@ void Client::step(float dtime)
 		}
 
 		// Prioritize
-		static const float far_weight = 8.0f; // TODO: Configurable
 		std::sort(wanted_map_send_queue.begin(), wanted_map_send_queue.end(),
 				WMSPriority(player_p, far_weight));
+#endif
 
 		// Autosend parameters
 		s16 autosend_radius_map = map->suggestAutosendMapblocksRadius();
 		s16 autosend_radius_far = m_far_map->suggestAutosendFarblocksRadius();
 		float autosend_far_weight = far_weight;
+		float autosend_fov = map->suggestAutosendFov();
 
 		NetworkPacket pkt(TOSERVER_SET_WANTED_MAP_SEND_QUEUE, 0);
 		/*
@@ -734,6 +739,7 @@ void Client::step(float dtime)
 			s16 radius_map
 			s16 radius_far
 			f1000 far_weight
+			f1000 fov
 			Manual requests:
 			u32 len
 			for len:
@@ -743,6 +749,7 @@ void Client::step(float dtime)
 		pkt << (s16) autosend_radius_map;
 		pkt << (s16) autosend_radius_far;
 		pkt << (float) autosend_far_weight;
+		pkt << (float) autosend_fov;
 		pkt << (u32) wanted_map_send_queue.size();
 		for (size_t i=0; i<wanted_map_send_queue.size(); i++) {
 			const WantedMapSend &wms = wanted_map_send_queue[i];

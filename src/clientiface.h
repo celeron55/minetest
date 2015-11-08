@@ -238,6 +238,7 @@ public:
 		m_autosend_radius_map(0),
 		m_autosend_radius_far(0),
 		m_autosend_far_weight(8.0f),
+		m_autosend_fov(72.0f),
 		m_nearest_unsent_d(0),
 		m_nearest_unsent_reset_timer(0.0),
 		m_nothing_to_send_pause_timer(0.0),
@@ -290,11 +291,13 @@ public:
 		return m_blocks_sending.size();
 	}
 
-	void setAutosendParameters(s16 radius_map, s16 radius_far, float far_weight)
+	void setAutosendParameters(s16 radius_map, s16 radius_far, float far_weight,
+			float fov)
 	{
 		m_autosend_radius_map = radius_map;
 		m_autosend_radius_far = radius_far;
 		m_autosend_far_weight = far_weight;
+		m_autosend_fov = fov;
 
 		// Disable fallback algorithm
 		m_fallback_autosend_active = false;
@@ -384,8 +387,9 @@ private:
 	s16 m_autosend_radius_map; // Updated by the client; 0 disables autosend.
 	s16 m_autosend_radius_far; // Updated by the client; 0 disables autosend.
 	float m_autosend_far_weight; // Updated by the client; 0 is invalid.
+	float m_autosend_fov; // Updated by the client; 0 disables FOV limit.
 	s16 m_nearest_unsent_d;
-	v3s16 m_last_center;
+	v3s16 m_last_focus_point;
 	float m_nearest_unsent_reset_timer;
 	float m_nothing_to_send_pause_timer; // CPU usage optimization
 	bool m_fallback_autosend_active;

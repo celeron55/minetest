@@ -881,6 +881,7 @@ enum ToServerCommand
 		s16 radius_map
 		s16 radius_far
 		f1000 far_weight
+		f1000 fov
 		Manual requests:
 		u32 len
 		for len:

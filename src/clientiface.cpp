@@ -205,6 +205,23 @@ void RemoteClient::GetNextBlocks (
 	}
 }
 
+u16 figure_out_max_simultaneous_block_sends(u16 base_setting,
+		float time_from_building, float time_from_building_limit_setting,
+		s16 block_distance_in_blocks)
+{
+	// If block is very close, always send the configured amount
+	if (block_distance_in_blocks <= BLOCK_SEND_DISABLE_LIMITS_MAX_D)
+		return base_setting;
+
+	// If the time from last addNode/removeNode is small, don't send as much
+	// stuff in order to reduce lag
+	if (time_from_building < time_from_building_limit_setting)
+		return LIMITED_MAX_SIMULTANEOUS_BLOCK_SENDS;
+
+	// Send the configured amount if nothing special is happening
+	return base_setting;
+}
+
 void RemoteClient::GetNextAutosendBlocks (
 		ServerEnvironment *env,
 		EmergeManager *emerge,
@@ -217,118 +234,91 @@ void RemoteClient::GetNextAutosendBlocks (
 	m_nothing_to_send_pause_timer -= dtime;
 	m_nearest_unsent_reset_timer += dtime;
 
-	if(m_nothing_to_send_pause_timer >= 0)
+	if (m_nothing_to_send_pause_timer >= 0)
 		return;
 
 	Player *player = env->getPlayer(peer_id);
-	// This can happen sometimes; clients and players are not in perfect sync.
-	if(player == NULL)
+	if (player == NULL) {
+		// This can happen sometimes; clients and players are not in perfect sync.
 		return;
+	}
 
 	// Won't send anything if already sending
-	if(m_blocks_sending.size() >= g_settings->getU16
-			("max_simultaneous_block_sends_per_client"))
-	{
+	if (m_blocks_sending.size() >= g_settings->getU16
+			("max_simultaneous_block_sends_per_client")) {
 		//infostream<<"Not sending any blocks, Queue full."<<std::endl;
 		return;
 	}
 
-	v3f playerpos = player->getPosition();
-	v3f playerspeed = player->getSpeed();
-	v3f playerspeeddir(0,0,0);
-	if(playerspeed.getLength() > 1.0*BS)
-		playerspeeddir = playerspeed / playerspeed.getLength();
+	v3f camera_p = player->getEyePosition();
+	v3f player_speed = player->getSpeed();
+
+	// Get player position and figure out a good focus point for block selection
+	v3f player_speed_dir(0,0,0);
+	if(player_speed.getLength() > 1.0*BS)
+		player_speed_dir = player_speed / player_speed.getLength();
 	// Predict to next block
-	v3f playerpos_predicted = playerpos + playerspeeddir*MAP_BLOCKSIZE*BS;
-
-	v3s16 center_nodepos = floatToInt(playerpos_predicted, BS);
-
-	v3s16 center = getNodeBlockPos(center_nodepos);
+	v3f camera_p_predicted = camera_p + player_speed_dir*MAP_BLOCKSIZE*BS;
+	v3s16 focus_point_nodepos = floatToInt(camera_p_predicted, BS);
+	v3s16 focus_point = getNodeBlockPos(focus_point_nodepos);
 
 	// Camera position and direction
-	v3f camera_pos = player->getEyePosition();
 	v3f camera_dir = v3f(0,0,1);
 	camera_dir.rotateYZBy(player->getPitch());
 	camera_dir.rotateXZBy(player->getYaw());
 
-	/*infostream<<"camera_dir=("<<camera_dir.X<<","<<camera_dir.Y<<","
-			<<camera_dir.Z<<")"<<std::endl;*/
-
-	/*
-		Get the starting value of the block finder radius.
-	*/
-
-	if(m_last_center != center)
-	{
+	// If focus point has changed to a different MapBlock, reset radius value
+	// for iterating from zero again
+	if (m_last_focus_point != focus_point) {
 		m_nearest_unsent_d = 0;
-		m_last_center = center;
+		m_last_focus_point = focus_point;
 	}
 
-	/*infostream<<"m_nearest_unsent_reset_timer="
-			<<m_nearest_unsent_reset_timer<<std::endl;*/
+	// Get some settings
+	const u16 max_simul_sends_setting =
+			g_settings->getU16("max_simultaneous_block_sends_per_client");
+	const float time_from_building_limit_s =
+			g_settings->getFloat("full_block_send_enable_min_time_from_building");
+	const s16 max_block_send_distance_setting =
+			g_settings->getS16("max_block_send_distance");
+	const s16 max_block_generate_distance =
+			g_settings->getS16("max_block_generate_distance");
 
-	// Reset periodically to workaround for some bugs or stuff
-	if(m_nearest_unsent_reset_timer > 20.0)
-	{
-		m_nearest_unsent_reset_timer = 0;
-		m_nearest_unsent_d = 0;
-		//infostream<<"Resetting m_nearest_unsent_d for "
-		//		<<server->getPlayerName(peer_id)<<std::endl;
-	}
+	// Derived settings
+	const s16 max_block_send_distance =
+			m_autosend_radius_map < max_block_send_distance_setting ?
+			m_autosend_radius_map : max_block_send_distance_setting;
 
-	//s16 last_nearest_unsent_d = m_nearest_unsent_d;
-	s16 d_start = m_nearest_unsent_d;
-
-	//infostream<<"d_start="<<d_start<<std::endl;
-
-	u16 max_simul_sends_setting = g_settings->getU16
-			("max_simultaneous_block_sends_per_client");
-	u16 max_simul_sends_usually = max_simul_sends_setting;
-
-	/*
-		Check the time from last addNode/removeNode.
-
-		Decrease send rate if player is building stuff.
-	*/
-	m_time_from_building += dtime;
-	if(m_time_from_building < g_settings->getFloat(
-				"full_block_send_enable_min_time_from_building"))
-	{
-		max_simul_sends_usually
-			= LIMITED_MAX_SIMULTANEOUS_BLOCK_SENDS;
-	}
-
-	/*
-		Number of blocks sending + number of blocks selected for sending
-	*/
+	// Number of blocks sending + number of blocks selected for sending
 	u32 num_blocks_selected = m_blocks_sending.size();
 
-	/*
-		next time d will be continued from the d from which the nearest
-		unsent block was found this time.
+	// Reset periodically to workaround possible glitches due to whatever
+	// reasons (this is somewhat guided by just heuristics, after all)
+	if (m_nearest_unsent_reset_timer > 20.0) {
+		m_nearest_unsent_reset_timer = 0;
+		m_nearest_unsent_d = 0;
+	}
 
-		This is because not necessarily any of the blocks found this
-		time are actually sent.
-	*/
-	s32 new_nearest_unsent_d = -1;
+	// We will start from a radius that still has unsent MapBlocks
+	s16 d_start = m_nearest_unsent_d >= 0 ? m_nearest_unsent_d : 0;
+	//infostream<<"d_start="<<d_start<<std::endl;
 
-	const s16 full_d_max = g_settings->getS16("max_block_send_distance");
-	s16 d_max = full_d_max;
-	s16 d_max_gen = g_settings->getS16("max_block_generate_distance");
+	// Don't loop very much at a time. This function is called each server tick
+	// so just a step or two will work fine.
+	s16 d_max = d_start + 2;
+	if (d_max > max_block_send_distance)
+		d_max = max_block_send_distance;
 
-	// Don't loop very much at a time
-	s16 max_d_increment_at_time = 2;
-	if(d_max > d_start + max_d_increment_at_time)
-		d_max = d_start + max_d_increment_at_time;
-
-	s32 nearest_emerged_d = -1;
-	s32 nearest_emergefull_d = -1;
-	s32 nearest_sent_d = -1;
+	// Keep track of... things. We need these in order to figure out where to
+	// continue iterating on the next call to this function.
+	s32 nearest_emergequeued_d = INT32_MAX;
+	s32 nearest_emergefull_d = INT32_MAX;
+	s32 nearest_sendqueued_d = INT32_MAX;
 	//bool queue_is_full = false;
 
 	// TODO: Get FarBlocks
 
-	s16 d;
+	s16 d; // Current radius in MapBlocks
 	for(d = d_start; d <= d_max; d++) {
 		/*
 			Get the border/face dot coordinates of a "d-radiused"
@@ -338,26 +328,19 @@ void RemoteClient::GetNextAutosendBlocks (
 
 		std::vector<v3s16>::iterator li;
 		for(li = list.begin(); li != list.end(); ++li) {
-			v3s16 p = *li + center;
+			v3s16 p = *li + focus_point;
 			WantedMapSend wms(WMST_MAPBLOCK, p);
 
-			/*
-				Send throttling
-				- Don't allow too many simultaneous transfers
-				- EXCEPT when the blocks are very close
-
-				Also, don't send blocks that are already flying.
-			*/
-
-			// Start with the usual maximum
-			u16 max_simul_dynamic = max_simul_sends_usually;
-
-			// If block is very close, allow full maximum
-			if(d <= BLOCK_SEND_DISABLE_LIMITS_MAX_D)
-				max_simul_dynamic = max_simul_sends_setting;
+			u16 max_simultaneous_block_sends =
+					figure_out_max_simultaneous_block_sends(
+							max_simul_sends_setting,
+							m_time_from_building,
+							time_from_building_limit_s,
+							d);
+							
 
 			// Don't select too many blocks for sending
-			if (num_blocks_selected >= max_simul_dynamic) {
+			if (num_blocks_selected >= max_simultaneous_block_sends) {
 				//queue_is_full = true;
 				goto queue_full_break;
 			}
@@ -366,46 +349,34 @@ void RemoteClient::GetNextAutosendBlocks (
 			if (m_blocks_sending.find(wms) != m_blocks_sending.end())
 				continue;
 
-			/*
-				Do not go over-limit
-			*/
+			// Don't go over hard map limits
 			if (blockpos_over_limit(p))
 				continue;
 
-			// If this is true, inexistent block will be made from scratch
-			bool generate = d <= d_max_gen;
+			// If this is true, inexistent blocks will be made from scratch
+			bool generate = d <= max_block_generate_distance;
 
-			{
-				/*// Limit the generating area vertically to 2/3
-				if(abs(p.Y - center.Y) > d_max_gen - d_max_gen / 3)
-					generate = false;*/
+			/*// Limit the generating area vertically to 2/3
+			if(abs(p.Y - focus_point.Y) >
+					max_block_generate_distance - max_block_generate_distance / 3)
+				generate = false;*/
 
-				// Limit the send area vertically to 1/2
-				if (abs(p.Y - center.Y) > full_d_max / 2)
-					continue;
-			}
+			/*// Limit the send area vertically to 1/2
+			if (abs(p.Y - focus_point.Y) > max_block_send_distance / 2)
+				continue;*/
 
-			/*
-				Don't generate or send if not in sight
-				FIXME This only works if the client uses a small enough
-				FOV setting. The default of 72 degrees is fine.
-			*/
-
-			float camera_fov = (72.0*M_PI/180) * 4./3.;
-			if(isBlockInSight(p, camera_pos, camera_dir, camera_fov, 10000*BS) == false)
-			{
-				continue;
-			}
-
-			/*
-				Don't send already sent blocks
-			*/
-			{
-				if(m_blocks_sent.find(wms) != m_blocks_sent.end())
+			// Don't generate or send if not in sight
+			if (m_autosend_fov != 0.0f && d > max_block_send_distance / 2) {
+				if(isBlockInSight(p, camera_p, camera_dir, m_autosend_fov,
+						10000*BS) == false)
 				{
 					continue;
 				}
 			}
+
+			// Don't send blocks that have already been sent
+			if (m_blocks_sent.find(wms) != m_blocks_sent.end())
+				continue;
 
 			/*
 				Check if map has this block
@@ -465,10 +436,10 @@ void RemoteClient::GetNextAutosendBlocks (
 			if(block == NULL || surely_not_found_on_disk || block_is_invalid)
 			{
 				if (emerge->enqueueBlockEmerge(peer_id, p, generate)) {
-					if (nearest_emerged_d == -1)
-						nearest_emerged_d = d;
+					if (nearest_emergequeued_d == INT32_MAX)
+						nearest_emergequeued_d = d;
 				} else {
-					if (nearest_emergefull_d == -1)
+					if (nearest_emergefull_d == INT32_MAX)
 						nearest_emergefull_d = d;
 					goto queue_full_break;
 				}
@@ -477,8 +448,8 @@ void RemoteClient::GetNextAutosendBlocks (
 				continue;
 			}
 
-			if(nearest_sent_d == -1)
-				nearest_sent_d = d;
+			if(nearest_sendqueued_d == INT32_MAX)
+				nearest_sendqueued_d = d;
 
 			/*
 				Add block to send queue
@@ -491,26 +462,32 @@ void RemoteClient::GetNextAutosendBlocks (
 	}
 queue_full_break:
 
-	// If nothing was found for sending and nothing was queued for
-	// emerging, continue next time browsing from here
-	if(nearest_emerged_d != -1){
-		new_nearest_unsent_d = nearest_emerged_d;
-	} else if(nearest_emergefull_d != -1){
-		new_nearest_unsent_d = nearest_emergefull_d;
-	} else {
-		if(d > g_settings->getS16("max_block_send_distance")){
-			new_nearest_unsent_d = 0;
-			m_nothing_to_send_pause_timer = 2.0;
-		} else {
-			if(nearest_sent_d != -1)
-				new_nearest_unsent_d = nearest_sent_d;
-			else
-				new_nearest_unsent_d = d;
-		}
-	}
+	// Because none of the things we queue for sending or emerging or anything
+	// will necessarily be sent or anything, next time we need to continue
+	// iterating from the closest radius of any of that happening so that we can
+	// check whether they were sent or emerged or otherwise handled.
+	s32 closest_required_re_check = INT32_MAX;
+	if (nearest_emergequeued_d < closest_required_re_check)
+		closest_required_re_check = nearest_emergequeued_d;
+	if (nearest_emergefull_d < closest_required_re_check)
+		closest_required_re_check = nearest_emergefull_d;
+	if (nearest_sendqueued_d < closest_required_re_check)
+		closest_required_re_check = nearest_sendqueued_d;
 
-	if(new_nearest_unsent_d != -1)
-		m_nearest_unsent_d = new_nearest_unsent_d;
+	if (closest_required_re_check != INT32_MAX) {
+		// We did something that requires a result to be checked later. Continue
+		// from that on the next time.
+		m_nearest_unsent_d = closest_required_re_check;
+	} else if (d > max_block_send_distance) {
+		// We iterated all the way through to the end of the send radius, if you
+		// can believe that. Start from the beginning after a short idle delay.
+		m_nearest_unsent_d = 0;
+		m_nothing_to_send_pause_timer = 2.0;
+	} else {
+		// Absolutely nothing interesting happened. Next time we will continue
+		// iterating from the next radius.
+		m_nearest_unsent_d = d;
+	}
 }
 
 void RemoteClient::GotBlock(const WantedMapSend &wms)

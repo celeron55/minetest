@@ -913,4 +913,8 @@ s16 ClientMap::suggestAutosendMapblocksRadius()
 	return radius_mapblocks;
 }
 
+float ClientMap::suggestAutosendFov()
+{
+	return m_camera_fov;
+}
 
