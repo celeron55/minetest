@@ -164,6 +164,18 @@ public:
 			a.MinEdge.Z >= MinEdge.Z && a.MaxEdge.Z <= MaxEdge.Z
 		);
 	}
+	bool touches(const VoxelArea &a) const
+	{
+		// No area touches an empty area
+		if(a.hasEmptyExtent())
+			return false;
+
+		return(
+			a.MaxEdge.X >= MinEdge.X && a.MinEdge.X <= MaxEdge.X &&
+			a.MaxEdge.Y >= MinEdge.Y && a.MinEdge.Y <= MaxEdge.Y &&
+			a.MaxEdge.Z >= MinEdge.Z && a.MinEdge.Z <= MaxEdge.Z
+		);
+	}
 	bool contains(v3s16 p) const
 	{
 		return(
