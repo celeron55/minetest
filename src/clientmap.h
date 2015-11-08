@@ -134,6 +134,7 @@ public:
 	
 	std::vector<v3s16> suggestMapBlocksToFetch(v3s16 camera_p,
 			size_t wanted_num_results);
+	s16 suggestAutosendMapblocksRadius(); // Result in MapBlocks
 
 private:
 	Client *m_client;

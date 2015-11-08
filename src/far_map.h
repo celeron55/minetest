@@ -205,6 +205,7 @@ public:
 	void createAtlas();
 
 	std::vector<v3s16> suggestFarBlocksToFetch(v3s16 camera_p);
+	s16 suggestAutosendFarblocksRadius(); // Result in FarBlocks
 
 	// ISceneNode methods
 	void OnRegisterSceneNode();
@@ -235,6 +236,7 @@ private:
 	v3s16 m_camera_offset;
 
 	// Fetch suggestion algorithm
+	s16 m_fetch_distance_nodes;
 	s16 m_farblocks_exist_up_to_d;
 	s16 m_farblocks_exist_up_to_d_reset_counter;
 };

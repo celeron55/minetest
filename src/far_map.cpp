@@ -725,6 +725,7 @@ FarMap::FarMap(
 	client(client),
 	atlas(this),
 	farblock_shader_id(0),
+	m_fetch_distance_nodes(800),
 	m_farblocks_exist_up_to_d(0),
 	m_farblocks_exist_up_to_d_reset_counter(0)
 {
@@ -987,9 +988,8 @@ std::vector<v3s16> FarMap::suggestFarBlocksToFetch(v3s16 camera_p)
 	v3s16 center_mb = getContainerPos(camera_p, MAP_BLOCKSIZE);
 	v3s16 center_fb = getContainerPos(center_mb, FMP_SCALE);
 
-	s32 fetch_distance_nodes = 800;
-	s32 fetch_distance_farblocks =
-			ceilf((float)fetch_distance_nodes / MAP_BLOCKSIZE / FMP_SCALE);
+	s16 fetch_distance_farblocks =
+			ceilf((float)m_fetch_distance_nodes / MAP_BLOCKSIZE / FMP_SCALE);
 
 	// Avoid running the algorithm through all the close FarBlocks that probably
 	// have already been fetched, except once in a while to catch up with
@@ -1021,6 +1021,13 @@ done:
 
 	infostream << "suggested_fbs.size()=" << suggested_fbs.size() << std::endl;
 	return suggested_fbs;
+}
+
+s16 FarMap::suggestAutosendFarblocksRadius()
+{
+	s16 fetch_distance_farblocks =
+			ceilf((float)m_fetch_distance_nodes / MAP_BLOCKSIZE / FMP_SCALE);
+	return fetch_distance_farblocks;
 }
 
 void FarMap::updateSettings()

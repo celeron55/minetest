@@ -23,6 +23,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "constants.h"
 #include "serialization.h"             // for SER_FMT_VER_INVALID
+#include "voxel.h"                     // for VoxelArea
 #include "threading/mutex.h"
 #include "network/networkpacket.h"
 
@@ -234,7 +235,7 @@ public:
 		m_time_from_building(9999),
 		m_pending_serialization_version(SER_FMT_VER_INVALID),
 		m_state(CS_Created),
-		m_map_send_queue_is_being_used(0),
+		m_new_block_sending_active(0),
 		m_nearest_unsent_d(0),
 		m_nearest_unsent_reset_timer(0.0),
 		m_excess_gotblocks(0),
@@ -287,11 +288,20 @@ public:
 		return m_blocks_sending.size();
 	}
 
+	void setAutosendParameters(v3s16 autosend_focus_p,
+			const VoxelArea &autosend_mapblocks_area,
+			const VoxelArea &autosend_farblocks_area)
+	{
+		m_autosend_focus_p = autosend_focus_p;
+		m_autosend_mapblocks_area = autosend_mapblocks_area;
+		m_autosend_farblocks_area = autosend_farblocks_area;
+	}
+
 	void setMapSendQueue(const std::vector<WantedMapSend> &map_send_queue)
 	{
 		m_map_send_queue = map_send_queue;
 		// Enable new algorithm
-		m_map_send_queue_is_being_used = true;
+		m_new_block_sending_active = true;
 	}
 
 	// Increments timeouts and removes timed-out blocks from list
@@ -371,8 +381,13 @@ private:
 
 		If this is non-empty, this takes precedence over the previous algorithm.
 	*/
+	bool m_new_block_sending_active;
+
+	v3s16 m_autosend_focus_p;
+	VoxelArea m_autosend_mapblocks_area;
+	VoxelArea m_autosend_farblocks_area;
+
 	std::vector<WantedMapSend> m_map_send_queue;
-	bool m_map_send_queue_is_being_used;
 
 	/*
 		Blocks that have been sent to client.

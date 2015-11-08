@@ -847,8 +847,8 @@ std::vector<v3s16> ClientMap::suggestMapBlocksToFetch(v3s16 camera_p,
 
 	v3s16 center_mb = getContainerPos(camera_p, MAP_BLOCKSIZE);
 
-	s32 fetch_distance_nodes = m_control.wanted_range;
-	s32 fetch_distance_mapblocks =
+	s16 fetch_distance_nodes = m_control.wanted_range;
+	s16 fetch_distance_mapblocks =
 			roundf((float)fetch_distance_nodes / MAP_BLOCKSIZE);
 
 	// Avoid running the algorithm through all the close MapBlocks that probably
@@ -905,4 +905,12 @@ done:
 	infostream << "suggested_mbs.size()=" << suggested_mbs.size() << std::endl;
 	return suggested_mbs;
 }
+
+s16 ClientMap::suggestAutosendMapblocksRadius()
+{
+	s16 radius_nodes = m_control.wanted_range;
+	s16 radius_mapblocks = roundf((float)radius_nodes / MAP_BLOCKSIZE);
+	return radius_mapblocks;
+}
+
 

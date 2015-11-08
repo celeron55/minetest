@@ -877,6 +877,13 @@ enum ToServerCommand
 
 	TOSERVER_SET_WANTED_MAP_SEND_QUEUE = 0x54,
 	/*
+		Autosend parameters:
+		v3s16 focus_p
+		v3s16 mapblocks_area_edge0
+		v3s16 mapblocks_area_edge1
+		v3s16 farblocks_area_edge0
+		v3s16 farblocks_area_edge1
+		Manual requests:
 		u32 len
 		for len:
 			u8 type // 1=MapBlock, 2=FarBlock

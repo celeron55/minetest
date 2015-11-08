@@ -68,10 +68,15 @@ void RemoteClient::GetNextBlocks (
 		std::vector<WantedMapSend> &dest)
 {
 	// Use legacy algorithm if map send queue is not being used
-	if (!m_map_send_queue_is_being_used) {
+	if (!m_new_block_sending_active) {
 		return GetNextBlocksLegacy(env, emerge, dtime, dest);
 	}
 
+	// TODO: Auto-send stuff
+
+	/*
+		Handle map send queue as set by the client for custom map transfers
+	*/
 	for (size_t i=0; i<m_map_send_queue.size(); i++) {
 		const WantedMapSend &wms = m_map_send_queue[i];
 		if (wms.type == WMST_MAPBLOCK) {
@@ -193,6 +198,8 @@ void RemoteClient::GetNextBlocksLegacy (
 		std::vector<WantedMapSend> &dest)
 {
 	DSTACK(FUNCTION_NAME);
+
+	// TODO: Just set autosend parameters
 
 	// Increment timers
 	m_nothing_to_send_pause_timer -= dtime;

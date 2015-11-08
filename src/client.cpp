@@ -726,13 +726,36 @@ void Client::step(float dtime)
 		std::sort(wanted_map_send_queue.begin(), wanted_map_send_queue.end(),
 				WMSPriority(player_p, far_weight));
 
+		// Calculate autosend parameters
+		v3s16 autosend_focus_p = player_p;
+		s16 asmbr = map->suggestAutosendMapblocksRadius();
+		VoxelArea autosend_mapblocks_area(
+				getContainerPos(player_p, MAP_BLOCKSIZE) - asmbr,
+				getContainerPos(player_p, MAP_BLOCKSIZE) + asmbr);
+		s16 asfbr = m_far_map->suggestAutosendFarblocksRadius();
+		VoxelArea autosend_farblocks_area(
+				getContainerPos(player_p, MAP_BLOCKSIZE*FMP_SCALE) - asfbr,
+				getContainerPos(player_p, MAP_BLOCKSIZE*FMP_SCALE) + asfbr);
+
 		NetworkPacket pkt(TOSERVER_SET_WANTED_MAP_SEND_QUEUE, 0);
 		/*
+			Autosend parameters:
+			v3s16 focus_p
+			v3s16 mapblocks_area_edge0
+			v3s16 mapblocks_area_edge1
+			v3s16 farblocks_area_edge0
+			v3s16 farblocks_area_edge1
+			Manual requests:
 			u32 len
 			for len:
 				u8 type // 1=MapBlock, 2=FarBlock
 				v3s16 p
 		*/
+		pkt << (v3s16) autosend_focus_p;
+		pkt << (v3s16) autosend_mapblocks_area.MinEdge;
+		pkt << (v3s16) autosend_mapblocks_area.MaxEdge;
+		pkt << (v3s16) autosend_farblocks_area.MinEdge;
+		pkt << (v3s16) autosend_farblocks_area.MaxEdge;
 		pkt << (u32) wanted_map_send_queue.size();
 		for (size_t i=0; i<wanted_map_send_queue.size(); i++) {
 			const WantedMapSend &wms = wanted_map_send_queue[i];
