@@ -315,6 +315,9 @@
 #    Far map rendering range in nodes
 #far_map_range = 500
 
+#    Far map rendering range in nodes
+#far_map_minimize_memory_usage = false
+
 #### Filtering
 
 #    Use mip mapping to scale textures. May slightly increase performance.
