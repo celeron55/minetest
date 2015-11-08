@@ -1098,24 +1098,28 @@ static void renderBlock(FarMap *far_map, FarBlock *b,
 		area_in_mapblocks_from_origin.MaxEdge + fb_origin_mapblock
 	);
 
-	v3s16 mp0;
-
+	// If some of the MapBlocks inside this FarBlock are rendered normally, we
+	// have to render MapBlock-sized pieces instead of the full FarBlock.
 	bool fb_being_normally_rendered = false;
-	for (mp0.Z=0; mp0.Z<FMP_SCALE; mp0.Z++)
-	for (mp0.Y=0; mp0.Y<FMP_SCALE; mp0.Y++)
-	for (mp0.X=0; mp0.X<FMP_SCALE; mp0.X++) {
-		v3s16 mp = fb_origin_mapblock + mp0;
-		if (far_map->normally_rendered_blocks.get(mp)) {
-			// This MapBlock is being rendered by ClientMap
-			fb_being_normally_rendered = true;
-			goto big_break;
+	if (far_map->normally_rendered_blocks.blocks_area.touches(area_in_mapblocks)) {
+		v3s16 mp0;
+		for (mp0.Z=0; mp0.Z<FMP_SCALE; mp0.Z++)
+		for (mp0.Y=0; mp0.Y<FMP_SCALE; mp0.Y++)
+		for (mp0.X=0; mp0.X<FMP_SCALE; mp0.X++) {
+			v3s16 mp = fb_origin_mapblock + mp0;
+			if (far_map->normally_rendered_blocks.get(mp)) {
+				// This MapBlock is being rendered by ClientMap
+				fb_being_normally_rendered = true;
+				goto big_break;
+			}
 		}
-	}
 big_break:;
+	}
 
 	if (fb_being_normally_rendered) {
 		ScopeProfiler sp(g_profiler,
 				"Far: render time: mb-parts (avg)", SPT_AVG);
+		v3s16 mp0;
 		for (mp0.Z=0; mp0.Z<FMP_SCALE; mp0.Z++)
 		for (mp0.Y=0; mp0.Y<FMP_SCALE; mp0.Y++)
 		for (mp0.X=0; mp0.X<FMP_SCALE; mp0.X++) {
