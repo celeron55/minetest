@@ -1158,6 +1158,9 @@ static void renderMesh(FarMap *far_map, scene::SMesh *mesh,
 
 static void renderBlock(FarMap *far_map, FarBlock *b,
 		video::IVideoDriver* driver,
+		u32 *profiler_render_time_farblocks_us,
+		u32 *profiler_render_time_fbmbparts_us,
+		u32 *profiler_render_time_fbmb2parts_us,
 		size_t *profiler_num_rendered_farblocks,
 		size_t *profiler_num_rendered_fbmbparts,
 		size_t *profiler_num_rendered_fbmb2parts)
@@ -1202,8 +1205,6 @@ big_break:;
 	}
 
 	if (fb_being_normally_rendered) {
-		ScopeProfiler sp(g_profiler,
-				"Far: render time: mb-parts (avg)", SPT_AVG);
 		v3s16 mp20;
 		for (mp20.Z=0; mp20.Z<FMP_SCALE/2; mp20.Z++)
 		for (mp20.Y=0; mp20.Y<FMP_SCALE/2; mp20.Y++)
@@ -1219,6 +1220,7 @@ big_break:;
 				!far_map->normally_rendered_blocks.get(mp1 + v3s16(0,1,1)) &&
 				!far_map->normally_rendered_blocks.get(mp1 + v3s16(0,0,1)))
 			{
+				TimeTaker tt(NULL, NULL, PRECISION_MICRO);
 				// Index to mapblock2_meshes
 				size_t mi = area_in_mapblock2x2x2s_from_origin.index(mp20);
 				scene::SMesh *mesh = b->mapblock2_meshes[mi];
@@ -1226,7 +1228,9 @@ big_break:;
 					continue;
 				renderMesh(far_map, mesh, driver);
 				(*profiler_num_rendered_fbmb2parts)++;
+				*profiler_render_time_fbmb2parts_us += tt.stop(true);
 			} else {
+				TimeTaker tt(NULL, NULL, PRECISION_MICRO);
 				v3s16 mp01;
 				for (mp01.Z=0; mp01.Z<2; mp01.Z++)
 				for (mp01.Y=0; mp01.Y<2; mp01.Y++)
@@ -1243,25 +1247,29 @@ big_break:;
 					renderMesh(far_map, mesh, driver);
 					(*profiler_num_rendered_fbmbparts)++;
 				}
+				*profiler_render_time_fbmbparts_us += tt.stop(true);
 			}
 		}
 	} else {
-		ScopeProfiler sp(g_profiler,
-				"Far: render time: full meshes (avg)", SPT_AVG);
+		TimeTaker tt(NULL, NULL, PRECISION_MICRO);
 		scene::SMesh *mesh = b->mesh;
 		if (mesh) {
 			renderMesh(far_map, mesh, driver);
 		}
+		*profiler_render_time_farblocks_us += tt.stop(true);
 	}
 }
 
 void FarMap::render()
 {
-	ScopeProfiler sp_render(g_profiler, "Far: render time (avg)", SPT_AVG);
+	ScopeProfiler sp_render(g_profiler, "Far: render time /frame", SPT_AVG);
 
 	video::IVideoDriver* driver = SceneManager->getVideoDriver();
 	driver->setTransform(video::ETS_WORLD, AbsoluteTransformation);
 
+	u32 profiler_render_time_farblocks_us = 0;
+	u32 profiler_render_time_fbmbparts_us = 0;
+	u32 profiler_render_time_fbmb2parts_us = 0;
 	size_t profiler_num_total_farblocks = 0;
 	size_t profiler_num_rendered_farblocks = 0;
 	size_t profiler_num_rendered_fbmbparts = 0;
@@ -1280,20 +1288,29 @@ void FarMap::render()
 			FarBlock *b = i->second;
 
 			renderBlock(this, b, driver,
+					&profiler_render_time_farblocks_us,
+					&profiler_render_time_fbmbparts_us,
+					&profiler_render_time_fbmb2parts_us,
 					&profiler_num_rendered_farblocks,
 					&profiler_num_rendered_fbmbparts,
 					&profiler_num_rendered_fbmb2parts);
 		}
 	}
 
-	g_profiler->avg("Far: total number of farblocks",
+	g_profiler->avg("Far: total: farblocks",
 			profiler_num_total_farblocks);
-	g_profiler->avg("Far: rendered farblocks /frame",
+	g_profiler->avg("Far: render count: farblocks /frame",
 			profiler_num_rendered_farblocks);
-	g_profiler->avg("Far: rendered farblock-mb-parts /frame",
+	g_profiler->avg("Far: render count: fbmbparts /frame",
 			profiler_num_rendered_fbmbparts);
-	g_profiler->avg("Far: rendered farblock-mb2-parts /frame",
+	g_profiler->avg("Far: render count: fbmb2parts /frame",
 			profiler_num_rendered_fbmb2parts);
+	g_profiler->avg("Far: render time: farblocks /frame",
+			profiler_render_time_farblocks_us / 1000000.f);
+	g_profiler->avg("Far: render time: fbmbparts /frame",
+			profiler_render_time_fbmbparts_us / 1000000.f);
+	g_profiler->avg("Far: render time: fbmb2parts /frame",
+			profiler_render_time_fbmb2parts_us / 1000000.f);
 }
 
 void FarMap::OnRegisterSceneNode()
