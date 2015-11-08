@@ -113,10 +113,12 @@ void RemoteClient::GetNextBlocks (
 			// If the MapBlock is not loaded, it will be queued to be loaded or
 			// generated. Otherwise it will be added to 'dest'.
 
+			const bool generate_allowed = true;
+
 			MapBlock *block = env->getMap().getBlockNoCreateNoEx(wms.p);
 
 			bool surely_not_found_on_disk = false;
-			bool block_is_invalid = false;
+			bool emerge_required = false;
 			if(block != NULL)
 			{
 				// Reset usage timer, this block will be of use in the future.
@@ -129,10 +131,10 @@ void RemoteClient::GetNextBlocks (
 
 				// Block is valid if lighting is up-to-date and data exists
 				if(block->isValid() == false)
-					block_is_invalid = true;
+					emerge_required = true;
 
-				if(block->isGenerated() == false)
-					block_is_invalid = true;
+				if(block->isGenerated() == false && generate_allowed)
+					emerge_required = true;
 
 				// This check is disabled because it mis-guesses sea floors to
 				// not be worth transferring to the client, while they are.
@@ -140,16 +142,16 @@ void RemoteClient::GetNextBlocks (
 					continue;*/
 			}
 
-			if(surely_not_found_on_disk == true) {
+			if(generate_allowed == false && surely_not_found_on_disk == true) {
+				// NOTE: If we wanted to avoid generating new blocks based on
+				// some criterion, that check woould go here and we would call
+				// 'continue' if the block should not be generated.
+
 				// TODO: There needs to be some new way or limiting which
 				// positions are allowed to be generated, because we aren't
 				// going to look up the player's position and compare it with
 				// max_block_generate_distance anymore. Maybe a configured set
 				// of allowed areas, or maybe a callback to Lua.
-
-				// NOTE: If we wanted to avoid generating new blocks based on
-				// some criterion, that check woould go here and we would call
-				// 'continue' if the check is positive.
 
 				// NOTE: There may need to be a way to tell the client that this
 				// block will not be transferred to it no matter how nicely it
@@ -161,7 +163,7 @@ void RemoteClient::GetNextBlocks (
 			/*
 				If block does not exist, add it to the emerge queue.
 			*/
-			if(block == NULL || surely_not_found_on_disk || block_is_invalid)
+			if(block == NULL || surely_not_found_on_disk || emerge_required)
 			{
 				bool allow_generate = true;
 				if (!emerge->enqueueBlockEmerge(peer_id, wms.p, allow_generate)) {
@@ -197,6 +199,9 @@ void RemoteClient::GetNextBlocks (
 			// Don't send blocks that have already been sent
 			if (m_blocks_sent.find(wms) != m_blocks_sent.end())
 				continue;
+
+			// TODO: Check if data for this is available and if not, possibly
+			//       request an emerge of the required area
 
 			// Put the block in dest so that if we're lucky, it will be
 			// transferred to the client
@@ -349,7 +354,6 @@ void RemoteClient::GetNextAutosendBlocks (
 							m_time_from_building,
 							time_from_building_limit_s,
 							d);
-							
 
 			// Don't select too many blocks for sending
 			if (num_blocks_selected >= max_simultaneous_block_sends) {
@@ -365,12 +369,12 @@ void RemoteClient::GetNextAutosendBlocks (
 				continue;
 
 			// If this is true, inexistent blocks will be made from scratch
-			bool generate = d <= max_block_generate_distance;
+			bool generate_allowed = d <= max_block_generate_distance;
 
 			/*// Limit the generating area vertically to 2/3
 			if(abs(p.Y - focus_point.Y) >
 					max_block_generate_distance - max_block_generate_distance / 3)
-				generate = false;*/
+				generate_allowed = false;*/
 
 			/*// Limit the send area vertically to 1/2
 			if (abs(p.Y - focus_point.Y) > max_block_send_distance / 2)
@@ -395,7 +399,7 @@ void RemoteClient::GetNextAutosendBlocks (
 			MapBlock *block = env->getMap().getBlockNoCreateNoEx(p);
 
 			bool surely_not_found_on_disk = false;
-			bool block_is_invalid = false; // TODO: Rename
+			bool emerge_required = false;
 			if(block != NULL)
 			{
 				// Reset usage timer, this block will be of use in the future.
@@ -408,32 +412,24 @@ void RemoteClient::GetNextAutosendBlocks (
 
 				// Block is valid if lighting is up-to-date and data exists
 				if(block->isValid() == false)
-					block_is_invalid = true;
+					emerge_required = true;
 
 				// If a block hasn't been generated but we would ask it to be
 				// generated, it's invalid.
-				if(block->isGenerated() == false && generate)
-					block_is_invalid = true;
+				if(block->isGenerated() == false && generate_allowed)
+					emerge_required = true;
 
-				/*
-					If block is not close, don't send it unless it is near
-					ground level.
-
-					Block is near ground level if night-time mesh
-					differs from day-time mesh.
-				*/
-				if(d >= 4)
-				{
-					if(block->getDayNightDiff() == false)
-						continue;
-				}
+				// This check is disabled because it mis-guesses sea floors to
+				// not be worth transferring to the client, while they are.
+				/*if (d >= 4 && block->getDayNightDiff() == false)
+					continue;*/
 			}
 
 			/*
 				If block has been marked to not exist on disk (dummy)
 				and generating new ones is not wanted, skip block.
 			*/
-			if(generate == false && surely_not_found_on_disk == true)
+			if(generate_allowed == false && surely_not_found_on_disk == true)
 			{
 				// get next one.
 				continue;
@@ -442,9 +438,9 @@ void RemoteClient::GetNextAutosendBlocks (
 			/*
 				Add inexistent block to emerge queue.
 			*/
-			if(block == NULL || surely_not_found_on_disk || block_is_invalid)
+			if(block == NULL || surely_not_found_on_disk || emerge_required)
 			{
-				if (emerge->enqueueBlockEmerge(peer_id, p, generate)) {
+				if (emerge->enqueueBlockEmerge(peer_id, p, generate_allowed)) {
 					if (nearest_emergequeued_d == INT32_MAX)
 						nearest_emergequeued_d = d;
 				} else {
