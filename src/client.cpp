@@ -730,7 +730,8 @@ void Client::step(float dtime)
 
 		// Autosend parameters
 		s16 autosend_radius_map = map->suggestAutosendMapblocksRadius();
-		s16 autosend_radius_far = m_far_map->suggestAutosendFarblocksRadius();
+		s16 autosend_radius_far = !m_far_map ? 0 :
+				m_far_map->suggestAutosendFarblocksRadius();
 		float autosend_far_weight = far_weight;
 		float autosend_fov = map->suggestAutosendFov();
 
@@ -1970,12 +1971,12 @@ bool Client::getFarMapVisible()
 
 void Client::setFarMapVisible(bool b)
 {
-	m_far_map->setVisible(b);
+	if (m_far_map) m_far_map->setVisible(b);
 }
 
 float Client::getFarMapFogDistance()
 {
-	return m_far_map->suggestFogDistance();
+	return !m_far_map ? 500.0 : m_far_map->suggestFogDistance();
 }
 
 void Client::makeScreenshot(IrrlichtDevice *device)

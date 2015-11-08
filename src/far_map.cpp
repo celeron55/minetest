@@ -485,6 +485,7 @@ void FarBlockMeshGenerateTask::inThread()
 		assert(block.mesh == NULL);
 		if (num_faces_added > 0) {
 			block.mesh = create_farblock_mesh(block.mesh, far_map, &collector);
+			// This gives Irrlicht permission to store this mesh on the GPU
 			block.mesh->setHardwareMappingHint(scene::EHM_STATIC);
 		}
 	}
