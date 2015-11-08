@@ -60,6 +60,9 @@ struct WMSPriority
 				priority /= far_weight;
 			}
 			break;
+		default:
+			priority = 1000000;
+			break;
 		}
 		return priority;
 	}
