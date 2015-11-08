@@ -42,8 +42,8 @@ struct FarNode
 
 struct FarBlock
 {
+	// Position in FarBlocks
 	v3s16 p;
-
 	// In how many pieces MapBlocks have been divided per dimension
 	v3s16 block_div;
 	// Block's effective origin in FarNodes based on block_div

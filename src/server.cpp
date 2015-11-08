@@ -62,6 +62,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "util/base64.h"
 #include "util/sha1.h"
 #include "util/hex.h"
+#include "server_far_map.h"
 
 class ClientNotFoundException : public BaseException
 {
@@ -172,6 +173,7 @@ Server::Server(
 	m_nodedef(createNodeDefManager()),
 	m_craftdef(createCraftDefManager()),
 	m_event(new EventManager()),
+	m_far_map(new ServerFarMap()),
 	m_thread(NULL),
 	m_time_of_day_send_timer(0),
 	m_uptime(0),
@@ -407,6 +409,7 @@ Server::~Server()
 	delete m_emerge;
 	delete m_rollback;
 	delete m_banmanager;
+	delete m_far_map;
 	delete m_event;
 	delete m_itemdef;
 	delete m_nodedef;

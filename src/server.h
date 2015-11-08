@@ -57,6 +57,7 @@ class GameScripting;
 class ServerEnvironment;
 struct SimpleSoundSpec;
 class ServerThread;
+class ServerFarMap;
 
 enum ClientDeletionReason {
 	CDR_LEAVE,
@@ -569,6 +570,9 @@ private:
 
 	// Mods
 	std::vector<ModSpec> m_mods;
+
+	// Server-side far map
+	ServerFarMap *m_far_map;
 
 	/*
 		Threads

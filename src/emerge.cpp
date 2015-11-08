@@ -95,6 +95,7 @@ private:
 		v3s16 pos, bool allow_gen, MapBlock **block, BlockMakeData *data);
 	MapBlock *finishGen(v3s16 pos, BlockMakeData *bmdata,
 		std::map<v3s16, MapBlock *> *modified_blocks);
+	void updateFarMap(const std::map<v3s16, MapBlock*> &modified_blocks);
 
 	friend class EmergeManager;
 };
@@ -630,6 +631,34 @@ MapBlock *EmergeThread::finishGen(v3s16 pos, BlockMakeData *bmdata,
 	return block;
 }
 
+void EmergeThread::updateFarMap(
+		const std::map<v3s16, MapBlock*> &modified_blocks)
+{
+	for (std::map<v3s16, MapBlock*>::iterator it = modified_blocks.begin();
+			it != modified_blocks.end(); ++it)
+	{
+		VoxelManipulator vm;
+
+		// Get block data
+		{
+			MutexAutoLock envlock(m_server->m_env_mutex);
+			MapBlock *block = m_map->getBlockNoCreateNoEx(pos);
+			if (!block)
+				continue;
+			block->copyTo(vm);
+		}
+
+		// Generate FarMap data without locking anything
+		ServerFarMapPiece piece;
+		piece.generateFrom(vm);
+
+		// Insert FarMap data into ServerFarMap
+		{
+			MutexAutoLock envlock(m_server->m_env_mutex);
+			m_server->m_far_map->updateFrom(piece);
+		}
+	}
+}
 
 void *EmergeThread::run()
 {
@@ -682,6 +711,10 @@ void *EmergeThread::run()
 
 		if (block)
 			modified_blocks[pos] = block;
+
+		if (action == EMERGE_FROM_DISK || action == EMERGE_GENERATED) {
+			updateFarMap(modified_blocks);
+		}
 
 		if (modified_blocks.size() > 0)
 			m_server->SetMapBlocksNotSent(modified_blocks);
