@@ -395,7 +395,7 @@ void RemoteClient::GetNextAutosendBlocks (
 			MapBlock *block = env->getMap().getBlockNoCreateNoEx(p);
 
 			bool surely_not_found_on_disk = false;
-			bool block_is_invalid = false;
+			bool block_is_invalid = false; // TODO: Rename
 			if(block != NULL)
 			{
 				// Reset usage timer, this block will be of use in the future.
@@ -410,7 +410,9 @@ void RemoteClient::GetNextAutosendBlocks (
 				if(block->isValid() == false)
 					block_is_invalid = true;
 
-				if(block->isGenerated() == false)
+				// If a block hasn't been generated but we would ask it to be
+				// generated, it's invalid.
+				if(block->isGenerated() == false && generate)
 					block_is_invalid = true;
 
 				/*
