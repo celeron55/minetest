@@ -55,7 +55,7 @@ struct WMSPriority
 
 				// Lessen priority by a static amount so that close-by MapBlocks
 				// are always transferred first
-				priority += MAP_BLOCKSIZE * FMP_SCALE / 2;
+				priority += MAP_BLOCKSIZE * FMP_SCALE;
 
 				priority /= far_weight;
 			}
