@@ -774,7 +774,8 @@ void Server::handleCommand_GotBlocks(NetworkPacket* pkt)
 			v3s16 p = pkt->read<v3s16>();
 			client->GotBlock(WantedMapSend(WMST_FARBLOCK, p));
 		}
-	} catch(SerializationError &e) {
+	} catch(PacketError &e) {
+		// It's the old packet without the farblock list
 	}
 }
 
