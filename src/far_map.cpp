@@ -1144,6 +1144,7 @@ void FarMap::render()
 	video::IVideoDriver* driver = SceneManager->getVideoDriver();
 	driver->setTransform(video::ETS_WORLD, AbsoluteTransformation);
 
+	size_t profiler_num_total_farblocks = 0;
 	size_t profiler_num_rendered_farblocks = 0;
 	size_t profiler_num_rendered_fbmbparts = 0;
 
@@ -1153,6 +1154,7 @@ void FarMap::render()
 	for (std::map<v2s16, FarSector*>::iterator i = m_sectors.begin();
 			i != m_sectors.end(); i++) {
 		FarSector *s = i->second;
+		profiler_num_total_farblocks += s->blocks.size();
 
 		for (std::map<s16, FarBlock*>::iterator i = s->blocks.begin();
 				i != s->blocks.end(); i++) {
@@ -1164,6 +1166,8 @@ void FarMap::render()
 		}
 	}
 
+	g_profiler->avg("Far: total number of farblocks",
+			profiler_num_total_farblocks);
 	g_profiler->avg("Far: rendered farblocks per frame",
 			profiler_num_rendered_farblocks);
 	g_profiler->avg("Far: rendered farblock-mb-parts frame",
