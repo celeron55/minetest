@@ -2343,7 +2343,8 @@ void Server::SendBlocks(float dtime)
 							} else {
 								// TODO: Get light of a nearby node; something that defines
 								//       how brightly this division should be rendered
-								light = (15) | (15<<4);
+								// (day | (night << 8))
+								light = (15) | (0<<4);
 								node_id = n.getContent();
 							}
 							np.Y++;

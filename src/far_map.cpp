@@ -230,16 +230,17 @@ static void add_face(MeshCollector *collector,
 
 	u8 alpha = 255;
 
-	// As produced by getFaceLight (day | (night << 8))
-	u16 light_encoded = (255) | (255<<8);
+	u8 light_day_4 = n.light % 0x0f;
+	u8 light_night_4 = (n.light & 0xf0) >> 4;
+	u8 light_day_8 = decode_light(light_day_4);
+	u8 light_night_8 = decode_light(light_night_4);
+	// Both lightbanks as 16-bit values from decode_light() as produced by
+	// getFaceLight (day | (night << 8))
+	// TODO
+	//u16 light_encoded_16 = (light_day_8) | (light_night_8<<8);
+	u16 light_encoded_16 = (255) | (255<<8);
 	// Light produced by the node itself
 	u8 light_source = 0;
-
-	// Texture coordinates
-	float x0 = 0.0;
-	float y0 = 0.0;
-	float w = 1.0 / 8; // WTF
-	float h = 1.0;
 
 	// Get texture from texture atlas
 	u8 face = dir.Y == 1 ? 0 : dir.Y == -1 ? 1 : 2;
@@ -253,44 +254,17 @@ static void add_face(MeshCollector *collector,
 	assert(asc->texture_pp);
 	assert(*asc->texture_pp);
 
-	// Copy texture coordinates
-	x0 = asc->coord0.X;
-	y0 = asc->coord0.Y;
-	w = asc->coord1.X - x0;
-	h = asc->coord1.Y - y0;
+	// Texture coordinates
+	float x0 = asc->coord0.X;
+	float y0 = asc->coord0.Y;
+	float x1 = asc->coord1.X;
+	float y1 = asc->coord1.Y;
 
-	/*const ContentFeatures &f = ndef->get(n.id);
-	const std::string *tile_name = NULL;
-	if(dir.Y == 1) // Top
-		tile_name = &f.tiledef[0].name;
-	else if(dir.Y == -1) // Bottom
-		tile_name = &f.tiledef[1].name;
-	else // Side
-		tile_name = &f.tiledef[2].name;*/
-
-	//std::string tile_name = "unknown_node.png";
-
-	// TODO
 	TileSpec t;
-
-	/*t.texture_id = tsrc->getTextureId(*tile_name);
-	t.texture = tsrc->getTexture(t.texture_id);
-	t.texture_id = 0;*/
-
-	/*t.texture_id = tsrc->getTextureId(tile_name);
-	t.texture = tsrc->getTexture(t.texture_id);
-	t.texture_id = 0;*/
-
 	t.texture_id = 0; // atlas::AtlasRegistry doesn't provide this
 	t.texture = *asc->texture_pp;
-
-	/*t.texture = far_map->client->getSceneManager()->getVideoDriver()
-			->getTexture("atlas_FarMap_texture_1");*/
-	/*t.texture = far_map->client->getSceneManager()->getVideoDriver()
-			->getTexture("unknown_node.png");*/
 	t.alpha = alpha;
 	t.material_type = TILE_MATERIAL_BASIC;
-	//t.material_flags &= ~MATERIAL_FLAG_BACKFACE_CULLING;
 
 	if (far_map->config_enable_shaders) {
 		t.shader_id = far_map->farblock_shader_id;
@@ -301,17 +275,17 @@ static void add_face(MeshCollector *collector,
 	// Finally create the vertices that we have been preparing for
 	video::S3DVertex vertices[4];
 	vertices[0] = video::S3DVertex(vertex_pos[0], normal,
-			MapBlock_LightColor(alpha, light_encoded, light_source),
-			core::vector2d<f32>(x0+w, y0+h));
+			MapBlock_LightColor(alpha, light_encoded_16, light_source),
+			core::vector2d<f32>(x1, y1));
 	vertices[1] = video::S3DVertex(vertex_pos[1], normal,
-			MapBlock_LightColor(alpha, light_encoded, light_source),
-			core::vector2d<f32>(x0, y0+h));
+			MapBlock_LightColor(alpha, light_encoded_16, light_source),
+			core::vector2d<f32>(x0, y1));
 	vertices[2] = video::S3DVertex(vertex_pos[2], normal,
-			MapBlock_LightColor(alpha, light_encoded, light_source),
+			MapBlock_LightColor(alpha, light_encoded_16, light_source),
 			core::vector2d<f32>(x0, y0));
 	vertices[3] = video::S3DVertex(vertex_pos[3], normal,
-			MapBlock_LightColor(alpha, light_encoded, light_source),
-			core::vector2d<f32>(x0+w, y0));
+			MapBlock_LightColor(alpha, light_encoded_16, light_source),
+			core::vector2d<f32>(x1, y0));
 
 	collector->append(t, vertices, 4, indices, 6);
 }
@@ -451,8 +425,6 @@ static scene::SMesh* create_farblock_mesh(scene::SMesh *old_mesh,
 		material.setFlag(video::EMF_BILINEAR_FILTER, false);
 		material.setFlag(video::EMF_FOG_ENABLE, true);
 		material.setTexture(0, p.tile.texture);
-
-		// TODO: A special texture atlas needs to be generated to be used here
 
 		if (far_map->config_enable_shaders) {
 			material.MaterialType = ssrc->getShaderInfo(p.tile.shader_id).material;
