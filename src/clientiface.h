@@ -235,6 +235,9 @@ public:
 		m_time_from_building(9999),
 		m_pending_serialization_version(SER_FMT_VER_INVALID),
 		m_state(CS_Created),
+		m_autosend_radius_map(0),
+		m_autosend_radius_far(0),
+		m_autosend_far_weight(8.0f),
 		m_nearest_unsent_d(0),
 		m_nearest_unsent_reset_timer(0.0),
 		m_nothing_to_send_pause_timer(0.0),
@@ -287,21 +290,19 @@ public:
 		return m_blocks_sending.size();
 	}
 
-	void setMapSendQueue(const std::vector<WantedMapSend> &map_send_queue)
+	void setAutosendParameters(s16 radius_map, s16 radius_far, float far_weight)
 	{
-		m_map_send_queue = map_send_queue;
+		m_autosend_radius_map = radius_map;
+		m_autosend_radius_far = radius_far;
+		m_autosend_far_weight = far_weight;
 
 		// Disable fallback algorithm
 		m_fallback_autosend_active = false;
 	}
 
-	void setAutosendParameters(v3s16 autosend_focus_p,
-			const VoxelArea &autosend_mapblocks_area,
-			const VoxelArea &autosend_farblocks_area)
+	void setMapSendQueue(const std::vector<WantedMapSend> &map_send_queue)
 	{
-		m_autosend_focus_p = autosend_focus_p;
-		m_autosend_mapblocks_area = autosend_mapblocks_area;
-		m_autosend_farblocks_area = autosend_farblocks_area;
+		m_map_send_queue = map_send_queue;
 
 		// Disable fallback algorithm
 		m_fallback_autosend_active = false;
@@ -377,19 +378,16 @@ private:
 	/* current state of client */
 	ClientState m_state;
 
-
 	/*
 		Autosend algorithm
 	*/
-	v3s16 m_autosend_focus_p;
-	VoxelArea m_autosend_mapblocks_area;
-	VoxelArea m_autosend_farblocks_area;
-
+	s16 m_autosend_radius_map; // Updated by the client; 0 disables autosend.
+	s16 m_autosend_radius_far; // Updated by the client; 0 disables autosend.
+	float m_autosend_far_weight; // Updated by the client; 0 is invalid.
 	s16 m_nearest_unsent_d;
 	v3s16 m_last_center;
 	float m_nearest_unsent_reset_timer;
 	float m_nothing_to_send_pause_timer; // CPU usage optimization
-
 	bool m_fallback_autosend_active;
 
 	/*

@@ -2045,11 +2045,9 @@ void Server::handleCommand_SetWantedMapSendQueue(NetworkPacket* pkt_in)
 
 	/*
 		Autosend parameters:
-		v3s16 focus_p
-		v3s16 mapblocks_area_edge0
-		v3s16 mapblocks_area_edge1
-		v3s16 farblocks_area_edge0
-		v3s16 farblocks_area_edge1
+		s16 radius_map
+		s16 radius_far
+		f1000 far_weight
 		Manual requests:
 		u32 len
 		for len:
@@ -2057,17 +2055,16 @@ void Server::handleCommand_SetWantedMapSendQueue(NetworkPacket* pkt_in)
 			v3s16 p
 	*/
 
-	v3s16 autosend_focus_p = pkt_in->read<v3s16>();
-	VoxelArea autosend_mapblocks_area(
-			pkt_in->read<v3s16>(),
-			pkt_in->read<v3s16>());
-	VoxelArea autosend_farblocks_area(
-			pkt_in->read<v3s16>(),
-			pkt_in->read<v3s16>());
+	s16 autosend_radius_map = pkt_in->read<s16>();
+	s16 autosend_radius_far = pkt_in->read<s16>();
+	float autosend_far_weight = pkt_in->read<float>();
 	u32 wanted_map_send_queue_len = pkt_in->read<u32>();
 
-	verbosestream << "Client " << pkt_in->getPeerId() <<
-			": wanted_map_send_queue_len=" << wanted_map_send_queue_len
+	verbosestream << "Client " << pkt_in->getPeerId()
+			<< ": radius_map=" << autosend_radius_map
+			<< ", radius_far=" << autosend_radius_far
+			<< ", far_weight=" << autosend_far_weight
+			<< ", wanted_map_send_queue_len=" << wanted_map_send_queue_len
 			<< std::endl;
 
 	// Use a vector, because this is not really strictly a queue. It's more like
@@ -2083,8 +2080,8 @@ void Server::handleCommand_SetWantedMapSendQueue(NetworkPacket* pkt_in)
 
 	// Set the values in RemoteClient; data transfer is handled elsewhere.
 	RemoteClient* client = getClient(pkt_in->getPeerId(), CS_Created);
-	client->setAutosendParameters(
-			autosend_focus_p, autosend_mapblocks_area, autosend_farblocks_area);
+	client->setAutosendParameters(autosend_radius_map, autosend_radius_far,
+			autosend_far_weight);
 	client->setMapSendQueue(wanted_map_send_queue);
 }
 

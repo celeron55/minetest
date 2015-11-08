@@ -69,24 +69,12 @@ void RemoteClient::GetNextBlocks (
 {
 	// If the client has not indicated it supports the new algorithm, fill in
 	// autosend parameters and things should work fine
-	if (m_fallback_autosend_active) {
-		Player *player = env->getPlayer(peer_id);
-		if (!player) {
-			// Well we can't because we have no focus position; just cancel
-			// everything
-			return;
-		}
-		v3s16 player_p = floatToInt(player->getPosition(), BS);
-		s16 mb_send_d = g_settings->getS16("max_block_send_distance");
+	if (m_fallback_autosend_active)
+	{
+		m_autosend_radius_map = g_settings->getS16("max_block_send_distance");
+		m_autosend_radius_far = 0; // Old client does not understand FarBlocks
 
-		m_autosend_focus_p = player_p;
-		m_autosend_mapblocks_area = VoxelArea(
-				getContainerPos(player_p, MAP_BLOCKSIZE) - mb_send_d,
-				getContainerPos(player_p, MAP_BLOCKSIZE) + mb_send_d);
-		// Old client would not understand FarBlocks
-		m_autosend_farblocks_area = VoxelArea();
-
-		// Now continue as if nothing weird is happening.
+		// Continue normally.
 	}
 
 	/*
@@ -94,9 +82,11 @@ void RemoteClient::GetNextBlocks (
 
 		NOTE: All auto-sent stuff is considered higher priority than custom
 		transfers. If the client wants to get custom stuff quickly, it has to
-		zero out the autosend areas.
+		disable autosend.
 	*/
-	GetNextAutosendBlocks(env, emerge, dtime, dest);
+	if (m_autosend_radius_map > 0 || m_autosend_radius_far > 0) {
+		GetNextAutosendBlocks(env, emerge, dtime, dest);
+	}
 
 	/*
 		Handle map send queue as set by the client for custom map transfers
@@ -335,6 +325,8 @@ void RemoteClient::GetNextAutosendBlocks (
 	s32 nearest_emergefull_d = -1;
 	s32 nearest_sent_d = -1;
 	//bool queue_is_full = false;
+
+	// TODO: Get FarBlocks
 
 	s16 d;
 	for(d = d_start; d <= d_max; d++) {
