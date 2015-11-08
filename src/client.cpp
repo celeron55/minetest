@@ -687,13 +687,13 @@ void Client::step(float dtime)
 
 		std::vector<WantedMapSend> wanted_map_send_queue;
 
-#if 0
 		// Get player position (used for prioritizing requests)
 		v3s16 player_p;
 		Player *player = m_env.getLocalPlayer();
 		if(player)
 			player_p = floatToInt(player->getPosition(), BS);
 
+		// Add FarBlock requests to wanted_map_send_queue
 		if (m_far_map && getFarMapVisible()) {
 			// Get suggested FarBlock positions
 			std::vector<v3s16> suggested_fbs =
@@ -704,6 +704,7 @@ void Client::step(float dtime)
 			}
 		}
 
+#if 0
 		// Figure out maximum number for queued MapBlocks
 		static const s32 max_mut_queue_size = 20;
 		static const s32 max_suggested_mbs = 50;
@@ -732,6 +733,14 @@ void Client::step(float dtime)
 		s16 autosend_radius_far = m_far_map->suggestAutosendFarblocksRadius();
 		float autosend_far_weight = far_weight;
 		float autosend_fov = map->suggestAutosendFov();
+
+		// Occasionally disable autosending MapBlocks in order to get some
+		// FarBlocks at all times for now as autosend doesn't send FarBlocks
+		// yet.
+		static size_t temporary_trick = 0;
+		if ((temporary_trick++) % 5 == 0) {
+			autosend_radius_map = 0;
+		}
 
 		NetworkPacket pkt(TOSERVER_SET_WANTED_MAP_SEND_QUEUE, 0);
 		/*
@@ -1966,7 +1975,7 @@ void Client::setFarMapVisible(bool b)
 
 float Client::getFarMapFogDistance()
 {
-	m_far_map->suggestFogDistance();
+	return m_far_map->suggestFogDistance();
 }
 
 void Client::makeScreenshot(IrrlichtDevice *device)
