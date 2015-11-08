@@ -75,7 +75,14 @@ struct FarBlock
 	// used
 	std::vector<scene::SMesh*> mapblock2_meshes;
 
+	// TODO: Some kind of usage timer for these small meshes so that they can be
+	//       unloaded when they are not needed anymore. However it is not
+	//       important because relatively few of them will be generated to begin
+	//       with.
+
 	v3s16 current_camera_offset;
+
+	bool generating_mesh;
 
 	FarBlock(v3s16 p);
 	~FarBlock();
@@ -117,8 +124,10 @@ struct FarBlockMeshGenerateTask: public FarMapTask
 {
 	FarMap *far_map;
 	FarBlock block;
+	bool generate_aux_meshes;
 
-	FarBlockMeshGenerateTask(FarMap *far_map, const FarBlock &source_block);
+	FarBlockMeshGenerateTask(FarMap *far_map, const FarBlock &source_block,
+			bool generate_aux_meshes);
 	~FarBlockMeshGenerateTask();
 	void inThread();
 	void sync();
@@ -197,7 +206,7 @@ public:
 			v3s16 block_div,
 			const std::vector<u16> &node_ids, const std::vector<u8> &lights);
 
-	void startGeneratingBlockMesh(FarBlock *b);
+	void startGeneratingBlockMesh(FarBlock *b, bool generate_aux_meshes);
 	void insertGeneratedBlockMesh(v3s16 p, scene::SMesh *mesh,
 			const std::vector<scene::SMesh*> &mapblock_meshes,
 			const std::vector<scene::SMesh*> &mapblock2_meshes);

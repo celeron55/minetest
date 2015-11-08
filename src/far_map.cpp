@@ -37,10 +37,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 FarBlock::FarBlock(v3s16 p):
 	p(p),
-	mesh(NULL)
+	mesh(NULL),
+	generating_mesh(false)
 {
-	mapblock_meshes.resize(FMP_SCALE * FMP_SCALE * FMP_SCALE);
-	mapblock2_meshes.resize(FMP_SCALE/2 * FMP_SCALE/2 * FMP_SCALE/2);
 }
 
 FarBlock::~FarBlock()
@@ -168,9 +167,11 @@ FarBlock* FarSector::getOrCreateBlock(s16 y)
 */
 
 FarBlockMeshGenerateTask::FarBlockMeshGenerateTask(
-		FarMap *far_map, const FarBlock &source_block):
+		FarMap *far_map, const FarBlock &source_block,
+		bool generate_aux_meshes):
 	far_map(far_map),
-	block(source_block)
+	block(source_block),
+	generate_aux_meshes(generate_aux_meshes)
 {
 	// We don't want to deal with whatever mesh the block was currently holding;
 	// set things to NULL so that FarBlock's destructor will not drop the
@@ -490,113 +491,118 @@ void FarBlockMeshGenerateTask::inThread()
 		}
 	}
 
-	// MapBlock-sized meshes
-	VoxelArea mapblock_meshes_area(
-		v3s16(0, 0, 0),
-		v3s16(FMP_SCALE-1, FMP_SCALE-1, FMP_SCALE-1)
-	);
-	std::vector<FarNode> content_buf;
 	v3s16 mp;
-	for (mp.Z=0; mp.Z<FMP_SCALE; mp.Z++)
-	for (mp.Y=0; mp.Y<FMP_SCALE; mp.Y++)
-	for (mp.X=0; mp.X<FMP_SCALE; mp.X++) {
-		// Index to mapblock_meshes
-		size_t mi = mapblock_meshes_area.index(mp);
 
-		MeshCollector collector;
+	if (generate_aux_meshes) {
+		// MapBlock-sized meshes
+		block.mapblock_meshes.resize(FMP_SCALE * FMP_SCALE * FMP_SCALE);
+		VoxelArea mapblock_meshes_area(
+			v3s16(0, 0, 0),
+			v3s16(FMP_SCALE-1, FMP_SCALE-1, FMP_SCALE-1)
+		);
+		std::vector<FarNode> content_buf;
+		for (mp.Z=0; mp.Z<FMP_SCALE; mp.Z++)
+		for (mp.Y=0; mp.Y<FMP_SCALE; mp.Y++)
+		for (mp.X=0; mp.X<FMP_SCALE; mp.X++) {
+			// Index to mapblock_meshes
+			size_t mi = mapblock_meshes_area.index(mp);
 
-		VoxelArea gen_area( // effective
-			block.dp00 + v3s16(
-				block.block_div.X * mp.X,
-				block.block_div.Y * mp.Y,
-				block.block_div.Z * mp.Z
-			),
-			block.dp00 + v3s16(
-				block.block_div.X * mp.X + block.block_div.X - 1,
-				block.block_div.Y * mp.Y + block.block_div.Y - 1,
-				block.block_div.Z * mp.Z + block.block_div.Z - 1
-			)
-		);
-		VoxelArea content_buf_area(
-			gen_area.MinEdge - v3s16(1,1,1),
-			gen_area.MaxEdge + v3s16(1,1,1)
-		);
-		content_buf.resize(content_buf_area.getVolume());
-		v3s16 p;
-		// Fill in everything but the edges
-		for (p.Y=gen_area.MinEdge.Y; p.Y<=gen_area.MaxEdge.Y; p.Y++)
-		for (p.X=gen_area.MinEdge.X; p.X<=gen_area.MaxEdge.X; p.X++)
-		for (p.Z=gen_area.MinEdge.Z; p.Z<=gen_area.MaxEdge.Z; p.Z++) {
-			content_buf[content_buf_area.index(p)] =
-					block.content[block.content_area.index(p)];
+			MeshCollector collector;
+
+			VoxelArea gen_area( // effective
+				block.dp00 + v3s16(
+					block.block_div.X * mp.X,
+					block.block_div.Y * mp.Y,
+					block.block_div.Z * mp.Z
+				),
+				block.dp00 + v3s16(
+					block.block_div.X * mp.X + block.block_div.X - 1,
+					block.block_div.Y * mp.Y + block.block_div.Y - 1,
+					block.block_div.Z * mp.Z + block.block_div.Z - 1
+				)
+			);
+			VoxelArea content_buf_area(
+				gen_area.MinEdge - v3s16(1,1,1),
+				gen_area.MaxEdge + v3s16(1,1,1)
+			);
+			content_buf.resize(content_buf_area.getVolume());
+			v3s16 p;
+			// Fill in everything but the edges
+			for (p.Y=gen_area.MinEdge.Y; p.Y<=gen_area.MaxEdge.Y; p.Y++)
+			for (p.X=gen_area.MinEdge.X; p.X<=gen_area.MaxEdge.X; p.X++)
+			for (p.Z=gen_area.MinEdge.Z; p.Z<=gen_area.MaxEdge.Z; p.Z++) {
+				content_buf[content_buf_area.index(p)] =
+						block.content[block.content_area.index(p)];
+			}
+
+			size_t num_faces_added = 0;
+
+			extract_faces(&collector, content_buf, content_buf_area,
+					gen_area, block.block_div, far_map,
+					&num_faces_added);
+
+			g_profiler->avg("Far: num faces per mb mesh", num_faces_added);
+			g_profiler->add("Far: num mb meshes generated", 1);
+
+			if (num_faces_added > 0) {
+				block.mapblock_meshes[mi] = create_farblock_mesh(
+						block.mapblock_meshes[mi], far_map, &collector);
+			}
 		}
 
-		size_t num_faces_added = 0;
-
-		extract_faces(&collector, content_buf, content_buf_area,
-				gen_area, block.block_div, far_map,
-				&num_faces_added);
-
-		g_profiler->avg("Far: num faces per mb mesh", num_faces_added);
-		g_profiler->add("Far: num mb meshes generated", 1);
-
-		if (num_faces_added > 0) {
-			block.mapblock_meshes[mi] = create_farblock_mesh(
-					block.mapblock_meshes[mi], far_map, &collector);
-		}
-	}
-
-	// 2x2x2-MapBlock-sized meshes
-	VoxelArea mapblock2_meshes_area(
-		v3s16(0, 0, 0),
-		v3s16(FMP_SCALE/2-1, FMP_SCALE/2-1, FMP_SCALE/2-1)
-	);
-	for (mp.Z=0; mp.Z<FMP_SCALE/2; mp.Z++)
-	for (mp.Y=0; mp.Y<FMP_SCALE/2; mp.Y++)
-	for (mp.X=0; mp.X<FMP_SCALE/2; mp.X++) {
-		// Index to mapblock2_meshes
-		size_t mi = mapblock2_meshes_area.index(mp);
-
-		MeshCollector collector;
-
-		VoxelArea gen_area( // effective
-			block.dp00 + v3s16(
-				block.block_div.X * mp.X * 2,
-				block.block_div.Y * mp.Y * 2,
-				block.block_div.Z * mp.Z * 2
-			),
-			block.dp00 + v3s16(
-				block.block_div.X * mp.X * 2 + block.block_div.X * 2 - 1,
-				block.block_div.Y * mp.Y * 2 + block.block_div.Y * 2 - 1,
-				block.block_div.Z * mp.Z * 2 + block.block_div.Z * 2 - 1
-			)
+		// 2x2x2-MapBlock-sized meshes
+		block.mapblock2_meshes.resize(FMP_SCALE/2 * FMP_SCALE/2 * FMP_SCALE/2);
+		VoxelArea mapblock2_meshes_area(
+			v3s16(0, 0, 0),
+			v3s16(FMP_SCALE/2-1, FMP_SCALE/2-1, FMP_SCALE/2-1)
 		);
-		VoxelArea content_buf_area(
-			gen_area.MinEdge - v3s16(1,1,1),
-			gen_area.MaxEdge + v3s16(1,1,1)
-		);
-		content_buf.resize(content_buf_area.getVolume());
-		v3s16 p;
-		// Fill in everything but the edges
-		for (p.Y=gen_area.MinEdge.Y; p.Y<=gen_area.MaxEdge.Y; p.Y++)
-		for (p.X=gen_area.MinEdge.X; p.X<=gen_area.MaxEdge.X; p.X++)
-		for (p.Z=gen_area.MinEdge.Z; p.Z<=gen_area.MaxEdge.Z; p.Z++) {
-			content_buf[content_buf_area.index(p)] =
-					block.content[block.content_area.index(p)];
-		}
+		for (mp.Z=0; mp.Z<FMP_SCALE/2; mp.Z++)
+		for (mp.Y=0; mp.Y<FMP_SCALE/2; mp.Y++)
+		for (mp.X=0; mp.X<FMP_SCALE/2; mp.X++) {
+			// Index to mapblock2_meshes
+			size_t mi = mapblock2_meshes_area.index(mp);
 
-		size_t num_faces_added = 0;
+			MeshCollector collector;
 
-		extract_faces(&collector, content_buf, content_buf_area,
-				gen_area, block.block_div, far_map,
-				&num_faces_added);
+			VoxelArea gen_area( // effective
+				block.dp00 + v3s16(
+					block.block_div.X * mp.X * 2,
+					block.block_div.Y * mp.Y * 2,
+					block.block_div.Z * mp.Z * 2
+				),
+				block.dp00 + v3s16(
+					block.block_div.X * mp.X * 2 + block.block_div.X * 2 - 1,
+					block.block_div.Y * mp.Y * 2 + block.block_div.Y * 2 - 1,
+					block.block_div.Z * mp.Z * 2 + block.block_div.Z * 2 - 1
+				)
+			);
+			VoxelArea content_buf_area(
+				gen_area.MinEdge - v3s16(1,1,1),
+				gen_area.MaxEdge + v3s16(1,1,1)
+			);
+			content_buf.resize(content_buf_area.getVolume());
+			v3s16 p;
+			// Fill in everything but the edges
+			for (p.Y=gen_area.MinEdge.Y; p.Y<=gen_area.MaxEdge.Y; p.Y++)
+			for (p.X=gen_area.MinEdge.X; p.X<=gen_area.MaxEdge.X; p.X++)
+			for (p.Z=gen_area.MinEdge.Z; p.Z<=gen_area.MaxEdge.Z; p.Z++) {
+				content_buf[content_buf_area.index(p)] =
+						block.content[block.content_area.index(p)];
+			}
 
-		g_profiler->avg("Far: num faces per mb mesh", num_faces_added);
-		g_profiler->add("Far: num mb meshes generated", 1);
+			size_t num_faces_added = 0;
 
-		if (num_faces_added > 0) {
-			block.mapblock2_meshes[mi] = create_farblock_mesh(
-					block.mapblock2_meshes[mi], far_map, &collector);
+			extract_faces(&collector, content_buf, content_buf_area,
+					gen_area, block.block_div, far_map,
+					&num_faces_added);
+
+			g_profiler->avg("Far: num faces per mb mesh", num_faces_added);
+			g_profiler->add("Far: num mb meshes generated", 1);
+
+			if (num_faces_added > 0) {
+				block.mapblock2_meshes[mi] = create_farblock_mesh(
+						block.mapblock2_meshes[mi], far_map, &collector);
+			}
 		}
 	}
 }
@@ -915,13 +921,17 @@ void FarMap::insertData(v3s16 area_offset_mapblocks, v3s16 area_size_mapblocks,
 			b->content[dst_i].light = lights[source_i];
 		}
 
-		startGeneratingBlockMesh(b);
+		// TODO: Maybe yes if not config_far_map_minimize_memory_usage
+		startGeneratingBlockMesh(b, false);
 	}
 }
 
-void FarMap::startGeneratingBlockMesh(FarBlock *b)
+void FarMap::startGeneratingBlockMesh(FarBlock *b, bool generate_aux_meshes)
 {
-	FarBlockMeshGenerateTask *t = new FarBlockMeshGenerateTask(this, *b);
+	b->generating_mesh = true;
+
+	FarBlockMeshGenerateTask *t = new FarBlockMeshGenerateTask(
+			this, *b, generate_aux_meshes);
 
 	m_worker_thread.addTask(t);
 }
@@ -931,6 +941,8 @@ void FarMap::insertGeneratedBlockMesh(v3s16 p, scene::SMesh *mesh,
 		const std::vector<scene::SMesh*> &mapblock2_meshes)
 {
 	FarBlock *b = getOrCreateBlock(p);
+
+	b->generating_mesh = false;
 
 	if(b->mesh)
 		b->mesh->drop();
@@ -1208,7 +1220,18 @@ static void renderBlock(FarMap *far_map, FarBlock *b,
 big_break:;
 	}
 
-	if (fb_being_normally_rendered) {
+	bool render_in_pieces = fb_being_normally_rendered;
+
+	if (b->mapblock_meshes.empty() || b->mapblock2_meshes.empty()) {
+		if (!b->generating_mesh) {
+			far_map->startGeneratingBlockMesh(b, true);
+		}
+		// Can't render in pieces because we don't have meshes for the pieces.
+		// Render normally so that things don't blink annoyingly meanwhile.
+		render_in_pieces = false;
+	}
+
+	if (render_in_pieces) {
 		v3s16 mp20;
 		for (mp20.Z=0; mp20.Z<FMP_SCALE/2; mp20.Z++)
 		for (mp20.Y=0; mp20.Y<FMP_SCALE/2; mp20.Y++)
