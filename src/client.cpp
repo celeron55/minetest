@@ -735,12 +735,13 @@ void Client::step(float dtime)
 		float autosend_far_weight = far_weight;
 		float autosend_fov = map->suggestAutosendFov();
 
-		// Occasionally disable autosending MapBlocks in order to get some
-		// FarBlocks at all times for now as autosend doesn't send FarBlocks
-		// yet.
+		// Periodically disable autosending MapBlocks from far away in order to
+		// get some FarBlocks at all times for now as autosend doesn't send
+		// FarBlocks yet.
 		static size_t temporary_trick = 0;
 		if ((temporary_trick++) % 5 == 0) {
-			autosend_radius_map = 0;
+			if (autosend_radius_map > 2)
+				autosend_radius_map = 2;
 		}
 
 		NetworkPacket pkt(TOSERVER_SET_WANTED_MAP_SEND_QUEUE, 0);

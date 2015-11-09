@@ -646,6 +646,9 @@ void FarBlockMeshGenerateTask::inThread()
 			if (num_faces_added > 0) {
 				block.mapblock_meshes[mi] = create_farblock_mesh(
 						block.mapblock_meshes[mi], far_map, &collector);
+				// NOTE: Don't se this scene::EHM_STATIC. This is so small that
+				// a VBO will do nothing but waste GPU resources, and we
+				// actively avoid rendering many of these at a time.
 			}
 		}
 
@@ -702,6 +705,10 @@ void FarBlockMeshGenerateTask::inThread()
 			if (num_faces_added > 0) {
 				block.mapblock2_meshes[mi] = create_farblock_mesh(
 						block.mapblock2_meshes[mi], far_map, &collector);
+				// This gives Irrlicht permission to store this mesh on the GPU
+				block.crude_mesh->setHardwareMappingHint(scene::EHM_STATIC);
+				// TODO: Check whether these get correctly deleted from the GPU
+				// when block.mapblock2_meshes are dropped
 			}
 		}
 	}
