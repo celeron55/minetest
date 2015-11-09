@@ -57,23 +57,23 @@ FarBlock::~FarBlock()
 	}
 }
 
-void FarBlock::resize(v3s16 new_block_div)
+void FarBlock::resize(v3s16 new_divs_per_mb)
 {
-	block_div = new_block_div;
+	divs_per_mb = new_divs_per_mb;
 
-	// Block's effective origin in FarNodes based on block_div
+	// Block's effective origin in FarNodes based on divs_per_mb
 	dp00 = v3s16(
-		p.X * FMP_SCALE * block_div.X,
-		p.Y * FMP_SCALE * block_div.Y,
-		p.Z * FMP_SCALE * block_div.Z
+		p.X * FMP_SCALE * divs_per_mb.X,
+		p.Y * FMP_SCALE * divs_per_mb.Y,
+		p.Z * FMP_SCALE * divs_per_mb.Z
 	);
 
-	// Effective size of content in FarNodes based on block_div in global
+	// Effective size of content in FarNodes based on divs_per_mb in global
 	// coordinates
 	effective_size = v3s16(
-			FMP_SCALE * block_div.X,
-			FMP_SCALE * block_div.Y,
-			FMP_SCALE * block_div.Z);
+			FMP_SCALE * divs_per_mb.X,
+			FMP_SCALE * divs_per_mb.Y,
+			FMP_SCALE * divs_per_mb.Z);
 
 	v3s16 edp0 = dp00;
 	v3s16 edp1 = edp0 + effective_size - v3s16(1,1,1); // Inclusive
@@ -193,7 +193,7 @@ static void add_face(MeshCollector *collector,
 		const FarNode &n, const v3s16 &p, s16 dir_x, s16 dir_y, s16 dir_z,
 		const std::vector<FarNode> &data,
 		const VoxelArea &data_area,
-		const v3s16 &block_div,
+		const v3s16 &divs_per_mb,
 		const FarMap *far_map)
 {
 	ITextureSource *tsrc = far_map->client->getTextureSource();
@@ -208,9 +208,9 @@ static void add_face(MeshCollector *collector,
 
 	// This is the size of one FarNode (without BS being factored in)
 	v3f scale(
-		MAP_BLOCKSIZE / block_div.X,
-		MAP_BLOCKSIZE / block_div.Y,
-		MAP_BLOCKSIZE / block_div.Z
+		MAP_BLOCKSIZE / divs_per_mb.X,
+		MAP_BLOCKSIZE / divs_per_mb.Y,
+		MAP_BLOCKSIZE / divs_per_mb.Z
 	);
 
 	v3f pf(
@@ -300,7 +300,7 @@ static void add_face(MeshCollector *collector,
 static void extract_faces(MeshCollector *collector,
 		const std::vector<FarNode> &data,
 		const VoxelArea &data_area, const VoxelArea &gen_area,
-		const v3s16 &block_div,
+		const v3s16 &divs_per_mb,
 		const FarMap *far_map,
 		size_t *num_faces_added)
 {
@@ -344,35 +344,35 @@ static void extract_faces(MeshCollector *collector,
 
 		if(s000 > s001){
 			add_face(collector, n000, p000,  0,0,1, data,
-					data_area, block_div, far_map);
+					data_area, divs_per_mb, far_map);
 			(*num_faces_added)++;
 		}
 		else if(s000 < s001){
 			v3s16 p001 = p000 + v3s16(0,0,1);
 			add_face(collector, n001, p001, 0,0,-1, data,
-					data_area, block_div, far_map);
+					data_area, divs_per_mb, far_map);
 			(*num_faces_added)++;
 		}
 		if(s000 > s010){
 			add_face(collector, n000, p000,  0,1,0, data,
-					data_area, block_div, far_map);
+					data_area, divs_per_mb, far_map);
 			(*num_faces_added)++;
 		}
 		else if(s000 < s010){
 			v3s16 p010 = p000 + v3s16(0,1,0);
 			add_face(collector, n010, p010, 0,-1,0, data,
-					data_area, block_div, far_map);
+					data_area, divs_per_mb, far_map);
 			(*num_faces_added)++;
 		}
 		if(s000 > s100){
 			add_face(collector, n000, p000,  1,0,0, data,
-					data_area, block_div, far_map);
+					data_area, divs_per_mb, far_map);
 			(*num_faces_added)++;
 		}
 		else if(s000 < s100){
 			v3s16 p100 = p000 + v3s16(1,0,0);
 			add_face(collector, n100, p100, -1,0,0, data,
-					data_area, block_div, far_map);
+					data_area, divs_per_mb, far_map);
 			(*num_faces_added)++;
 		}
 	}
@@ -477,7 +477,7 @@ void FarBlockMeshGenerateTask::inThread()
 		size_t num_faces_added = 0;
 
 		extract_faces(&collector, block.content, block.content_area,
-				block.effective_area, block.block_div, far_map,
+				block.effective_area, block.divs_per_mb, far_map,
 				&num_faces_added);
 
 		g_profiler->avg("Far: num faces per mesh", num_faces_added);
@@ -511,14 +511,14 @@ void FarBlockMeshGenerateTask::inThread()
 
 			VoxelArea gen_area( // effective
 				block.dp00 + v3s16(
-					block.block_div.X * mp.X,
-					block.block_div.Y * mp.Y,
-					block.block_div.Z * mp.Z
+					block.divs_per_mb.X * mp.X,
+					block.divs_per_mb.Y * mp.Y,
+					block.divs_per_mb.Z * mp.Z
 				),
 				block.dp00 + v3s16(
-					block.block_div.X * mp.X + block.block_div.X - 1,
-					block.block_div.Y * mp.Y + block.block_div.Y - 1,
-					block.block_div.Z * mp.Z + block.block_div.Z - 1
+					block.divs_per_mb.X * mp.X + block.divs_per_mb.X - 1,
+					block.divs_per_mb.Y * mp.Y + block.divs_per_mb.Y - 1,
+					block.divs_per_mb.Z * mp.Z + block.divs_per_mb.Z - 1
 				)
 			);
 			VoxelArea content_buf_area(
@@ -538,7 +538,7 @@ void FarBlockMeshGenerateTask::inThread()
 			size_t num_faces_added = 0;
 
 			extract_faces(&collector, content_buf, content_buf_area,
-					gen_area, block.block_div, far_map,
+					gen_area, block.divs_per_mb, far_map,
 					&num_faces_added);
 
 			g_profiler->avg("Far: num faces per mb mesh", num_faces_added);
@@ -566,14 +566,14 @@ void FarBlockMeshGenerateTask::inThread()
 
 			VoxelArea gen_area( // effective
 				block.dp00 + v3s16(
-					block.block_div.X * mp.X * 2,
-					block.block_div.Y * mp.Y * 2,
-					block.block_div.Z * mp.Z * 2
+					block.divs_per_mb.X * mp.X * 2,
+					block.divs_per_mb.Y * mp.Y * 2,
+					block.divs_per_mb.Z * mp.Z * 2
 				),
 				block.dp00 + v3s16(
-					block.block_div.X * mp.X * 2 + block.block_div.X * 2 - 1,
-					block.block_div.Y * mp.Y * 2 + block.block_div.Y * 2 - 1,
-					block.block_div.Z * mp.Z * 2 + block.block_div.Z * 2 - 1
+					block.divs_per_mb.X * mp.X * 2 + block.divs_per_mb.X * 2 - 1,
+					block.divs_per_mb.Y * mp.Y * 2 + block.divs_per_mb.Y * 2 - 1,
+					block.divs_per_mb.Z * mp.Z * 2 + block.divs_per_mb.Z * 2 - 1
 				)
 			);
 			VoxelArea content_buf_area(
@@ -593,7 +593,7 @@ void FarBlockMeshGenerateTask::inThread()
 			size_t num_faces_added = 0;
 
 			extract_faces(&collector, content_buf, content_buf_area,
-					gen_area, block.block_div, far_map,
+					gen_area, block.divs_per_mb, far_map,
 					&num_faces_added);
 
 			g_profiler->avg("Far: num faces per mb mesh", num_faces_added);
@@ -862,27 +862,27 @@ FarBlock* FarMap::getOrCreateBlock(v3s16 p)
 }
 
 void FarMap::insertData(v3s16 area_offset_mapblocks, v3s16 area_size_mapblocks,
-		v3s16 block_div,
+		v3s16 divs_per_mb,
 		const std::vector<u16> &node_ids, const std::vector<u8> &lights)
 {
 	infostream<<"FarMap::insertData: "
 			<<"area_offset_mapblocks: "<<PP(area_offset_mapblocks)
 			<<", area_size_mapblocks: "<<PP(area_size_mapblocks)
-			<<", block_div: "<<PP(block_div)
+			<<", divs_per_mb: "<<PP(divs_per_mb)
 			<<", node_ids.size(): "<<node_ids.size()
 			<<", lights.size(): "<<lights.size()
 			<<std::endl;
 
 	// Convert to divisions (which will match FarNodes)
 	v3s16 div_p0(
-		area_offset_mapblocks.X * block_div.X,
-		area_offset_mapblocks.Y * block_div.Y,
-		area_offset_mapblocks.Z * block_div.Z
+		area_offset_mapblocks.X * divs_per_mb.X,
+		area_offset_mapblocks.Y * divs_per_mb.Y,
+		area_offset_mapblocks.Z * divs_per_mb.Z
 	);
 	v3s16 div_p1 = div_p0 + v3s16(
-		area_size_mapblocks.X * block_div.X,
-		area_size_mapblocks.Y * block_div.Y,
-		area_size_mapblocks.Z * block_div.Z
+		area_size_mapblocks.X * divs_per_mb.X,
+		area_size_mapblocks.Y * divs_per_mb.Y,
+		area_size_mapblocks.Z * divs_per_mb.Z
 	);
 	// This can be used for indexing node_ids and lights
 	VoxelArea div_area(div_p0, div_p1 - v3s16(1,1,1));
@@ -902,7 +902,7 @@ void FarMap::insertData(v3s16 area_offset_mapblocks, v3s16 area_size_mapblocks,
 
 		FarBlock *b = getOrCreateBlock(fbp);
 		
-		b->resize(block_div);
+		b->resize(divs_per_mb);
 
 		v3s16 dp_in_fb;
 		for (dp_in_fb.Y=0; dp_in_fb.Y<b->effective_size.Y; dp_in_fb.Y++)

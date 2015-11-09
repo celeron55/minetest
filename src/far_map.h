@@ -45,19 +45,19 @@ struct FarBlock
 	// Position in FarBlocks
 	v3s16 p;
 	// In how many pieces MapBlocks have been divided per dimension
-	v3s16 block_div;
-	// Block's effective origin in FarNodes based on block_div
+	v3s16 divs_per_mb;
+	// Block's effective origin in FarNodes based on divs_per_mb
 	v3s16 dp00;
-	// Effective size of content in FarNodes based on block_div in global
+	// Effective size of content in FarNodes based on divs_per_mb in global
 	// coordinates
 	v3s16 effective_size;
-	// Effective size of content in FarNodes based on block_div in global
+	// Effective size of content in FarNodes based on divs_per_mb in global
 	// coordinates
 	VoxelArea effective_area;
-	// Raw size of content in FarNodes based on block_div in global
+	// Raw size of content in FarNodes based on divs_per_mb in global
 	// coordinates
 	v3s16 content_size;
-	// Raw area of content in FarNodes based on block_div in global
+	// Raw area of content in FarNodes based on divs_per_mb in global
 	// coordinates
 	VoxelArea content_area;
 
@@ -88,7 +88,7 @@ struct FarBlock
 	FarBlock(v3s16 p);
 	~FarBlock();
 
-	void resize(v3s16 new_block_div);
+	void resize(v3s16 new_divs_per_mb);
 	void updateCameraOffset(v3s16 camera_offset);
 	void resetCameraOffset(v3s16 camera_offset = v3s16(0, 0, 0));
 
@@ -205,7 +205,7 @@ public:
 	// Parameter dimensions are in MapBlocks
 	// TODO: More appropriate parameters (just a FarBlock position or something)
 	void insertData(v3s16 area_offset_mapblocks, v3s16 area_size_mapblocks,
-			v3s16 block_div,
+			v3s16 divs_per_mb,
 			const std::vector<u16> &node_ids, const std::vector<u8> &lights);
 	void insertEmptyBlock(v3s16 fbp);
 
