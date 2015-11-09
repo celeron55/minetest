@@ -85,9 +85,17 @@ struct FarBlock
 	//       important because relatively few of them will be generated to begin
 	//       with.
 
-	v3s16 current_camera_offset;
-
+	// True while the mesh generator is running for this FarBlock. Old meshes
+	// may be available for rendering while it is running.
 	bool generating_mesh;
+
+	// This is true after mesh has been generated and it has turned out that
+	// this FarBlock does not require any geometry. In that case, mesh will be
+	// NULL and regeneration should not be triggered based on it being NULL.
+	bool mesh_is_empty;
+
+	// Used by the faraway rendering error minimizing system
+	v3s16 current_camera_offset;
 
 	FarBlock(v3s16 p);
 	~FarBlock();

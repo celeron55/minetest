@@ -38,7 +38,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 FarBlock::FarBlock(v3s16 p):
 	p(p),
 	mesh(NULL),
-	generating_mesh(false)
+	generating_mesh(false),
+	mesh_is_empty(false)
 {
 }
 
@@ -469,6 +470,11 @@ void FarBlockMeshGenerateTask::inThread()
 {
 	infostream<<"Generating FarBlock mesh for "
 			<<PP(block.p)<<std::endl;
+
+	if (block.content.empty() || block.content_area.getVolume() == 0) {
+		// This will have no meshes whatsoever
+		return;
+	}
 
 	// Main mesh
 	{
@@ -923,8 +929,6 @@ void FarMap::insertData(v3s16 fbp, v3s16 divs_per_mb,
 				5 : CONTENT_AIR;*/
 		b->content[dst_i].light = lights[source_i];
 	}
-
-	startGeneratingBlockMesh(b, false);
 }
 
 void FarMap::insertEmptyBlock(v3s16 fbp)
@@ -957,11 +961,17 @@ void FarMap::insertGeneratedBlockMesh(v3s16 p, scene::SMesh *mesh,
 
 	b->generating_mesh = false;
 
-	if(b->mesh)
+	if (b->mesh) {
 		b->mesh->drop();
-
-	mesh->grab();
-	b->mesh = mesh;
+		b->mesh = NULL;
+	}
+	if (mesh) {
+		mesh->grab();
+		b->mesh = mesh;
+		b->mesh_is_empty = false;
+	} else {
+		b->mesh_is_empty = true;
+	}
 
 	for (size_t i=0; i<b->mapblock_meshes.size(); i++) {
 		if(b->mapblock_meshes[i])
@@ -1196,10 +1206,22 @@ static void renderBlock(FarMap *far_map, FarBlock *b,
 		size_t *profiler_num_rendered_fbmbparts,
 		size_t *profiler_num_rendered_fbmb2parts)
 {
-	if(!b->mesh){
-		//infostream<<"FarMap::renderBlock: "<<PP(b->p)<<": No mesh"<<std::endl;
-		return;
+	if (b->mesh_is_empty) {
+		/*infostream<<"FarMap::renderBlock: "<<PP(b->p)<<": Mesh is empty"
+				<<std::endl;*/
+			return;
 	}
+
+	/*
+		Cull FarBlock if possible so that we don't have to generate so many
+		meshes. Meshes use nasty amounts of memory.
+	*/
+	// TODO
+
+	/*
+		This FarBlock will be rendered
+	*/
+
 	(*profiler_num_rendered_farblocks)++;
 
 	// Check what ClientMap is rendering and avoid rendering over it
@@ -1237,8 +1259,10 @@ big_break:;
 
 	bool render_in_pieces = fb_being_normally_rendered;
 
-	if (b->mapblock_meshes.empty() || b->mapblock2_meshes.empty()) {
+	if (render_in_pieces && (b->mapblock_meshes.empty() ||
+			b->mapblock2_meshes.empty())) {
 		if (!b->generating_mesh && !b->content.empty()) {
+			// We need small meshes for this ASAP
 			far_map->startGeneratingBlockMesh(b, true);
 		}
 		// Can't render in pieces because we don't have meshes for the pieces.
@@ -1293,12 +1317,15 @@ big_break:;
 			}
 		}
 	} else {
-		TimeTaker tt(NULL, NULL, PRECISION_MICRO);
 		scene::SMesh *mesh = b->mesh;
 		if (mesh) {
+			TimeTaker tt(NULL, NULL, PRECISION_MICRO);
 			renderMesh(far_map, mesh, driver);
+			*profiler_render_time_farblocks_us += tt.stop(true);
+		} else if(!b->generating_mesh) {
+			// We need a mesh for this ASAP
+			far_map->startGeneratingBlockMesh(b, false);
 		}
-		*profiler_render_time_farblocks_us += tt.stop(true);
 	}
 }
 
