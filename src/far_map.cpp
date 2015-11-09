@@ -429,10 +429,12 @@ static scene::SMesh* create_farblock_mesh(scene::SMesh *old_mesh,
 		for(u32 j = 0; j < p.vertices.size(); j++)
 		{
 			video::S3DVertexTangents *vertex = &p.vertices[j];
-			// Note applyFacesShading second parameter is precalculated sqrt
+			video::SColor &vc = vertex->Color;
+			/*// Note applyFacesShading second parameter is precalculated sqrt
 			// value for speed improvement
 			// Skip it for lightsources and top faces.
-			video::SColor &vc = vertex->Color;
+			// NOTE: Don't use this because we bake shading into the atlas
+			//       textures in order to cheat with lighting effects
 			if (!vc.getBlue()) {
 				if (vertex->Normal.Y < -0.5) {
 					applyFacesShading (vc, 0.447213);
@@ -445,7 +447,7 @@ static scene::SMesh* create_farblock_mesh(scene::SMesh *old_mesh,
 				} else if (vertex->Normal.Z < -0.5) {
 					applyFacesShading (vc, 0.836660);
 				}
-			}
+			}*/
 			if(!far_map->config_enable_shaders)
 			{
 				// - Classic lighting (shaders handle this by themselves)
@@ -858,6 +860,7 @@ atlas::AtlasSegmentReference FarAtlas::addTexture(const std::string &name,
 	def.lod_simulation = crude ? 16 : 4;
 	if (is_top)
 		def.lod_simulation |= atlas::ATLAS_LOD_TOP_FACE;
+	def.lod_simulation |= atlas::ATLAS_LOD_BAKE_SHADOWS;
 	return atlas->find_or_add_segment(def);
 }
 

@@ -301,19 +301,20 @@ struct CAtlasRegistry: public AtlasRegistry
 						// Preserve original colors
 						video::SColor c = seg_img->getPixel(src_p.X, src_p.Y);
 						if(flags & ATLAS_LOD_BAKE_SHADOWS){
+							// This value has been calibrated
 							c.set(
 								c.getAlpha(),
-								c.getRed() * 0.8f,
-								c.getGreen() * 0.8f,
-								c.getBlue() * 0.8f
+								c.getRed() * 0.97f,
+								c.getGreen() * 0.97f,
+								c.getBlue() * 0.99f
 							);
 						} else {
+							// This value has been calibrated
 							c.set(
 								c.getAlpha(),
-								c.getRed() * 1.0f,
-								c.getGreen() * 1.0f,
+								c.getRed() * 0.97f,
+								c.getGreen() * 0.97f,
 								c.getBlue() * 1.0f
-								//c.getBlue() * 0.875f
 							);
 						}
 						acache.image->setPixel(dst_p.X, dst_p.Y, c);
@@ -347,11 +348,12 @@ struct CAtlasRegistry: public AtlasRegistry
 										c.getBlue() * 0.8f
 									);
 								} else {
+									// This value has been calibrated
 									c.set(
 										c.getAlpha(),
-										c.getRed() * 0.8f * 0.49f,
-										c.getGreen() * 0.8f * 0.49f,
-										c.getBlue() * 0.8f * 0.52f
+										c.getRed() * 0.97f * 0.9f,
+										c.getGreen() * 0.97f * 0.9f,
+										c.getBlue() * 1.0f * 0.9f
 									);
 								}
 							} else {
@@ -370,21 +372,23 @@ struct CAtlasRegistry: public AtlasRegistry
 										c.getBlue() * 0.50f * 0.8f
 									);
 								} else {
+									// This value has been calibrated
 									c.set(
 										c.getAlpha(),
-										c.getRed() * 0.5f * 0.15f,
-										c.getGreen() * 0.5f * 0.15f,
-										c.getBlue() * 0.5f * 0.16f
+										c.getRed() * 0.61f * 0.8f,
+										c.getGreen() * 0.61f * 0.8f,
+										c.getBlue() * 0.67f * 0.8f
 									);
 								}
 							}
 						} else {
 							if(is_edge){
+								// This value has been calibrated
 								c.set(
 									c.getAlpha(),
-									c.getRed() * 1.0f,
-									c.getGreen() * 1.0f,
-									c.getBlue() * 0.875f
+									c.getRed() * 0.97f,
+									c.getGreen() * 0.97f,
+									c.getBlue() * 1.0f
 								);
 							} else {
 								if(flags & ATLAS_LOD_SEMIBRIGHT1_FACE){
@@ -402,11 +406,12 @@ struct CAtlasRegistry: public AtlasRegistry
 										c.getBlue() * 0.7f
 									);
 								} else {
+									// This value has been calibrated
 									c.set(
 										c.getAlpha(),
 										c.getRed() * 0.7f,
 										c.getGreen() * 0.7f,
-										c.getBlue() * 0.7f
+										c.getBlue() * 0.8f
 									);
 								}
 							}
