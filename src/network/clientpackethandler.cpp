@@ -1243,6 +1243,8 @@ void Client::handleCommand_FarBlocksResult(NetworkPacket* pkt_in)
 	u8    flags       = pkt_in->read<u8>();
 	v3s16 divs_per_mb = pkt_in->read<v3s16>();
 
+	(void)flags; // Unused
+
 	if (status == FBRS_FULLY_LOADED || status == FBRS_PARTLY_LOADED) {
 		v3s16 area_offset_mb(
 				FMP_SCALE * p.X,
