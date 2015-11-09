@@ -2323,11 +2323,12 @@ void Server::SendBlocks(float dtime)
 				u8 status
 				u8 flags
 				v3s16 divs_per_mb (amount of divisions per mapblock)
-				TODO: Compress
-				for each division (for(Y) for(X) for(Z)):
-					u16 node_id
-				for each division (for(Y) for(X) for(Z)):
-					u8 light (both lightbanks; raw value)
+				u32 data_len
+				Zlib-compressed:
+					for each division (for(Y) for(X) for(Z)):
+						u16 node_id
+					for each division (for(Y) for(X) for(Z)):
+						u8 light (both lightbanks; raw value)
 			*/
 
 			pkt << wms.p;
@@ -2336,10 +2337,16 @@ void Server::SendBlocks(float dtime)
 			pkt << (u8) 0; // flags
 			pkt << divs_per_mb;
 			if (status == FBRS_FULLY_LOADED || status == FBRS_PARTLY_LOADED) {
+				std::ostringstream os(std::ios::binary);
 				for(size_t i=0; i<fb->node_ids.size(); i++)
-					pkt << (u16) fb->node_ids[i];
+					writeU16(os, fb->node_ids[i]);
 				for(size_t i=0; i<fb->lights.size(); i++)
-					pkt << (u8) fb->lights[i];
+					writeU8(os, fb->lights[i]);
+				std::ostringstream os2(std::ios::binary);
+				compressZlib(os.str(), os2);
+				pkt.putLongString(os2.str());
+			} else {
+				pkt << (u32) 0;
 			}
 
 			infostream << "FAR_BLOCKS_RESULT packet size: " << pkt.getSize()

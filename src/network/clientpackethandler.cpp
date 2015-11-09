@@ -1232,11 +1232,12 @@ void Client::handleCommand_FarBlocksResult(NetworkPacket* pkt_in)
 		u8 status
 		u8 flags
 		v3s16 divs_per_mb (amount of divisions per mapblock)
-		TODO: Compress
-		for each division (for(Y) for(X) for(Z)):
-			u16 node_id
-		for each division (for(Y) for(X) for(Z)):
-			u8 light (both lightbanks; raw value)
+		u32 data_len
+		Zlib-compressed:
+			for each division (for(Y) for(X) for(Z)):
+				u16 node_id
+			for each division (for(Y) for(X) for(Z)):
+				u8 light (both lightbanks; raw value)
 	*/
 	v3s16 p           = pkt_in->read<v3s16>();
 	FarBlocksResultStatus status = (FarBlocksResultStatus)pkt_in->read<u8>();
@@ -1266,10 +1267,16 @@ void Client::handleCommand_FarBlocksResult(NetworkPacket* pkt_in)
 		std::vector<u8> lights;
 		lights.resize(total_size_n);
 
+		std::string compressed_data = pkt_in->readLongString();
+		std::istringstream is1(compressed_data, std::ios::binary);
+		std::ostringstream os2(std::ios::binary);
+		decompressZlib(is1, os2);
+		std::istringstream is2(os2.str(), std::ios::binary);
+
 		for(size_t i=0; i<total_size_n; i++)
-			*pkt_in >> node_ids[i];
+			node_ids[i] = readU16(is2);
 		for(size_t i=0; i<total_size_n; i++)
-			*pkt_in >> lights[i];
+			lights[i] = readU8(is2);
 
 		// Shove the data into FarMap to be rendered efficiently
 		m_far_map->insertData(p, divs_per_mb, node_ids, lights);

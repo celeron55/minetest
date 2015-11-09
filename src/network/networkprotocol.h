@@ -590,11 +590,12 @@ enum ToClientCommand
 		u8 status
 		u8 flags
 		v3s16 divs_per_mb (amount of divisions (FarNodes) per mapblock)
-		TODO: Compress
-		for each division (indexed by VoxelArea):
-			u16 node_id
-		for each division (indexed by VoxelArea):
-			u8 light (both lightbanks; raw value)
+		u32 data_len
+		Zlib-compressed:
+			for each division (indexed by VoxelArea):
+				u16 node_id
+			for each division (indexed by VoxelArea):
+				u8 light (both lightbanks; raw value)
 	*/
 
 	TOCLIENT_SRP_BYTES_S_B = 0x60,
