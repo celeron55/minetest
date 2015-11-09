@@ -2277,6 +2277,9 @@ void Server::SendBlocks(float dtime)
 			// TODO: Figure out how to do this in a good way
 			bool allow_generate = wms.p.Y >= -1 && wms.p.Y <= 1;
 
+			if (!g_settings->getBool("far_map_allow_generate"))
+				allow_generate = false;
+
 			bool all_found = true;
 
 			// TODO: Is this loop really what we should be doing here?
