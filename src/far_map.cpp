@@ -114,7 +114,8 @@ void FarBlock::resize(v3s16 new_divs_per_mb)
 
 	size_t content_size_n = content_area.getVolume();
 
-	content.resize(content_size_n);
+	content.clear();
+	content.resize(content_size_n, CONTENT_IGNORE);
 }
 
 void FarBlock::updateCameraOffset(v3s16 camera_offset)
