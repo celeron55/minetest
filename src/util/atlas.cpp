@@ -280,8 +280,8 @@ struct CAtlasRegistry: public AtlasRegistry
 				}
 			}
 		} else {
-			int lod = def.lod_simulation & 0x0f;
-			uint8_t flags = def.lod_simulation & 0xf0;
+			int lod = def.lod_simulation & 0x00ff;
+			uint8_t flags = def.lod_simulation & 0xff00;
 			for(int y = 0; y<seg_size.Y * 2; y++){
 				for(int x = 0; x<seg_size.X * 2; x++){
 					float fx = (float)src_size.X * lod / seg_size.X;

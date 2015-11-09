@@ -47,18 +47,18 @@ namespace atlas
 		{}
 	};
 
-	const uint8_t ATLAS_LOD_TOP_FACE = 0x10;
-	const uint8_t ATLAS_LOD_SEMIBRIGHT1_FACE = 0x20;
-	const uint8_t ATLAS_LOD_SEMIBRIGHT2_FACE = 0x40;
-	const uint8_t ATLAS_LOD_BAKE_SHADOWS = 0x80;
+	const uint16_t ATLAS_LOD_TOP_FACE = 0x100;
+	const uint16_t ATLAS_LOD_SEMIBRIGHT1_FACE = 0x200;
+	const uint16_t ATLAS_LOD_SEMIBRIGHT2_FACE = 0x400;
+	const uint16_t ATLAS_LOD_BAKE_SHADOWS = 0x800;
 
 	struct AtlasSegmentDefinition
 	{
 		std::string image_name; // If "", segment won't be added
 		v2s32 total_segments;
 		v2s32 select_segment;
-		// Mask 0x0f: LOD level, mask 0xf0: flags
-		uint8_t lod_simulation;
+		// Mask 0x00ff: LOD level, mask 0xff00: flags
+		uint16_t lod_simulation;
 		// TODO: Rotation
 
 		AtlasSegmentDefinition():

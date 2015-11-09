@@ -196,6 +196,7 @@ struct FarAtlas
 {
 	struct NodeSegRefs {
 		atlas::AtlasSegmentReference refs[3]; // top, bottom, side
+		atlas::AtlasSegmentReference crude_refs[3]; // top, bottom, side
 	};
 
 	atlas::AtlasRegistry *atlas;
@@ -203,10 +204,12 @@ struct FarAtlas
 
 	FarAtlas(FarMap *far_map);
 	~FarAtlas();
-	atlas::AtlasSegmentReference addTexture(const std::string &name, bool is_top);
+	atlas::AtlasSegmentReference addTexture(const std::string &name,
+			bool is_top, bool crude);
 	void addNode(content_t id, const std::string &top,
 			const std::string &bottom, const std::string &side);
-	const atlas::AtlasSegmentCache* getNode(content_t id, u8 face) const;
+	const atlas::AtlasSegmentCache* getNode(
+			content_t id, u8 face, bool crude) const;
 	void update();
 };
 

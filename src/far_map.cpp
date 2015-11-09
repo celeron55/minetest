@@ -280,7 +280,9 @@ static void add_face(MeshCollector *collector,
 
 	// Get texture from texture atlas
 	u8 face = dir.Y == 1 ? 0 : dir.Y == -1 ? 1 : 2;
-	const atlas::AtlasSegmentCache *asc = far_map->atlas.getNode(n.id, face);
+	bool crude = (divs_per_mb.X == 1);
+	const atlas::AtlasSegmentCache *asc =
+			far_map->atlas.getNode(n.id, face, crude);
 	if (!asc) {
 		const ContentFeatures &f = ndef->get(n.id);
 		assert(f.tiledef[0].name == "" && "All nodes that have a texture should"
@@ -847,13 +849,13 @@ FarAtlas::~FarAtlas()
 }
 
 atlas::AtlasSegmentReference FarAtlas::addTexture(const std::string &name,
-		bool is_top)
+		bool is_top, bool crude)
 {
 	atlas::AtlasSegmentDefinition def;
 	def.image_name = name;
 	def.total_segments = v2s32(1, 1);
 	def.select_segment = v2s32(0, 0);
-	def.lod_simulation = 4;
+	def.lod_simulation = crude ? 16 : 4;
 	if (is_top)
 		def.lod_simulation |= atlas::ATLAS_LOD_TOP_FACE;
 	return atlas->find_or_add_segment(def);
@@ -863,21 +865,29 @@ void FarAtlas::addNode(content_t id, const std::string &top,
 		const std::string &bottom, const std::string &side)
 {
 	NodeSegRefs nsr;
-	nsr.refs[0] = addTexture(top, true);
-	nsr.refs[1] = addTexture(bottom, false);
-	nsr.refs[2] = addTexture(side, false);
+	nsr.refs[0] = addTexture(top, true, false);
+	nsr.refs[1] = addTexture(bottom, false, false);
+	nsr.refs[2] = addTexture(side, false, false);
+	nsr.crude_refs[0] = addTexture(top, true, true);
+	nsr.crude_refs[1] = addTexture(bottom, false, true);
+	nsr.crude_refs[2] = addTexture(side, false, true);
 
 	if((content_t)node_segrefs.size() < id + 1)
 		node_segrefs.resize(id + 1);
 	node_segrefs[id] = nsr;
 }
 
-const atlas::AtlasSegmentCache* FarAtlas::getNode(content_t id, u8 face) const
+const atlas::AtlasSegmentCache* FarAtlas::getNode(
+	content_t id, u8 face, bool crude) const
 {
 	assert(face < 3);
 	if(node_segrefs.size() <= id)
 		return NULL;
-	return atlas->get_texture(node_segrefs[id].refs[face]);
+	if (crude) {
+		return atlas->get_texture(node_segrefs[id].crude_refs[face]);
+	} else {
+		return atlas->get_texture(node_segrefs[id].refs[face]);
+	}
 }
 
 void FarAtlas::update()
