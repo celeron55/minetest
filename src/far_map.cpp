@@ -1335,7 +1335,38 @@ static void renderBlock(FarMap *far_map, FarBlock *b,
 		Cull FarBlock if possible so that we don't have to generate so many
 		meshes. Meshes use nasty amounts of memory.
 	*/
-	// TODO
+
+	scene::ICameraSceneNode *camera =
+			far_map->getSceneManager()->getActiveCamera();
+	v3f camera_pf = camera->getAbsolutePosition();
+	camera_pf += v3f(
+		far_map->current_camera_offset.X * BS,
+		far_map->current_camera_offset.Y * BS,
+		far_map->current_camera_offset.Z * BS
+	);
+	v3f block_pf(
+		b->p.X * FMP_SCALE * MAP_BLOCKSIZE * BS,
+		b->p.Y * FMP_SCALE * MAP_BLOCKSIZE * BS,
+		b->p.Z * FMP_SCALE * MAP_BLOCKSIZE * BS
+	);
+	float d = (camera_pf - block_pf).getLength();
+
+	/*std::cout<<"b->p="<<PP(b->p)
+			<<", camera_pf="<<PP(camera_pf)
+			<<", b->current_camera_offset="<<PP(b->current_camera_offset)
+			<<", far_map->current_camera_offset="
+					<<PP(far_map->current_camera_offset)
+			<<", block_pf="<<PP(block_pf)
+			<<", d="<<d
+			<<std::endl;*/
+
+	// Distance culling
+	if (d > far_map->config_far_map_range * BS)
+		return;
+
+	// TODO: Frustum culling
+
+	// TODO: Occlusion culling?
 
 	/*
 		This FarBlock will be rendered
@@ -1440,30 +1471,6 @@ big_break:;
 		}
 	} else {
 		// Decide when to draw a normal mesh or a crude mesh
-		scene::ICameraSceneNode *camera =
-				far_map->getSceneManager()->getActiveCamera();
-		v3f camera_pf = camera->getAbsolutePosition();
-		camera_pf += v3f(
-			far_map->current_camera_offset.X * BS,
-			far_map->current_camera_offset.Y * BS,
-			far_map->current_camera_offset.Z * BS
-		);
-		v3f block_pf(
-			b->p.X * FMP_SCALE * MAP_BLOCKSIZE * BS,
-			b->p.Y * FMP_SCALE * MAP_BLOCKSIZE * BS,
-			b->p.Z * FMP_SCALE * MAP_BLOCKSIZE * BS
-		);
-		float d = (camera_pf - block_pf).getLength();
-
-		/*std::cout<<"b->p="<<PP(b->p)
-				<<", camera_pf="<<PP(camera_pf)
-				<<", b->current_camera_offset="<<PP(b->current_camera_offset)
-				<<", far_map->current_camera_offset="
-						<<PP(far_map->current_camera_offset)
-				<<", block_pf="<<PP(block_pf)
-				<<", d="<<d
-				<<std::endl;*/
-
 		// TODO: Configurable
 		bool fine_mesh_wanted = (d < BS * 500);
 
