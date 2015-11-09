@@ -37,7 +37,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 FarBlock::FarBlock(v3s16 p):
 	p(p),
-	mesh(NULL),
+	crude_mesh(NULL),
+	fine_mesh(NULL),
 	generating_mesh(false),
 	mesh_is_empty(false)
 {
@@ -45,17 +46,37 @@ FarBlock::FarBlock(v3s16 p):
 
 FarBlock::~FarBlock()
 {
-	if(mesh)
-		mesh->drop();
+	if(crude_mesh)
+		crude_mesh->drop();
 
+	unloadFineMesh();
+	unloadMapblockMeshes();
+}
+
+void FarBlock::unloadFineMesh()
+{
+	if (!fine_mesh)
+		return;
+	fine_mesh->drop();
+	fine_mesh = NULL;
+}
+
+void FarBlock::unloadMapblockMeshes()
+{
 	for (size_t i=0; i<mapblock_meshes.size(); i++) {
-		if(mapblock_meshes[i])
-			mapblock_meshes[i]->drop();
+		if (!mapblock_meshes[i])
+			continue;
+		mapblock_meshes[i]->drop();
+		mapblock_meshes[i] = NULL;
 	}
 	for (size_t i=0; i<mapblock2_meshes.size(); i++) {
-		if(mapblock2_meshes[i])
-			mapblock2_meshes[i]->drop();
+		if (!mapblock2_meshes[i])
+			continue;
+		mapblock2_meshes[i]->drop();
+		mapblock2_meshes[i] = NULL;
 	}
+	mapblock_meshes.clear();
+	mapblock2_meshes.clear();
 }
 
 void FarBlock::resize(v3s16 new_divs_per_mb)
@@ -101,8 +122,14 @@ void FarBlock::updateCameraOffset(v3s16 camera_offset)
 	if (camera_offset == current_camera_offset)
 		return;
 
-	if (mesh) {
-		translateMesh(mesh, intToFloat(current_camera_offset-camera_offset, BS));
+	if (crude_mesh) {
+		translateMesh(crude_mesh,
+				intToFloat(current_camera_offset-camera_offset, BS));
+	}
+
+	if (fine_mesh) {
+		translateMesh(fine_mesh,
+				intToFloat(current_camera_offset-camera_offset, BS));
 
 		for (size_t i=0; i<mapblock_meshes.size(); i++) {
 			if (!mapblock_meshes[i])
@@ -169,15 +196,16 @@ FarBlock* FarSector::getOrCreateBlock(s16 y)
 
 FarBlockMeshGenerateTask::FarBlockMeshGenerateTask(
 		FarMap *far_map, const FarBlock &source_block,
-		bool generate_aux_meshes):
+		GenLevel level):
 	far_map(far_map),
 	block(source_block),
-	generate_aux_meshes(generate_aux_meshes)
+	level(level)
 {
 	// We don't want to deal with whatever mesh the block was currently holding;
 	// set things to NULL so that FarBlock's destructor will not drop the
 	// original contents and we can store our results in it.
-	block.mesh = NULL;
+	block.fine_mesh = NULL;
+	block.crude_mesh = NULL;
 	for (size_t i=0; i<block.mapblock_meshes.size(); i++) {
 		block.mapblock_meshes[i] = NULL;
 	}
@@ -476,8 +504,66 @@ void FarBlockMeshGenerateTask::inThread()
 		return;
 	}
 
-	// Main mesh
+	// Crude main mesh (always generated)
 	{
+		MeshCollector collector;
+
+		size_t num_faces_added = 0;
+
+		// FarBlock position in MapBlocks
+		v3s16 bp00 = block.p * FMP_SCALE;
+		v3s16 bp01 = bp00 + v3s16(1,1,1) * FMP_SCALE - v3s16(1,1,1);
+
+		// Effective area in MapBlocks
+		VoxelArea gen_area(bp00, bp01);
+
+		// Content buffer area in MapBlocks
+		VoxelArea content_buf_area(
+			gen_area.MinEdge - v3s16(1,1,1),
+			gen_area.MaxEdge + v3s16(1,1,1)
+		);
+
+		std::vector<FarNode> content_buf;
+		content_buf.resize(content_buf_area.getVolume());
+
+		// Fill in everything but the edges
+		v3s16 p;
+		for (p.Y=gen_area.MinEdge.Y; p.Y<=gen_area.MaxEdge.Y; p.Y++)
+		for (p.X=gen_area.MinEdge.X; p.X<=gen_area.MaxEdge.X; p.X++)
+		for (p.Z=gen_area.MinEdge.Z; p.Z<=gen_area.MaxEdge.Z; p.Z++) {
+			v3s16 source_p(
+				p.X * block.divs_per_mb.X + block.divs_per_mb.X / 2,
+				p.Y * block.divs_per_mb.Y + block.divs_per_mb.Y - 1,
+				p.Z * block.divs_per_mb.Z + block.divs_per_mb.Z / 2
+			);
+			// Get topmost visible node
+			for (; source_p.Y >= p.Y * block.divs_per_mb.Y; source_p.Y--) {
+				FarNode n = block.content[block.content_area.index(source_p)];
+				if (n.id != CONTENT_IGNORE && n.id != CONTENT_AIR) {
+					content_buf[content_buf_area.index(p)] = n;
+					break;
+				}
+			}
+		}
+
+		extract_faces(&collector, content_buf, content_buf_area,
+				gen_area, v3s16(1,1,1), far_map,
+				&num_faces_added);
+
+		g_profiler->avg("Far: num faces per crude mesh", num_faces_added);
+		g_profiler->add("Far: num crude meshes generated", 1);
+
+		assert(block.crude_mesh == NULL);
+		if (num_faces_added > 0) {
+			block.crude_mesh = create_farblock_mesh(
+					block.crude_mesh, far_map, &collector);
+			// This gives Irrlicht permission to store this mesh on the GPU
+			block.crude_mesh->setHardwareMappingHint(scene::EHM_STATIC);
+		}
+	}
+
+	// Fine main mesh
+	if (level >= GL_FINE) {
 		MeshCollector collector;
 
 		size_t num_faces_added = 0;
@@ -489,17 +575,19 @@ void FarBlockMeshGenerateTask::inThread()
 		g_profiler->avg("Far: num faces per mesh", num_faces_added);
 		g_profiler->add("Far: num meshes generated", 1);
 
-		assert(block.mesh == NULL);
+		assert(block.fine_mesh == NULL);
 		if (num_faces_added > 0) {
-			block.mesh = create_farblock_mesh(block.mesh, far_map, &collector);
+			block.fine_mesh = create_farblock_mesh(
+					block.fine_mesh, far_map, &collector);
 			// This gives Irrlicht permission to store this mesh on the GPU
-			block.mesh->setHardwareMappingHint(scene::EHM_STATIC);
+			block.fine_mesh->setHardwareMappingHint(scene::EHM_STATIC);
 		}
 	}
 
-	v3s16 mp;
+	// Auxiliary meshes
+	if (level >= GL_FINE_AND_AUX) {
+		v3s16 mp;
 
-	if (generate_aux_meshes) {
 		// MapBlock-sized meshes
 		block.mapblock_meshes.resize(FMP_SCALE * FMP_SCALE * FMP_SCALE);
 		VoxelArea mapblock_meshes_area(
@@ -615,11 +703,18 @@ void FarBlockMeshGenerateTask::inThread()
 
 void FarBlockMeshGenerateTask::sync()
 {
-	if(block.mesh){
-		far_map->insertGeneratedBlockMesh(block.p, block.mesh,
+	if(block.crude_mesh || block.fine_mesh){
+		far_map->insertGeneratedBlockMesh(
+				block.p, block.crude_mesh, block.fine_mesh,
 				block.mapblock_meshes, block.mapblock2_meshes);
-		block.mesh->drop();
-		block.mesh = NULL;
+		if (block.crude_mesh) {
+			block.crude_mesh->drop();
+			block.crude_mesh = NULL;
+		}
+		if (block.fine_mesh) {
+			block.fine_mesh->drop();
+			block.fine_mesh = NULL;
+		}
 		for (size_t i=0; i<block.mapblock_meshes.size(); i++) {
 			if (block.mapblock_meshes[i] != NULL) {
 				block.mapblock_meshes[i]->drop();
@@ -943,17 +1038,19 @@ void FarMap::insertCulledBlock(v3s16 fbp)
 	b->is_culled_by_server = true;
 }
 
-void FarMap::startGeneratingBlockMesh(FarBlock *b, bool generate_aux_meshes)
+void FarMap::startGeneratingBlockMesh(FarBlock *b,
+		FarBlockMeshGenerateTask::GenLevel level)
 {
 	b->generating_mesh = true;
 
 	FarBlockMeshGenerateTask *t = new FarBlockMeshGenerateTask(
-			this, *b, generate_aux_meshes);
+			this, *b, level);
 
 	m_worker_thread.addTask(t);
 }
 
-void FarMap::insertGeneratedBlockMesh(v3s16 p, scene::SMesh *mesh,
+void FarMap::insertGeneratedBlockMesh(
+		v3s16 p, scene::SMesh *crude_mesh, scene::SMesh *fine_mesh,
 		const std::vector<scene::SMesh*> &mapblock_meshes,
 		const std::vector<scene::SMesh*> &mapblock2_meshes)
 {
@@ -961,16 +1058,28 @@ void FarMap::insertGeneratedBlockMesh(v3s16 p, scene::SMesh *mesh,
 
 	b->generating_mesh = false;
 
-	if (b->mesh) {
-		b->mesh->drop();
-		b->mesh = NULL;
+	if (b->crude_mesh) {
+		b->crude_mesh->drop();
+		b->crude_mesh = NULL;
 	}
-	if (mesh) {
-		mesh->grab();
-		b->mesh = mesh;
-		b->mesh_is_empty = false;
-	} else {
+	if (crude_mesh) {
+		crude_mesh->grab();
+		b->crude_mesh = crude_mesh;
+	}
+
+	if (b->fine_mesh) {
+		b->fine_mesh->drop();
+		b->fine_mesh = NULL;
+	}
+	if (fine_mesh) {
+		fine_mesh->grab();
+		b->fine_mesh = fine_mesh;
+	}
+
+	if (b->crude_mesh == NULL && b->fine_mesh == NULL) {
 		b->mesh_is_empty = true;
+	} else {
+		b->mesh_is_empty = false;
 	}
 
 	for (size_t i=0; i<b->mapblock_meshes.size(); i++) {
@@ -999,7 +1108,7 @@ void FarMap::insertGeneratedBlockMesh(v3s16 p, scene::SMesh *mesh,
 		}
 	}
 
-	b->resetCameraOffset(m_camera_offset);
+	b->resetCameraOffset(current_camera_offset);
 
 	g_profiler->add("Far: generated farblock meshes", 1);
 }
@@ -1031,9 +1140,9 @@ void FarMap::update()
 
 void FarMap::updateCameraOffset(v3s16 camera_offset)
 {
-	if (camera_offset == m_camera_offset) return;
+	if (camera_offset == current_camera_offset) return;
 
-	m_camera_offset = camera_offset;
+	current_camera_offset = camera_offset;
 
 	for (std::map<v2s16, FarSector*>::iterator i = m_sectors.begin();
 			i != m_sectors.end(); i++) {
@@ -1060,8 +1169,6 @@ void FarMap::reportNormallyRenderedBlocks(const BlockAreaBitmap &nrb)
 void FarMap::createAtlas()
 {
 	INodeDefManager *ndef = client->getNodeDefManager();
-
-	// TODO
 
 	// Umm... let's just start from zero and see how far we get?
 	for(content_t id=0; ; id++){
@@ -1200,16 +1307,18 @@ static void renderMesh(FarMap *far_map, scene::SMesh *mesh,
 static void renderBlock(FarMap *far_map, FarBlock *b,
 		video::IVideoDriver* driver,
 		u32 *profiler_render_time_farblocks_us,
+		u32 *profiler_render_time_fbcrudes_us,
 		u32 *profiler_render_time_fbmbparts_us,
 		u32 *profiler_render_time_fbmb2parts_us,
 		size_t *profiler_num_rendered_farblocks,
+		size_t *profiler_num_rendered_fbcrudes,
 		size_t *profiler_num_rendered_fbmbparts,
 		size_t *profiler_num_rendered_fbmb2parts)
 {
 	if (b->mesh_is_empty) {
 		/*infostream<<"FarMap::renderBlock: "<<PP(b->p)<<": Mesh is empty"
 				<<std::endl;*/
-			return;
+		return;
 	}
 
 	/*
@@ -1221,8 +1330,6 @@ static void renderBlock(FarMap *far_map, FarBlock *b,
 	/*
 		This FarBlock will be rendered
 	*/
-
-	(*profiler_num_rendered_farblocks)++;
 
 	// Check what ClientMap is rendering and avoid rendering over it
 	VoxelArea area_in_mapblocks_from_origin(
@@ -1258,16 +1365,21 @@ big_break:;
 	}
 
 	bool render_in_pieces = fb_being_normally_rendered;
+	bool avoid_crude_mesh = false;
 
 	if (render_in_pieces && (b->mapblock_meshes.empty() ||
 			b->mapblock2_meshes.empty())) {
 		if (!b->generating_mesh && !b->content.empty()) {
 			// We need small meshes for this ASAP
-			far_map->startGeneratingBlockMesh(b, true);
+			far_map->startGeneratingBlockMesh(b,
+					FarBlockMeshGenerateTask::GL_FINE_AND_AUX);
 		}
 		// Can't render in pieces because we don't have meshes for the pieces.
 		// Render normally so that things don't blink annoyingly meanwhile.
 		render_in_pieces = false;
+		// Don't render crude mesh here even temporarily; it would look horrible
+		// and would then immediately blink away making it even more horrible.
+		avoid_crude_mesh = true;
 	}
 
 	if (render_in_pieces) {
@@ -1317,14 +1429,68 @@ big_break:;
 			}
 		}
 	} else {
-		scene::SMesh *mesh = b->mesh;
-		if (mesh) {
+		// Decide when to draw a normal mesh or a crude mesh
+		scene::ICameraSceneNode *camera =
+				far_map->getSceneManager()->getActiveCamera();
+		v3f camera_pf = camera->getAbsolutePosition();
+		camera_pf += v3f(
+			far_map->current_camera_offset.X * BS,
+			far_map->current_camera_offset.Y * BS,
+			far_map->current_camera_offset.Z * BS
+		);
+		v3f block_pf(
+			b->p.X * FMP_SCALE * MAP_BLOCKSIZE * BS,
+			b->p.Y * FMP_SCALE * MAP_BLOCKSIZE * BS,
+			b->p.Z * FMP_SCALE * MAP_BLOCKSIZE * BS
+		);
+		float d = (camera_pf - block_pf).getLength();
+
+		/*std::cout<<"b->p="<<PP(b->p)
+				<<", camera_pf="<<PP(camera_pf)
+				<<", b->current_camera_offset="<<PP(b->current_camera_offset)
+				<<", far_map->current_camera_offset="
+						<<PP(far_map->current_camera_offset)
+				<<", block_pf="<<PP(block_pf)
+				<<", d="<<d
+				<<std::endl;*/
+
+		// TODO: Configurable
+		bool fine_mesh_wanted = (d < BS * 500);
+
+		if (fine_mesh_wanted && b->fine_mesh) {
+			scene::SMesh *mesh = b->fine_mesh;
 			TimeTaker tt(NULL, NULL, PRECISION_MICRO);
 			renderMesh(far_map, mesh, driver);
 			*profiler_render_time_farblocks_us += tt.stop(true);
-		} else if(!b->generating_mesh) {
-			// We need a mesh for this ASAP
-			far_map->startGeneratingBlockMesh(b, false);
+			(*profiler_num_rendered_farblocks)++;
+		} else if(b->crude_mesh && !avoid_crude_mesh) {
+			scene::SMesh *mesh = b->crude_mesh;
+			TimeTaker tt(NULL, NULL, PRECISION_MICRO);
+			renderMesh(far_map, mesh, driver);
+			*profiler_render_time_fbcrudes_us += tt.stop(true);
+			(*profiler_num_rendered_fbcrudes)++;
+		}
+
+		if (!b->generating_mesh) {
+			if (fine_mesh_wanted && !b->fine_mesh) {
+				// We need a fine mesh for this
+				far_map->startGeneratingBlockMesh(b,
+						FarBlockMeshGenerateTask::GL_FINE);
+			} else if(!b->crude_mesh) {
+				// We need a crude mesh for this so that we can render anything
+				far_map->startGeneratingBlockMesh(b,
+						FarBlockMeshGenerateTask::GL_CRUDE);
+			}
+		}
+
+		// Save RAM from these monstrosities if at all possible. We can unload
+		// them if we didn't start generating anything in the previous check.
+		// TODO: A timeout instead of an immediate drop would be good
+		if (!b->generating_mesh) {
+			if (!fine_mesh_wanted && b->fine_mesh) {
+				b->unloadFineMesh();
+				b->unloadMapblockMeshes();
+			}
 		}
 	}
 }
@@ -1337,10 +1503,12 @@ void FarMap::render()
 	driver->setTransform(video::ETS_WORLD, AbsoluteTransformation);
 
 	u32 profiler_render_time_farblocks_us = 0;
+	u32 profiler_render_time_fbcrudes_us = 0;
 	u32 profiler_render_time_fbmbparts_us = 0;
 	u32 profiler_render_time_fbmb2parts_us = 0;
 	size_t profiler_num_total_farblocks = 0;
 	size_t profiler_num_rendered_farblocks = 0;
+	size_t profiler_num_rendered_fbcrudes = 0;
 	size_t profiler_num_rendered_fbmbparts = 0;
 	size_t profiler_num_rendered_fbmb2parts = 0;
 
@@ -1358,9 +1526,11 @@ void FarMap::render()
 
 			renderBlock(this, b, driver,
 					&profiler_render_time_farblocks_us,
+					&profiler_render_time_fbcrudes_us,
 					&profiler_render_time_fbmbparts_us,
 					&profiler_render_time_fbmb2parts_us,
 					&profiler_num_rendered_farblocks,
+					&profiler_num_rendered_fbcrudes,
 					&profiler_num_rendered_fbmbparts,
 					&profiler_num_rendered_fbmb2parts);
 		}
@@ -1370,12 +1540,16 @@ void FarMap::render()
 			profiler_num_total_farblocks);
 	g_profiler->avg("Far: render count: farblocks /frame",
 			profiler_num_rendered_farblocks);
+	g_profiler->avg("Far: render count: fbcrudes /frame",
+			profiler_num_rendered_fbcrudes);
 	g_profiler->avg("Far: render count: fbmbparts /frame",
 			profiler_num_rendered_fbmbparts);
 	g_profiler->avg("Far: render count: fbmb2parts /frame",
 			profiler_num_rendered_fbmb2parts);
 	g_profiler->avg("Far: render time: farblocks /frame",
 			profiler_render_time_farblocks_us / 1000000.f);
+	g_profiler->avg("Far: render time: fbcrudes /frame",
+			profiler_render_time_fbcrudes_us / 1000000.f);
 	g_profiler->avg("Far: render time: fbmbparts /frame",
 			profiler_render_time_fbmbparts_us / 1000000.f);
 	g_profiler->avg("Far: render time: fbmb2parts /frame",

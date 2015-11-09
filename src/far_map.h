@@ -68,8 +68,11 @@ struct FarBlock
 	// If true, content should always be empty.
 	bool is_culled_by_server;
 
+	// Very crude mesh covering everything in this FarBlock
+	scene::SMesh *crude_mesh;
+
 	// Mesh covering everything in this FarBlock
-	scene::SMesh *mesh;
+	scene::SMesh *fine_mesh;
 
 	// An array of MapBlock-sized meshes to be used when the area is partly
 	// being rendered from the regular Map and the whole mesh cannnot be used
@@ -99,6 +102,9 @@ struct FarBlock
 
 	FarBlock(v3s16 p);
 	~FarBlock();
+
+	void unloadFineMesh();
+	void unloadMapblockMeshes();
 
 	void resize(v3s16 new_divs_per_mb);
 	void updateCameraOffset(v3s16 camera_offset);
@@ -135,12 +141,18 @@ struct FarMapTask
 
 struct FarBlockMeshGenerateTask: public FarMapTask
 {
+	enum GenLevel {
+		GL_CRUDE,
+		GL_FINE,
+		GL_FINE_AND_AUX
+	};
+
 	FarMap *far_map;
 	FarBlock block;
-	bool generate_aux_meshes;
+	GenLevel level;
 
 	FarBlockMeshGenerateTask(FarMap *far_map, const FarBlock &source_block,
-			bool generate_aux_meshes);
+			GenLevel level);
 	~FarBlockMeshGenerateTask();
 	void inThread();
 	void sync();
@@ -220,8 +232,10 @@ public:
 	void insertEmptyBlock(v3s16 fbp);
 	void insertCulledBlock(v3s16 fbp);
 
-	void startGeneratingBlockMesh(FarBlock *b, bool generate_aux_meshes);
-	void insertGeneratedBlockMesh(v3s16 p, scene::SMesh *mesh,
+	void startGeneratingBlockMesh(FarBlock *b,
+			FarBlockMeshGenerateTask::GenLevel level);
+	void insertGeneratedBlockMesh(
+			v3s16 p, scene::SMesh *crude_mesh, scene::SMesh *fine_mesh,
 			const std::vector<scene::SMesh*> &mapblock_meshes,
 			const std::vector<scene::SMesh*> &mapblock2_meshes);
 
@@ -255,6 +269,8 @@ public:
 	u32 farblock_shader_id;
 	BlockAreaBitmap normally_rendered_blocks;
 
+	v3s16 current_camera_offset;
+
 private:
 	void updateSettings();
 
@@ -265,7 +281,6 @@ private:
 
 	// Rendering stuff
 	core::aabbox3d<f32> m_bounding_box;
-	v3s16 m_camera_offset;
 
 	// Fetch suggestion algorithm
 	s16 m_farblocks_exist_up_to_d;
