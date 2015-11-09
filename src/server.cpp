@@ -2308,6 +2308,7 @@ void Server::SendBlocks(float dtime)
 				status = FBRS_FULLY_LOADED;
 			} else {
 				if (allow_generate) {
+					// Wait until it is fully generated
 					continue;
 				}
 				status = FBRS_PARTLY_LOADED;
@@ -2315,8 +2316,8 @@ void Server::SendBlocks(float dtime)
 
 			ServerFarBlock *fb = m_far_map->getBlock(wms.p);
 			if (!fb) {
-				// TODO: We don't actually know this based on this
-				status = FBRS_EMPTY;
+				std::cout<<"ServerFarBlock "<<PP(wms.p)<<" not found"<<std::endl;
+				status = FBRS_LOAD_IN_PROGRESS;
 			}
 
 			NetworkPacket pkt(TOCLIENT_FAR_BLOCKS_RESULT, 0, peer_id);

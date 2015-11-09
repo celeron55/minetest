@@ -37,6 +37,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 FarBlock::FarBlock(v3s16 p):
 	p(p),
+	is_culled_by_server(false),
+	is_partly_loaded_by_server(false),
+	partly_loaded_refresh_counter(0),
 	crude_mesh(NULL),
 	fine_mesh(NULL),
 	generating_mesh(false),
@@ -986,12 +989,14 @@ FarBlock* FarMap::getOrCreateBlock(v3s16 p)
 }
 
 void FarMap::insertData(v3s16 fbp, v3s16 divs_per_mb,
-		const std::vector<u16> &node_ids, const std::vector<u8> &lights)
+		const std::vector<u16> &node_ids, const std::vector<u8> &lights,
+		bool is_partly_loaded)
 {
 	infostream<<"FarMap::insertData: fbp: "<<PP(fbp)
 			<<", divs_per_mb: "<<PP(divs_per_mb)
 			<<", node_ids.size(): "<<node_ids.size()
 			<<", lights.size(): "<<lights.size()
+			<<", is_partly_loaded: "<<is_partly_loaded
 			<<std::endl;
 
 	v3s16 area_offset_mb(
@@ -1029,6 +1034,8 @@ void FarMap::insertData(v3s16 fbp, v3s16 divs_per_mb,
 
 	FarBlock *b = getOrCreateBlock(fbp);
 	b->is_culled_by_server = false;
+	b->is_partly_loaded_by_server = is_partly_loaded;
+	b->mesh_is_empty = false;
 	b->resize(divs_per_mb);
 
 	v3s16 dp_in_fb;
@@ -1051,14 +1058,26 @@ void FarMap::insertData(v3s16 fbp, v3s16 divs_per_mb,
 
 void FarMap::insertEmptyBlock(v3s16 fbp)
 {
+	infostream<<PP(fbp)<<" reported empty"<<std::endl;
 	FarBlock *b = getOrCreateBlock(fbp);
 	b->is_culled_by_server = false;
+	b->is_partly_loaded_by_server = false;
 }
 
 void FarMap::insertCulledBlock(v3s16 fbp)
 {
+	infostream<<PP(fbp)<<" reported culled"<<std::endl;
 	FarBlock *b = getOrCreateBlock(fbp);
 	b->is_culled_by_server = true;
+	b->is_partly_loaded_by_server = false;
+}
+
+void FarMap::insertLoadInProgressBlock(v3s16 fbp)
+{
+	infostream<<PP(fbp)<<" reported load-in-progress"<<std::endl;
+	FarBlock *b = getOrCreateBlock(fbp);
+	b->is_culled_by_server = false;
+	b->is_partly_loaded_by_server = true;
 }
 
 void FarMap::startGeneratingBlockMesh(FarBlock *b,
@@ -1259,8 +1278,21 @@ std::vector<v3s16> FarMap::suggestFarBlocksToFetch(v3s16 camera_p)
 		for (size_t i=0; i<ps.size(); i++) {
 			v3s16 p = center_fb + ps[i];
 			FarBlock *b = getBlock(p);
-			if (b != NULL)
-				continue; // Exists
+			infostream<<PP(p)<<" = "<<b<<std::endl;
+			if (b != NULL) {
+				if (!b->is_partly_loaded_by_server) {
+					infostream<<PP(b->p)<<" is fully loaded"<<std::endl;
+					continue; // Exists and was received fully loaded
+				}
+				b->partly_loaded_refresh_counter++;
+				if (b->partly_loaded_refresh_counter < 5) {
+					infostream<<PP(b->p)<<" is partly loaded; counting"<<std::endl;
+					continue; // Don't try reloading this time
+				}
+				infostream<<PP(b->p)<<" is partly loaded; reloading now"<<std::endl;
+				// Try reloading this time
+				b->partly_loaded_refresh_counter = 0;
+			}
 			if (m_farblocks_exist_up_to_d == -1)
 				m_farblocks_exist_up_to_d = d - 1;
 			suggested_fbs.push_back(p);
@@ -1362,7 +1394,7 @@ static void renderBlock(FarMap *far_map, FarBlock *b,
 	);
 	float d = (camera_pf - block_pf).getLength();
 
-	/*std::cout<<"b->p="<<PP(b->p)
+	/*infostream<<"b->p="<<PP(b->p)
 			<<", camera_pf="<<PP(camera_pf)
 			<<", b->current_camera_offset="<<PP(b->current_camera_offset)
 			<<", far_map->current_camera_offset="

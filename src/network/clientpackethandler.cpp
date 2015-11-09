@@ -1279,11 +1279,14 @@ void Client::handleCommand_FarBlocksResult(NetworkPacket* pkt_in)
 			lights[i] = readU8(is2);
 
 		// Shove the data into FarMap to be rendered efficiently
-		m_far_map->insertData(p, divs_per_mb, node_ids, lights);
+		bool partly_loaded = (status == FBRS_PARTLY_LOADED);
+		m_far_map->insertData(p, divs_per_mb, node_ids, lights, partly_loaded);
 	} else if(status == FBRS_EMPTY) {
 		m_far_map->insertEmptyBlock(p);
 	} else if(status == FBRS_CULLED) {
 		m_far_map->insertCulledBlock(p);
+	} else if(status == FBRS_LOAD_IN_PROGRESS) {
+		m_far_map->insertLoadInProgressBlock(p);
 	} else {
 		// ?
 	}

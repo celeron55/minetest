@@ -68,6 +68,12 @@ struct FarBlock
 	// If true, content should always be empty.
 	bool is_culled_by_server;
 
+	// Information given by server. Really the important bit about this is that
+	// it's partially NOT loaded, which means we should ask again sometime so
+	// that the server may give us a more full loaded version.
+	bool is_partly_loaded_by_server;
+	s32 partly_loaded_refresh_counter;
+
 	// Very crude mesh covering everything in this FarBlock
 	scene::SMesh *crude_mesh;
 
@@ -231,9 +237,11 @@ public:
 
 	// Parameter dimensions are in MapBlocks
 	void insertData(v3s16 fbp, v3s16 divs_per_mb,
-			const std::vector<u16> &node_ids, const std::vector<u8> &lights);
+			const std::vector<u16> &node_ids, const std::vector<u8> &lights,
+			bool is_partly_loaded);
 	void insertEmptyBlock(v3s16 fbp);
 	void insertCulledBlock(v3s16 fbp);
+	void insertLoadInProgressBlock(v3s16 fbp);
 
 	void startGeneratingBlockMesh(FarBlock *b,
 			FarBlockMeshGenerateTask::GenLevel level);

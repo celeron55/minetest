@@ -976,6 +976,7 @@ enum FarBlocksResultStatus {
 	FBRS_PARTLY_LOADED = 1,
 	FBRS_EMPTY = 2,
 	FBRS_CULLED = 3,
+	FBRS_LOAD_IN_PROGRESS = 4,
 };
 
 enum FarBlocksResultFlag {
