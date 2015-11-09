@@ -169,9 +169,6 @@ void RemoteClient::GetNextBlocks (
 				if (!emerge->enqueueBlockEmerge(peer_id, wms.p, allow_generate)) {
 					// EmergeThread's queue is full; maybe it's not full on the
 					// next time this is called.
-					infostream<<"Emerging MapBlock ("
-							<<wms.p.X<<","<<wms.p.Y<<","<<wms.p.Z<<")"
-							<<std::endl;
 				}
 
 				// This block is not available now; hopefully it appears on some
@@ -348,6 +345,20 @@ void RemoteClient::GetNextAutosendBlocks (
 			v3s16 p = *li + focus_point;
 			WantedMapSend wms(WMST_MAPBLOCK, p);
 
+			// Limit fetched MapBlocks to a ball radius instead of a square
+			// because that is how they are limited when drawing too
+			v3s16 blockpos_nodes = p * MAP_BLOCKSIZE;
+			v3f blockpos_center(
+					blockpos_nodes.X * BS + MAP_BLOCKSIZE/2 * BS,
+					blockpos_nodes.Y * BS + MAP_BLOCKSIZE/2 * BS,
+					blockpos_nodes.Z * BS + MAP_BLOCKSIZE/2 * BS
+			);
+			v3f blockpos_relative = blockpos_center - camera_p;
+			f32 distance = blockpos_relative.getLength();
+			if (distance > max_block_send_distance * MAP_BLOCKSIZE * BS)
+				continue; // Not in range
+
+			// Calculate this thing
 			u16 max_simultaneous_block_sends =
 					figure_out_max_simultaneous_block_sends(
 							max_simul_sends_setting,
