@@ -2232,6 +2232,11 @@ void Server::SendBlocks(float dtime)
 
 		u16 peer_id = random_order[i];
 
+		RemoteClient *client = m_clients.lockedGetClientNoEx(
+				peer_id, CS_Active);
+		if(!client)
+			continue;
+
 		WantedMapSendQueue &wmsq = wanted_map_sends_to_players[peer_id];
 		if (wmsq.i >= wmsq.wms.size())
 			continue;
@@ -2241,15 +2246,11 @@ void Server::SendBlocks(float dtime)
 			infostream << "Server: Sending to "<<peer_id<<": MapBlock ("
 					<<wms.p.X<<","<<wms.p.Y<<","<<wms.p.Z<<")"
 					<< std::endl;
+
 			MapBlock *block = m_env->getMap().getBlockNoCreateNoEx(wms.p);
 			if (!block)
 				continue;
 
-			// Send it if possible
-			RemoteClient *client = m_clients.lockedGetClientNoEx(
-					peer_id, CS_Active);
-			if(!client)
-				continue;
 			SendBlockNoLock(peer_id, block, client->serialization_version,
 					client->net_proto_version);
 			client->SendingBlock(wms);
@@ -2271,96 +2272,38 @@ void Server::SendBlocks(float dtime)
 
 			v3s16 area_size_mb(FMP_SCALE, FMP_SCALE, FMP_SCALE);
 
-			v3s16 out_size(
-				area_size_mb.X * divs_per_mb.X,
-				area_size_mb.Y * divs_per_mb.Y,
-				area_size_mb.Z * divs_per_mb.Z
-			);
+			// We really can't generate everything; it would bloat up
+			// the world database way too much.
+			// TODO: Figure out how to do this in a good way
+			bool allow_generate = wms.p.Y > -2 && wms.p.Y < 2;
 
-			size_t out_size_n = out_size.X * out_size.Y * out_size.Z;
-
-			// Output area in divisions
-			v3s16 out_div_area_p0(
-				area_offset_mb.X * divs_per_mb.X,
-				area_offset_mb.Y * divs_per_mb.Y,
-				area_offset_mb.Z * divs_per_mb.Z
-			);
-			v3s16 out_div_area_p1 = out_div_area_p0 + v3s16(
-				area_size_mb.X * divs_per_mb.X,
-				area_size_mb.Y * divs_per_mb.Y,
-				area_size_mb.Z * divs_per_mb.Z
-			);
-			// This can be used for indexing node_ids and lights
-			VoxelArea out_div_area(out_div_area_p0, out_div_area_p1 - v3s16(1,1,1));
-			assert(out_div_area.getVolume() == (s32)out_size_n);
-
-			std::vector<u16> node_ids;
-			node_ids.resize(out_size_n);
-
-			std::vector<u8> lights;
-			lights.resize(out_size_n);
-
+			bool all_found = true;
 			v3s16 bp;
 			for (bp.Z=area_offset_mb.Z; bp.Z<area_offset_mb.Z+area_size_mb.Z; bp.Z++)
 			for (bp.Y=area_offset_mb.Y; bp.Y<area_offset_mb.Y+area_size_mb.Y; bp.Y++)
-			for (bp.X=area_offset_mb.X; bp.X<area_offset_mb.X+area_size_mb.X; bp.X++) {
-				//MapBlock *b = m_env->getMap().getBlockNoCreateNoEx(bp);
-				// Use emergeBlock(*, false) to load from disk if possible
-				MapBlock *b = m_env->getMap().emergeBlock(bp, false);
+			for (bp.X=area_offset_mb.X; bp.X<area_offset_mb.X+area_size_mb.X; bp.X++)
+			{
+				MapBlock *b = m_env->getMap().getBlockNoCreateNoEx(bp);
+				if (!b) {
+					all_found = false;
 
-				// TODO: Don't send FarBlock if all MapBlocks inside it haven't
-				//       been generated
-
-				v3s16 dp; // Position inside block (division)
-				for (dp.Z=0; dp.Z<divs_per_mb.Z; dp.Z++)
-				for (dp.Y=0; dp.Y<divs_per_mb.Y; dp.Y++)
-				for (dp.X=0; dp.X<divs_per_mb.X; dp.X++) {
-					// Block's origin coordinates in global division coordinates
-					v3s16 dp0(
-						bp.X * divs_per_mb.X,
-						bp.Y * divs_per_mb.Y,
-						bp.Z * divs_per_mb.Z
-					);
-
-					v3s16 dp1 = dp0 + dp;
-					assert(out_div_area.contains(dp1));
-					size_t i = out_div_area.index(dp1);
-
-					u16 node_id = 0;
-					u8 light = 0;
-
-					if(b){
-						// Node at center of division (horizontally)
-						v3s16 np(
-							dp.X * divs_per_mb.X + MAP_BLOCKSIZE/divs_per_mb.X/2,
-							dp.Y * divs_per_mb.Y + MAP_BLOCKSIZE/divs_per_mb.Y/2,
-							dp.Z * divs_per_mb.Z + MAP_BLOCKSIZE/divs_per_mb.Z/2);
-						for(s32 i=0; i<MAP_BLOCKSIZE/divs_per_mb.Y+1; i++){
-							MapNode n = b->getNodeNoEx(np);
-							if(n.getContent() == CONTENT_IGNORE)
-								break;
-							const ContentFeatures &f = getNodeDefManager()->get(n);
-							if (!f.name.empty() && f.param_type == CPT_LIGHT) {
-								light = n.param1;
-								if(node_id == 0){
-									node_id = n.getContent();
-								}
-								break;
-							} else {
-								// TODO: Get light of a nearby node; something that defines
-								//       how brightly this division should be rendered
-								// (day | (night << 8))
-								light = (15) | (0<<4);
-								node_id = n.getContent();
-							}
-							np.Y++;
-						}
+					// NOTE: This might be a bit haphazard; we are talking about
+					// generating 8x8x8 MapBlocks here at a time, repeating by
+					// hundreds of times...
+					if (!m_emerge->enqueueBlockEmerge(peer_id, bp, allow_generate)) {
+						// EmergeThread's queue is full; maybe it's not full on the
+						// next time this is called.
 					}
-
-					node_ids[i] = node_id;
-					lights[i] = light;
 				}
 			}
+
+			// TODO
+			//(void)all_found; // Unused
+			// If generating, wait until all are found
+			if (allow_generate && !all_found)
+				continue;
+
+			ServerFarBlock *fb = m_far_map->getBlock(wms.p);
 
 			NetworkPacket pkt(TOCLIENT_FAR_BLOCKS_RESULT, 0, peer_id);
 			/*
@@ -2374,20 +2317,21 @@ void Server::SendBlocks(float dtime)
 			*/
 
 			pkt << wms.p;
-			pkt << divs_per_mb;
-			for(size_t i=0; i<node_ids.size(); i++)
-				pkt << (u16) node_ids[i];
-			for(size_t i=0; i<lights.size(); i++)
-				pkt << (u8) lights[i];
+
+			if (fb) {
+				pkt << divs_per_mb;
+				for(size_t i=0; i<fb->node_ids.size(); i++)
+					pkt << (u16) fb->node_ids[i];
+				for(size_t i=0; i<fb->lights.size(); i++)
+					pkt << (u8) fb->lights[i];
+			} else {
+				// Empty
+				pkt << v3s16(0, 0, 0);
+			}
 
 			infostream << "FAR_BLOCKS_RESULT packet size: " << pkt.getSize()
 					<< std::endl;
 
-			// Send it if possible
-			RemoteClient *client = m_clients.lockedGetClientNoEx(
-					peer_id, CS_Active);
-			if(!client)
-				continue;
 			Send(&pkt);
 			client->SendingBlock(wms);
 			total_sending++;

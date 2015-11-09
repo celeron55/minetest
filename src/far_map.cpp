@@ -926,6 +926,14 @@ void FarMap::insertData(v3s16 area_offset_mapblocks, v3s16 area_size_mapblocks,
 	}
 }
 
+void FarMap::insertEmptyBlock(v3s16 fbp)
+{
+	FarBlock *b = getOrCreateBlock(fbp);
+	(void)b; // Unused
+
+	// Umm... that's it I guess.
+}
+
 void FarMap::startGeneratingBlockMesh(FarBlock *b, bool generate_aux_meshes)
 {
 	b->generating_mesh = true;
@@ -1074,12 +1082,14 @@ void FarMap::createAtlas()
 std::vector<v3s16> FarMap::suggestFarBlocksToFetch(v3s16 camera_p)
 {
 	// Don't fetch anything if the task queue length is too high
+	// TODO: Where to get this value?
+	const size_t max_queue_length = 50;
+	size_t queue_length = m_worker_thread.getQueueLength();
 	verbosestream << "FarMap: m_worker_thread.getQueueLength()="
-			<< m_worker_thread.getQueueLength() << std::endl;
-	if (m_worker_thread.getQueueLength() >= 10)
+			<< queue_length << std::endl;
+	if (queue_length >= max_queue_length)
 		return std::vector<v3s16>();
-
-	static const size_t wanted_num_results = 20;
+	static const size_t wanted_num_results = max_queue_length - queue_length;
 
 	std::vector<v3s16> suggested_fbs;
 
@@ -1223,7 +1233,7 @@ big_break:;
 	bool render_in_pieces = fb_being_normally_rendered;
 
 	if (b->mapblock_meshes.empty() || b->mapblock2_meshes.empty()) {
-		if (!b->generating_mesh) {
+		if (!b->generating_mesh && !b->content.empty()) {
 			far_map->startGeneratingBlockMesh(b, true);
 		}
 		// Can't render in pieces because we don't have meshes for the pieces.

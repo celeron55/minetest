@@ -23,24 +23,37 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "voxel.h" // VoxelArea
 #include <map>
 
+class INodeDefManager;
+
 // In how many pieces MapBlocks have been divided in each dimension to create
 // FarNodes
-#define SERVER_FARBLOCK_DIV 4
+#define SERVER_FB_MB_DIV 4
+#define SERVER_FN_SIZE (MAP_BLOCKSIZE / SERVER_FB_MB_DIV)
 
 struct ServerFarBlock
 {
 	// Position in FarBlocks
 	v3s16 p;
-	// Block's effective origin in FarNodes
-	v3s16 fnp0;
 	// Contained area in FarNodes. Is used to index node_ids and lights.
 	VoxelArea content_area;
 
 	std::vector<u16> node_ids;
 	std::vector<u8> lights;
 
+	// TODO: Keep track of which MapBlocks have been loaded into this
+
 	ServerFarBlock(v3s16 p);
 	~ServerFarBlock();
+};
+
+struct ServerFarMapPiece
+{
+	VoxelArea content_area;
+
+	std::vector<u16> node_ids;
+	std::vector<u8> lights;
+
+	void generateFrom(VoxelManipulator &vm, INodeDefManager *ndef);
 };
 
 class ServerFarMap
@@ -51,6 +64,8 @@ public:
 
 	ServerFarBlock* getBlock(v3s16 p);
 	ServerFarBlock* getOrCreateBlock(v3s16 p);
+
+	void updateFrom(const ServerFarMapPiece &piece);
 
 private:
 	std::map<v3s16, ServerFarBlock*> m_blocks;

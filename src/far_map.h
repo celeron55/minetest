@@ -61,6 +61,7 @@ struct FarBlock
 	// coordinates
 	VoxelArea content_area;
 
+	// Can be empty
 	std::vector<FarNode> content;
 
 	// Mesh covering everything in this FarBlock
@@ -202,9 +203,11 @@ public:
 	FarBlock* getOrCreateBlock(v3s16 p);
 
 	// Parameter dimensions are in MapBlocks
+	// TODO: More appropriate parameters (just a FarBlock position or something)
 	void insertData(v3s16 area_offset_mapblocks, v3s16 area_size_mapblocks,
 			v3s16 block_div,
 			const std::vector<u16> &node_ids, const std::vector<u8> &lights);
+	void insertEmptyBlock(v3s16 fbp);
 
 	void startGeneratingBlockMesh(FarBlock *b, bool generate_aux_meshes);
 	void insertGeneratedBlockMesh(v3s16 p, scene::SMesh *mesh,

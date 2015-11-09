@@ -52,6 +52,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "serverobject.h"
 #include "settings.h"
 #include "voxel.h"
+#include "server_far_map.h"
 
 
 struct MapgenDesc {
@@ -634,7 +635,8 @@ MapBlock *EmergeThread::finishGen(v3s16 pos, BlockMakeData *bmdata,
 void EmergeThread::updateFarMap(
 		const std::map<v3s16, MapBlock*> &modified_blocks)
 {
-	for (std::map<v3s16, MapBlock*>::iterator it = modified_blocks.begin();
+	for (std::map<v3s16, MapBlock*>::const_iterator
+			it = modified_blocks.begin();
 			it != modified_blocks.end(); ++it)
 	{
 		VoxelManipulator vm;
@@ -642,15 +644,21 @@ void EmergeThread::updateFarMap(
 		// Get block data
 		{
 			MutexAutoLock envlock(m_server->m_env_mutex);
-			MapBlock *block = m_map->getBlockNoCreateNoEx(pos);
+			/*ServerMap *map = (ServerMap*)&m_server->m_env->getMap();
+			MapBlock *block = map->getBlockNoCreateNoEx(it->first);
 			if (!block)
-				continue;
+				continue;*/
+			MapBlock *block = it->second;
+			VoxelArea block_area_nodes(
+					block->getPos() * MAP_BLOCKSIZE,
+					(block->getPos()+1)*MAP_BLOCKSIZE - v3s16(1,1,1));
+			vm.addArea(block_area_nodes);
 			block->copyTo(vm);
 		}
 
 		// Generate FarMap data without locking anything
 		ServerFarMapPiece piece;
-		piece.generateFrom(vm);
+		piece.generateFrom(vm, m_server->m_nodedef);
 
 		// Insert FarMap data into ServerFarMap
 		{

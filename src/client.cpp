@@ -722,11 +722,11 @@ void Client::step(float dtime)
 			v3s16 mb = suggested_mbs[i];
 			wanted_map_send_queue.push_back(WantedMapSend(WMST_MAPBLOCK, mb));
 		}
+#endif
 
 		// Prioritize
 		std::sort(wanted_map_send_queue.begin(), wanted_map_send_queue.end(),
 				WMSPriority(player_p, far_weight));
-#endif
 
 		// Autosend parameters
 		s16 autosend_radius_map = map->suggestAutosendMapblocksRadius();

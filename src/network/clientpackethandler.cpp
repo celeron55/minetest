@@ -1239,34 +1239,39 @@ void Client::handleCommand_FarBlocksResult(NetworkPacket* pkt_in)
 	v3s16 p         = pkt_in->read<v3s16>();
 	v3s16 divs_per_mb = pkt_in->read<v3s16>();
 
-	v3s16 area_offset_mb(
-			FMP_SCALE * p.X,
-			FMP_SCALE * p.Y,
-			FMP_SCALE * p.Z);
+	if (divs_per_mb == v3s16(0, 0, 0)) {
+		// This is an empty block
+		m_far_map->insertEmptyBlock(p);
+	} else {
+		v3s16 area_offset_mb(
+				FMP_SCALE * p.X,
+				FMP_SCALE * p.Y,
+				FMP_SCALE * p.Z);
 
-	v3s16 area_size_mb(FMP_SCALE, FMP_SCALE, FMP_SCALE);
+		v3s16 area_size_mb(FMP_SCALE, FMP_SCALE, FMP_SCALE);
 
-	v3s16 total_size(
-			area_size_mb.X * divs_per_mb.X,
-			area_size_mb.Y * divs_per_mb.Y,
-			area_size_mb.Z * divs_per_mb.Z);
+		v3s16 total_size(
+				area_size_mb.X * divs_per_mb.X,
+				area_size_mb.Y * divs_per_mb.Y,
+				area_size_mb.Z * divs_per_mb.Z);
 
-	size_t total_size_n = total_size.X * total_size.Y * total_size.Z;
+		size_t total_size_n = total_size.X * total_size.Y * total_size.Z;
 
-	std::vector<u16> node_ids;
-	node_ids.resize(total_size_n);
+		std::vector<u16> node_ids;
+		node_ids.resize(total_size_n);
 
-	std::vector<u8> lights;
-	lights.resize(total_size_n);
+		std::vector<u8> lights;
+		lights.resize(total_size_n);
 
-	for(size_t i=0; i<total_size_n; i++)
-		*pkt_in >> node_ids[i];
-	for(size_t i=0; i<total_size_n; i++)
-		*pkt_in >> lights[i];
+		for(size_t i=0; i<total_size_n; i++)
+			*pkt_in >> node_ids[i];
+		for(size_t i=0; i<total_size_n; i++)
+			*pkt_in >> lights[i];
 
-	// Shove the data into FarMap to be rendered efficiently
-	m_far_map->insertData(area_offset_mb, area_size_mb, divs_per_mb,
-			node_ids, lights);
+		// Shove the data into FarMap to be rendered efficiently
+		m_far_map->insertData(area_offset_mb, area_size_mb, divs_per_mb,
+				node_ids, lights);
+	}
 
 	// Report to server that the FarBlock was received
 	sendGotFarBlock(p);
