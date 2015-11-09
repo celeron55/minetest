@@ -181,9 +181,9 @@ void RemoteClient::GetNextBlocks (
 			dest.push_back(wms);
 		}
 		if (wms.type == WMST_FARBLOCK) {
-			verbosestream << "Server: Client "<<peer_id<<" wants FarBlock ("
+			/*verbosestream << "Server: Client "<<peer_id<<" wants FarBlock ("
 					<<wms.p.X<<","<<wms.p.Y<<","<<wms.p.Z<<")"
-					<< std::endl;
+					<< std::endl;*/
 
 			// Do not go over-limit
 			if (blockpos_over_limit(wms.p))

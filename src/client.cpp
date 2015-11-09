@@ -680,7 +680,7 @@ void Client::step(float dtime)
 	static const float fmr_interval_s = 2.0f; // TODO: Configurable
 	if(m_far_blocks_request_interval.step(dtime, fmr_interval_s))
 	{
-		verbosestream<<"Client: Requesting far blocks"<<std::endl;
+		//verbosestream<<"Client: Requesting far blocks"<<std::endl;
 
 		ClientMap *map = &m_env.getClientMap();
 		static const float far_weight = 8.0f; // TODO: Configurable

@@ -2200,11 +2200,10 @@ void Server::SendBlocks(float dtime)
 			std::vector<WantedMapSend> &wanted_map_sends =
 					wanted_map_sends_to_players[peer_id].wms;
 			client->GetNextBlocks(m_env, m_emerge, dtime, wanted_map_sends);
-			if (!wanted_map_sends.empty()) {
-				verbosestream << "Client " << peer_id << ": "
-						<< "wanted_map_sends.size()="<<wanted_map_sends.size()
-						<< std::endl;
-			}
+
+			/*verbosestream << "Client " << peer_id << ": "
+					<< "wanted_map_sends.size()="<<wanted_map_sends.size()
+					<< std::endl;*/
 		}
 		m_clients.unlock();
 	}
@@ -2243,9 +2242,9 @@ void Server::SendBlocks(float dtime)
 		const WantedMapSend &wms = wmsq.wms[wmsq.i++];
 
 		if (wms.type == WMST_MAPBLOCK) {
-			infostream << "Server: Sending to "<<peer_id<<": MapBlock ("
+			/*infostream << "Server: Sending to "<<peer_id<<": MapBlock ("
 					<<wms.p.X<<","<<wms.p.Y<<","<<wms.p.Z<<")"
-					<< std::endl;
+					<< std::endl;*/
 
 			MapBlock *block = m_env->getMap().getBlockNoCreateNoEx(wms.p);
 			if (!block)
@@ -2257,9 +2256,9 @@ void Server::SendBlocks(float dtime)
 			total_sending++;
 		}
 		if (wms.type == WMST_FARBLOCK) {
-			infostream << "Server: Sending to "<<peer_id<<": FarBlock ("
+			/*infostream << "Server: Sending to "<<peer_id<<": FarBlock ("
 					<<wms.p.X<<","<<wms.p.Y<<","<<wms.p.Z<<")"
-					<< std::endl;
+					<< std::endl;*/
 
 			// FarBlock area in divisions (FarNodes)
 			static const v3s16 divs_per_mb(

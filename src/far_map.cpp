@@ -781,7 +781,7 @@ void FarMapWorkerThread::sync()
 	for(;;){
 		try {
 			FarMapTask *t = m_queue_sync.pop_front(0);
-			infostream<<"FarMapWorkerThread: Running task in sync"<<std::endl;
+			//infostream<<"FarMapWorkerThread: Running task in sync"<<std::endl;
 			// TODO: Spread these sync() calls as thin as possible, because if a
 			// bunch of them is called in a single frame, screen updates become
 			// choppy
@@ -1175,10 +1175,10 @@ void FarMap::reportNormallyRenderedBlocks(const BlockAreaBitmap &nrb)
 {
 	normally_rendered_blocks = nrb;
 
-	verbosestream<<"FarMap::reportNormallyRenderedBlocks: "
+	/*verbosestream<<"FarMap::reportNormallyRenderedBlocks: "
 			<<"reported area: ";
-	normally_rendered_blocks.blocks_area.print(verbosestream);
-	verbosestream<<std::endl;
+			normally_rendered_blocks.blocks_area.print(verbosestream);
+			verbosestream<<std::endl;*/
 }
 
 void FarMap::createAtlas()
@@ -1222,8 +1222,6 @@ std::vector<v3s16> FarMap::suggestFarBlocksToFetch(v3s16 camera_p)
 	// TODO: Where to get this value?
 	const size_t max_queue_length = 50;
 	size_t queue_length = m_worker_thread.getQueueLength();
-	verbosestream << "FarMap: m_worker_thread.getQueueLength()="
-			<< queue_length << std::endl;
 	if (queue_length >= max_queue_length)
 		return std::vector<v3s16>();
 	static const size_t wanted_num_results = max_queue_length - queue_length;
