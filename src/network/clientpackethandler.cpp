@@ -1229,6 +1229,8 @@ void Client::handleCommand_FarBlocksResult(NetworkPacket* pkt_in)
 
 	/*
 		v3s16 p (position in farblocks)
+		u8 status
+		u8 flags
 		v3s16 divs_per_mb (amount of divisions per mapblock)
 		TODO: Compress
 		for each division (for(Y) for(X) for(Z)):
@@ -1236,13 +1238,12 @@ void Client::handleCommand_FarBlocksResult(NetworkPacket* pkt_in)
 		for each division (for(Y) for(X) for(Z)):
 			u8 light (both lightbanks; raw value)
 	*/
-	v3s16 p         = pkt_in->read<v3s16>();
+	v3s16 p           = pkt_in->read<v3s16>();
+	FarBlocksResultStatus status = (FarBlocksResultStatus)pkt_in->read<u8>();
+	u8    flags       = pkt_in->read<u8>();
 	v3s16 divs_per_mb = pkt_in->read<v3s16>();
 
-	if (divs_per_mb == v3s16(0, 0, 0)) {
-		// This is an empty block
-		m_far_map->insertEmptyBlock(p);
-	} else {
+	if (status == FBRS_FULLY_LOADED || status == FBRS_PARTLY_LOADED) {
 		v3s16 area_offset_mb(
 				FMP_SCALE * p.X,
 				FMP_SCALE * p.Y,
@@ -1269,8 +1270,13 @@ void Client::handleCommand_FarBlocksResult(NetworkPacket* pkt_in)
 			*pkt_in >> lights[i];
 
 		// Shove the data into FarMap to be rendered efficiently
-		m_far_map->insertData(area_offset_mb, area_size_mb, divs_per_mb,
-				node_ids, lights);
+		m_far_map->insertData(p, divs_per_mb, node_ids, lights);
+	} else if(status == FBRS_EMPTY) {
+		m_far_map->insertEmptyBlock(p);
+	} else if(status == FBRS_CULLED) {
+		m_far_map->insertCulledBlock(p);
+	} else {
+		// ?
 	}
 
 	// Report to server that the FarBlock was received

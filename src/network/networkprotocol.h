@@ -587,11 +587,13 @@ enum ToClientCommand
 	TOCLIENT_FAR_BLOCKS_RESULT = 0x54,
 	/*
 		v3s16 p (position in farblocks)
-		v3s16 divs_per_mb (amount of divisions per mapblock)
+		u8 status
+		u8 flags
+		v3s16 divs_per_mb (amount of divisions (FarNodes) per mapblock)
 		TODO: Compress
-		for each division (for(Y) for(X) for(Z)):
+		for each division (indexed by VoxelArea):
 			u16 node_id
-		for each division (for(Y) for(X) for(Z)):
+		for each division (indexed by VoxelArea):
 			u8 light (both lightbanks; raw value)
 	*/
 
@@ -966,6 +968,17 @@ struct WantedMapSend
 		if (p < other.p) return true;
 		return false;
 	}
+};
+
+enum FarBlocksResultStatus {
+	FBRS_FULLY_LOADED = 0,
+	FBRS_PARTLY_LOADED = 1,
+	FBRS_EMPTY = 2,
+	FBRS_CULLED = 3,
+};
+
+enum FarBlocksResultFlag {
+	// Nothing for now
 };
 
 #endif

@@ -61,8 +61,12 @@ struct FarBlock
 	// coordinates
 	VoxelArea content_area;
 
-	// Can be empty
+	// Can be empty if server reports the FarBlock to be completely empty
 	std::vector<FarNode> content;
+
+	// If true, server has opted not to send this to us but may send it later.
+	// If true, content should always be empty.
+	bool is_culled_by_server;
 
 	// Mesh covering everything in this FarBlock
 	scene::SMesh *mesh;
@@ -203,11 +207,10 @@ public:
 	FarBlock* getOrCreateBlock(v3s16 p);
 
 	// Parameter dimensions are in MapBlocks
-	// TODO: More appropriate parameters (just a FarBlock position or something)
-	void insertData(v3s16 area_offset_mapblocks, v3s16 area_size_mapblocks,
-			v3s16 divs_per_mb,
+	void insertData(v3s16 fbp, v3s16 divs_per_mb,
 			const std::vector<u16> &node_ids, const std::vector<u8> &lights);
 	void insertEmptyBlock(v3s16 fbp);
+	void insertCulledBlock(v3s16 fbp);
 
 	void startGeneratingBlockMesh(FarBlock *b, bool generate_aux_meshes);
 	void insertGeneratedBlockMesh(v3s16 p, scene::SMesh *mesh,

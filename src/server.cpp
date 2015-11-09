@@ -2262,7 +2262,8 @@ void Server::SendBlocks(float dtime)
 					<< std::endl;
 
 			// FarBlock area in divisions (FarNodes)
-			static const v3s16 divs_per_mb(4, 4, 4);
+			static const v3s16 divs_per_mb(
+					SERVER_FB_MB_DIV, SERVER_FB_MB_DIV, SERVER_FB_MB_DIV);
 
 			v3s16 area_offset_mb(
 				FMP_SCALE * wms.p.X,
@@ -2278,6 +2279,8 @@ void Server::SendBlocks(float dtime)
 			bool allow_generate = wms.p.Y >= -1 && wms.p.Y <= 1;
 
 			bool all_found = true;
+
+			// TODO: Is this loop really what we should be doing here?
 			v3s16 bp;
 			for (bp.Z=area_offset_mb.Z; bp.Z<area_offset_mb.Z+area_size_mb.Z; bp.Z++)
 			for (bp.Y=area_offset_mb.Y; bp.Y<area_offset_mb.Y+area_size_mb.Y; bp.Y++)
@@ -2297,17 +2300,28 @@ void Server::SendBlocks(float dtime)
 				}
 			}
 
-			// TODO
-			//(void)all_found; // Unused
-			// If generating, wait until all are found
-			if (allow_generate && !all_found)
-				continue;
+			FarBlocksResultStatus status;
+
+			if (all_found) {
+				status = FBRS_FULLY_LOADED;
+			} else {
+				if (allow_generate) {
+					continue;
+				}
+				status = FBRS_PARTLY_LOADED;
+			}
 
 			ServerFarBlock *fb = m_far_map->getBlock(wms.p);
+			if (!fb) {
+				// TODO: We don't actually know this based on this
+				status = FBRS_EMPTY;
+			}
 
 			NetworkPacket pkt(TOCLIENT_FAR_BLOCKS_RESULT, 0, peer_id);
 			/*
 				v3s16 p (position in farblocks)
+				u8 status
+				u8 flags
 				v3s16 divs_per_mb (amount of divisions per mapblock)
 				TODO: Compress
 				for each division (for(Y) for(X) for(Z)):
@@ -2318,15 +2332,14 @@ void Server::SendBlocks(float dtime)
 
 			pkt << wms.p;
 
-			if (fb) {
-				pkt << divs_per_mb;
+			pkt << (u8) status;
+			pkt << (u8) 0; // flags
+			pkt << divs_per_mb;
+			if (status == FBRS_FULLY_LOADED || status == FBRS_PARTLY_LOADED) {
 				for(size_t i=0; i<fb->node_ids.size(); i++)
 					pkt << (u16) fb->node_ids[i];
 				for(size_t i=0; i<fb->lights.size(); i++)
 					pkt << (u8) fb->lights[i];
-			} else {
-				// Empty
-				pkt << v3s16(0, 0, 0);
 			}
 
 			infostream << "FAR_BLOCKS_RESULT packet size: " << pkt.getSize()

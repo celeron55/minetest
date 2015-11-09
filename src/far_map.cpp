@@ -861,77 +861,82 @@ FarBlock* FarMap::getOrCreateBlock(v3s16 p)
 	return s->getOrCreateBlock(p.Y);
 }
 
-void FarMap::insertData(v3s16 area_offset_mapblocks, v3s16 area_size_mapblocks,
-		v3s16 divs_per_mb,
+void FarMap::insertData(v3s16 fbp, v3s16 divs_per_mb,
 		const std::vector<u16> &node_ids, const std::vector<u8> &lights)
 {
-	infostream<<"FarMap::insertData: "
-			<<"area_offset_mapblocks: "<<PP(area_offset_mapblocks)
-			<<", area_size_mapblocks: "<<PP(area_size_mapblocks)
+	infostream<<"FarMap::insertData: fbp: "<<PP(fbp)
 			<<", divs_per_mb: "<<PP(divs_per_mb)
 			<<", node_ids.size(): "<<node_ids.size()
 			<<", lights.size(): "<<lights.size()
 			<<std::endl;
 
+	v3s16 area_offset_mb(
+			FMP_SCALE * fbp.X,
+			FMP_SCALE * fbp.Y,
+			FMP_SCALE * fbp.Z);
+
+	v3s16 area_size_mb(FMP_SCALE, FMP_SCALE, FMP_SCALE);
+
 	// Convert to divisions (which will match FarNodes)
-	v3s16 div_p0(
-		area_offset_mapblocks.X * divs_per_mb.X,
-		area_offset_mapblocks.Y * divs_per_mb.Y,
-		area_offset_mapblocks.Z * divs_per_mb.Z
+	v3s16 source_fnp0(
+		area_offset_mb.X * divs_per_mb.X,
+		area_offset_mb.Y * divs_per_mb.Y,
+		area_offset_mb.Z * divs_per_mb.Z
 	);
-	v3s16 div_p1 = div_p0 + v3s16(
-		area_size_mapblocks.X * divs_per_mb.X,
-		area_size_mapblocks.Y * divs_per_mb.Y,
-		area_size_mapblocks.Z * divs_per_mb.Z
+	v3s16 source_fnp1 = source_fnp0 + v3s16(
+		area_size_mb.X * divs_per_mb.X - 1,
+		area_size_mb.Y * divs_per_mb.Y - 1,
+		area_size_mb.Z * divs_per_mb.Z - 1
 	);
 	// This can be used for indexing node_ids and lights
-	VoxelArea div_area(div_p0, div_p1 - v3s16(1,1,1));
+	VoxelArea source_area(source_fnp0, source_fnp1);
 
-	// Convert to FarBlock positions (this can cover extra area)
-	VoxelArea fb_area(
-		getContainerPos(area_offset_mapblocks, FMP_SCALE),
-		getContainerPos(area_offset_mapblocks + area_size_mapblocks -
-				v3s16(1,1,1), FMP_SCALE)
-	);
-
-	v3s16 fbp;
-	for (fbp.Y=fb_area.MinEdge.Y; fbp.Y<=fb_area.MaxEdge.Y; fbp.Y++)
-	for (fbp.X=fb_area.MinEdge.X; fbp.X<=fb_area.MaxEdge.X; fbp.X++)
-	for (fbp.Z=fb_area.MinEdge.Z; fbp.Z<=fb_area.MaxEdge.Z; fbp.Z++) {
-		infostream<<"FarMap::insertData: FarBlock "<<PP(fbp)<<std::endl;
-
-		FarBlock *b = getOrCreateBlock(fbp);
-		
-		b->resize(divs_per_mb);
-
-		v3s16 dp_in_fb;
-		for (dp_in_fb.Y=0; dp_in_fb.Y<b->effective_size.Y; dp_in_fb.Y++)
-		for (dp_in_fb.X=0; dp_in_fb.X<b->effective_size.X; dp_in_fb.X++)
-		for (dp_in_fb.Z=0; dp_in_fb.Z<b->effective_size.Z; dp_in_fb.Z++) {
-			v3s16 dp1 = b->dp00 + dp_in_fb;
-			// The source area does not necessarily contain all positions that
-			// the matching blocks contain
-			if(!div_area.contains(dp1))
-				continue;
-			size_t source_i = div_area.index(dp1);
-			size_t dst_i = b->index(dp1);
-			b->content[dst_i].id = node_ids[source_i];
-			/*b->content[dst_i].id = ((dp1.X + dp1.Y + dp1.Z) % 3 == 0) ?
-					5 : CONTENT_AIR;*/
-			b->content[dst_i].light = lights[source_i];
-		}
-
-		// TODO: Maybe yes if not config_far_map_minimize_memory_usage
-		startGeneratingBlockMesh(b, false);
+	if (node_ids.size() != (size_t)source_area.getVolume() ||
+			lights.size() != (size_t)source_area.getVolume()) {
+		warningstream<<"FarMap::insertData: fbp: "<<PP(fbp)
+				<<", divs_per_mb: "<<PP(divs_per_mb)
+				<<", node_ids.size(): "<<node_ids.size()
+				<<", lights.size(): "<<lights.size()
+				<<": Invalid data sizes"<<std::endl;
+		return;
 	}
+
+	infostream<<"FarMap::insertData: FarBlock "<<PP(fbp)<<std::endl;
+
+	FarBlock *b = getOrCreateBlock(fbp);
+	b->is_culled_by_server = false;
+	b->resize(divs_per_mb);
+
+	v3s16 dp_in_fb;
+	for (dp_in_fb.Y=0; dp_in_fb.Y<b->effective_size.Y; dp_in_fb.Y++)
+	for (dp_in_fb.X=0; dp_in_fb.X<b->effective_size.X; dp_in_fb.X++)
+	for (dp_in_fb.Z=0; dp_in_fb.Z<b->effective_size.Z; dp_in_fb.Z++) {
+		v3s16 dp1 = b->dp00 + dp_in_fb;
+		// The source area does not necessarily contain all positions that
+		// the matching blocks contain
+		if(!source_area.contains(dp1))
+			continue;
+		size_t source_i = source_area.index(dp1);
+		size_t dst_i = b->index(dp1);
+		b->content[dst_i].id = node_ids[source_i];
+		/*b->content[dst_i].id = ((dp1.X + dp1.Y + dp1.Z) % 3 == 0) ?
+				5 : CONTENT_AIR;*/
+		b->content[dst_i].light = lights[source_i];
+	}
+
+	startGeneratingBlockMesh(b, false);
 }
 
 void FarMap::insertEmptyBlock(v3s16 fbp)
 {
 	FarBlock *b = getOrCreateBlock(fbp);
-	(void)b; // Unused
+	b->is_culled_by_server = false;
+}
 
-	// Umm... that's it I guess.
+void FarMap::insertCulledBlock(v3s16 fbp)
+{
+	FarBlock *b = getOrCreateBlock(fbp);
+	b->is_culled_by_server = true;
 }
 
 void FarMap::startGeneratingBlockMesh(FarBlock *b, bool generate_aux_meshes)
