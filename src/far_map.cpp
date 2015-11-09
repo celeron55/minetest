@@ -528,7 +528,7 @@ void FarBlockMeshGenerateTask::inThread()
 		);
 
 		std::vector<FarNode> content_buf;
-		content_buf.resize(content_buf_area.getVolume());
+		content_buf.resize(content_buf_area.getVolume(), CONTENT_AIR);
 
 		// Fill in everything but the edges
 		v3s16 p;
@@ -623,7 +623,8 @@ void FarBlockMeshGenerateTask::inThread()
 				gen_area.MinEdge - v3s16(1,1,1),
 				gen_area.MaxEdge + v3s16(1,1,1)
 			);
-			content_buf.resize(content_buf_area.getVolume());
+			content_buf.clear();
+			content_buf.resize(content_buf_area.getVolume(), CONTENT_AIR);
 			v3s16 p;
 			// Fill in everything but the edges
 			for (p.Y=gen_area.MinEdge.Y; p.Y<=gen_area.MaxEdge.Y; p.Y++)
@@ -678,7 +679,8 @@ void FarBlockMeshGenerateTask::inThread()
 				gen_area.MinEdge - v3s16(1,1,1),
 				gen_area.MaxEdge + v3s16(1,1,1)
 			);
-			content_buf.resize(content_buf_area.getVolume());
+			content_buf.clear();
+			content_buf.resize(content_buf_area.getVolume(), CONTENT_AIR);
 			v3s16 p;
 			// Fill in everything but the edges
 			for (p.Y=gen_area.MinEdge.Y; p.Y<=gen_area.MaxEdge.Y; p.Y++)
