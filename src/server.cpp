@@ -2275,7 +2275,7 @@ void Server::SendBlocks(float dtime)
 			// We really can't generate everything; it would bloat up
 			// the world database way too much.
 			// TODO: Figure out how to do this in a good way
-			bool allow_generate = wms.p.Y > -2 && wms.p.Y < 2;
+			bool allow_generate = wms.p.Y >= -1 && wms.p.Y <= 1;
 
 			bool all_found = true;
 			v3s16 bp;
