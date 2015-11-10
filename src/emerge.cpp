@@ -649,6 +649,7 @@ void EmergeThread::updateFarMap(
 			if (!block)
 				continue;*/
 			MapBlock *block = it->second;
+			dstream<<"updateFarMap: "<<analyze_block(block)<<std::endl;
 			VoxelArea block_area_nodes(
 					block->getPos() * MAP_BLOCKSIZE,
 					(block->getPos()+1)*MAP_BLOCKSIZE - v3s16(1,1,1));

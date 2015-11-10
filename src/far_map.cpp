@@ -43,6 +43,7 @@ FarBlock::FarBlock(v3s16 p):
 	crude_mesh(NULL),
 	fine_mesh(NULL),
 	generating_mesh(false),
+	mesh_is_outdated(false),
 	mesh_is_empty(false)
 {
 }
@@ -992,7 +993,7 @@ void FarMap::insertData(v3s16 fbp, v3s16 divs_per_mb,
 		const std::vector<u16> &node_ids, const std::vector<u8> &lights,
 		bool is_partly_loaded)
 {
-	infostream<<"FarMap::insertData: fbp: "<<PP(fbp)
+	dstream<<"FarMap::insertData: fbp: "<<PP(fbp)
 			<<", divs_per_mb: "<<PP(divs_per_mb)
 			<<", node_ids.size(): "<<node_ids.size()
 			<<", lights.size(): "<<lights.size()
@@ -1036,6 +1037,7 @@ void FarMap::insertData(v3s16 fbp, v3s16 divs_per_mb,
 	b->is_culled_by_server = false;
 	b->is_partly_loaded_by_server = is_partly_loaded;
 	b->mesh_is_empty = false;
+	b->mesh_is_outdated = true;
 	b->resize(divs_per_mb);
 
 	v3s16 dp_in_fb;
@@ -1054,11 +1056,16 @@ void FarMap::insertData(v3s16 fbp, v3s16 divs_per_mb,
 				5 : CONTENT_AIR;*/
 		b->content[dst_i].light = lights[source_i];
 	}
+
+	if (!b->generating_mesh) {
+		startGeneratingBlockMesh(b,
+				FarBlockMeshGenerateTask::GL_FINE_AND_AUX);
+	}
 }
 
 void FarMap::insertEmptyBlock(v3s16 fbp)
 {
-	infostream<<PP(fbp)<<" reported empty"<<std::endl;
+	dstream<<PP(fbp)<<" reported empty"<<std::endl;
 	FarBlock *b = getOrCreateBlock(fbp);
 	b->is_culled_by_server = false;
 	b->is_partly_loaded_by_server = false;
@@ -1066,7 +1073,7 @@ void FarMap::insertEmptyBlock(v3s16 fbp)
 
 void FarMap::insertCulledBlock(v3s16 fbp)
 {
-	infostream<<PP(fbp)<<" reported culled"<<std::endl;
+	dstream<<PP(fbp)<<" reported culled"<<std::endl;
 	FarBlock *b = getOrCreateBlock(fbp);
 	b->is_culled_by_server = true;
 	b->is_partly_loaded_by_server = false;
@@ -1074,7 +1081,7 @@ void FarMap::insertCulledBlock(v3s16 fbp)
 
 void FarMap::insertLoadInProgressBlock(v3s16 fbp)
 {
-	infostream<<PP(fbp)<<" reported load-in-progress"<<std::endl;
+	dstream<<PP(fbp)<<" reported load-in-progress"<<std::endl;
 	FarBlock *b = getOrCreateBlock(fbp);
 	b->is_culled_by_server = false;
 	b->is_partly_loaded_by_server = true;
@@ -1083,7 +1090,10 @@ void FarMap::insertLoadInProgressBlock(v3s16 fbp)
 void FarMap::startGeneratingBlockMesh(FarBlock *b,
 		FarBlockMeshGenerateTask::GenLevel level)
 {
+	dstream<<"FarMap::startGeneratingBlockMesh: "<<PP(b->p)<<std::endl;
+
 	b->generating_mesh = true;
+	b->mesh_is_outdated = false;
 
 	FarBlockMeshGenerateTask *t = new FarBlockMeshGenerateTask(
 			this, *b, level);
@@ -1278,20 +1288,26 @@ std::vector<v3s16> FarMap::suggestFarBlocksToFetch(v3s16 camera_p)
 		for (size_t i=0; i<ps.size(); i++) {
 			v3s16 p = center_fb + ps[i];
 			FarBlock *b = getBlock(p);
-			infostream<<PP(p)<<" = "<<b<<std::endl;
+			/*dstream<<"FarMap::suggestFarBlocksToFetch: "
+					<<PP(p)<<" = "<<b<<std::endl;*/
 			if (b != NULL) {
 				if (!b->is_partly_loaded_by_server) {
-					infostream<<PP(b->p)<<" is fully loaded"<<std::endl;
+					//dstream<<"* "<<PP(p)<<" is fully loaded"<<std::endl;
 					continue; // Exists and was received fully loaded
 				}
 				b->partly_loaded_refresh_counter++;
 				if (b->partly_loaded_refresh_counter < 5) {
-					infostream<<PP(b->p)<<" is partly loaded; counting"<<std::endl;
+					/*dstream<<"* "<<PP(p)<<" is partly loaded; counting "
+							<<b->partly_loaded_refresh_counter<<std::endl;*/
 					continue; // Don't try reloading this time
 				}
-				infostream<<PP(b->p)<<" is partly loaded; reloading now"<<std::endl;
+				dstream<<"* "<<PP(p)<<" is partly loaded"
+						<<"; asking update from server"<<std::endl;
 				// Try reloading this time
 				b->partly_loaded_refresh_counter = 0;
+			} else {
+				dstream<<"* "<<PP(p)<<" is unfetched"
+						<<"; asking from server"<<std::endl;
 			}
 			if (m_farblocks_exist_up_to_d == -1)
 				m_farblocks_exist_up_to_d = d - 1;
@@ -1448,16 +1464,18 @@ static void renderBlock(FarMap *far_map, FarBlock *b,
 big_break:;
 	}
 
+	FarBlockMeshGenerateTask::GenLevel level_wanted =
+			FarBlockMeshGenerateTask::GL_CRUDE;
+
+	if (fb_being_normally_rendered) {
+		level_wanted = FarBlockMeshGenerateTask::GL_FINE_AND_AUX;
+	}
+
 	bool render_in_pieces = fb_being_normally_rendered;
 	bool avoid_crude_mesh = false;
 
 	if (render_in_pieces && (b->mapblock_meshes.empty() ||
 			b->mapblock2_meshes.empty())) {
-		if (!b->generating_mesh && !b->content.empty()) {
-			// We need small meshes for this ASAP
-			far_map->startGeneratingBlockMesh(b,
-					FarBlockMeshGenerateTask::GL_FINE_AND_AUX);
-		}
 		// Can't render in pieces because we don't have meshes for the pieces.
 		// Render normally so that things don't blink annoyingly meanwhile.
 		render_in_pieces = false;
@@ -1531,26 +1549,50 @@ big_break:;
 			(*profiler_num_rendered_fbcrudes)++;
 		}
 
-		if (!b->generating_mesh) {
-			if (fine_mesh_wanted && !b->fine_mesh) {
-				// We need a fine mesh for this
-				far_map->startGeneratingBlockMesh(b,
-						FarBlockMeshGenerateTask::GL_FINE);
-			} else if(!b->crude_mesh) {
+		if (fine_mesh_wanted &&
+				level_wanted <= FarBlockMeshGenerateTask::GL_CRUDE) {
+			level_wanted = FarBlockMeshGenerateTask::GL_FINE;
+		}
+	}
+
+	if (!b->generating_mesh) {
+		switch (level_wanted) {
+		case FarBlockMeshGenerateTask::GL_CRUDE:
+			if (!b->crude_mesh || b->mesh_is_outdated) {
 				// We need a crude mesh for this so that we can render anything
 				far_map->startGeneratingBlockMesh(b,
 						FarBlockMeshGenerateTask::GL_CRUDE);
 			}
-		}
-
-		// Save RAM from these monstrosities if at all possible. We can unload
-		// them if we didn't start generating anything in the previous check.
-		// TODO: A timeout instead of an immediate drop would be good
-		if (!b->generating_mesh) {
-			if (!fine_mesh_wanted && b->fine_mesh) {
-				b->unloadFineMesh();
-				b->unloadMapblockMeshes();
+			break;
+		case FarBlockMeshGenerateTask::GL_FINE:
+			if (!b->fine_mesh || b->mesh_is_outdated) {
+				// We need a fine mesh for this
+				far_map->startGeneratingBlockMesh(b,
+						FarBlockMeshGenerateTask::GL_FINE);
 			}
+			break;
+		case FarBlockMeshGenerateTask::GL_FINE_AND_AUX:
+			if (!b->fine_mesh || b->mapblock_meshes.empty() ||
+					b->mapblock2_meshes.empty()) {
+				if (b->mesh_is_outdated || !b->content.empty()) {
+					// We need small meshes for this ASAP
+					far_map->startGeneratingBlockMesh(b,
+							FarBlockMeshGenerateTask::GL_FINE_AND_AUX);
+				}
+			}
+			break;
+		default:
+			break;
+		}
+	}
+
+	// Save RAM from these monstrosities if at all possible. We can unload
+	// them if we didn't start generating anything in the previous check.
+	// TODO: A timeout instead of an immediate drop would be good
+	if (!b->generating_mesh) {
+		if (level_wanted < FarBlockMeshGenerateTask::GL_FINE && b->fine_mesh) {
+			b->unloadFineMesh();
+			b->unloadMapblockMeshes();
 		}
 	}
 }

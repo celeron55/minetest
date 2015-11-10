@@ -194,8 +194,12 @@ void RemoteClient::GetNextBlocks (
 				continue;
 
 			// Don't send blocks that have already been sent
-			if (m_blocks_sent.find(wms) != m_blocks_sent.end())
+			if (m_blocks_sent.find(wms) != m_blocks_sent.end()){
+				dstream<<"RemoteClient: Already sent: "
+						<<"("<<wms.p.X<<","<<wms.p.Y<<","<<wms.p.Z<<")"
+						<<std::endl;
 				continue;
+			}
 
 			// TODO: Check if data for this is available and if not, possibly
 			//       request an emerge of the required area
@@ -569,6 +573,10 @@ void RemoteClient::SetMapBlockNotSent(v3s16 p)
 	// Also set the corresponding FarBlock not sent
 	v3s16 farblock_p = getContainerPos(p, FMP_SCALE);
 	SetBlockNotSent(WantedMapSend(WMST_FARBLOCK, farblock_p));
+
+	dstream<<"RemoteClient: now not sent: MB"<<"("<<p.X<<","<<p.Y<<","<<p.Z<<")"
+			<<" FB"<<"("<<farblock_p.X<<","<<farblock_p.Y<<","<<farblock_p.Z<<")"
+			<<std::endl;
 }
 
 void RemoteClient::SetMapBlocksNotSent(std::map<v3s16, MapBlock*> &blocks)

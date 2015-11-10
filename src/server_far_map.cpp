@@ -160,8 +160,8 @@ void ServerFarMap::updateFrom(const ServerFarMapPiece &piece)
 	for (fbp.Y=fb_area.MinEdge.Y; fbp.Y<=fb_area.MaxEdge.Y; fbp.Y++)
 	for (fbp.X=fb_area.MinEdge.X; fbp.X<=fb_area.MaxEdge.X; fbp.X++)
 	for (fbp.Z=fb_area.MinEdge.Z; fbp.Z<=fb_area.MaxEdge.Z; fbp.Z++) {
-		/*infostream<<"ServerFarMap::updateFrom: ServerFarBlock "
-				<<PP(fbp)<<std::endl;*/
+		dstream<<"ServerFarMap::updateFrom: ServerFarBlock "
+				<<PP(fbp)<<std::endl;
 
 		ServerFarBlock *b = getOrCreateBlock(fbp);
 

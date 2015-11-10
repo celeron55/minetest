@@ -98,6 +98,9 @@ struct FarBlock
 	// may be available for rendering while it is running.
 	bool generating_mesh;
 
+	// Can be set to true while the mesh generator is running if needed
+	bool mesh_is_outdated;
+
 	// This is true after mesh has been generated and it has turned out that
 	// this FarBlock does not require any geometry. In that case, mesh will be
 	// NULL and regeneration should not be triggered based on it being NULL.

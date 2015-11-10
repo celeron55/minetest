@@ -2280,7 +2280,7 @@ void Server::SendBlocks(float dtime)
 			if (!g_settings->getBool("far_map_allow_generate"))
 				allow_generate = false;
 
-			bool all_found = true;
+			size_t num_parts_found = 0;
 
 			// TODO: Is this loop really what we should be doing here?
 			v3s16 bp;
@@ -2289,9 +2289,9 @@ void Server::SendBlocks(float dtime)
 			for (bp.X=area_offset_mb.X; bp.X<area_offset_mb.X+area_size_mb.X; bp.X++)
 			{
 				MapBlock *b = m_env->getMap().getBlockNoCreateNoEx(bp);
-				if (!b) {
-					all_found = false;
-
+				if (b) {
+					num_parts_found++;
+				} else {
 					// NOTE: This might be a bit haphazard; we are talking about
 					// generating 8x8x8 MapBlocks here at a time, repeating by
 					// hundreds of times...
@@ -2302,22 +2302,30 @@ void Server::SendBlocks(float dtime)
 				}
 			}
 
+			ServerFarBlock *fb = m_far_map->getBlock(wms.p);
+
 			FarBlocksResultStatus status;
 
-			if (all_found) {
+			if (num_parts_found == area_size_mb.X * area_size_mb.Y * area_size_mb.Z) {
+				dstream<<"ServerFarBlock "<<PP(wms.p)<<" fully loaded"
+						<<std::endl;
 				status = FBRS_FULLY_LOADED;
 			} else {
 				if (allow_generate) {
+					dstream<<"ServerFarBlock "<<PP(wms.p)<<" waiting for generate"
+							<<std::endl;
 					// Wait until it is fully generated
 					continue;
 				}
-				status = FBRS_PARTLY_LOADED;
-			}
-
-			ServerFarBlock *fb = m_far_map->getBlock(wms.p);
-			if (!fb) {
-				std::cout<<"ServerFarBlock "<<PP(wms.p)<<" not found"<<std::endl;
-				status = FBRS_LOAD_IN_PROGRESS;
+				if (!fb) {
+					dstream<<"ServerFarBlock "<<PP(wms.p)<<" not found"
+							<<std::endl;
+					status = FBRS_LOAD_IN_PROGRESS;
+				} else {
+					dstream<<"ServerFarBlock "<<PP(wms.p)<<" partly found ("
+							<<num_parts_found<<" parts)"<<std::endl;
+					status = FBRS_PARTLY_LOADED;
+				}
 			}
 
 			NetworkPacket pkt(TOCLIENT_FAR_BLOCKS_RESULT, 0, peer_id);
