@@ -201,6 +201,8 @@ void RemoteClient::GetNextBlocks (
 				continue;
 			}
 
+			// TODO: Use modification counter
+
 			// TODO: Check if data for this is available and if not, possibly
 			//       request an emerge of the required area
 
@@ -538,19 +540,18 @@ queue_full_break:
 
 void RemoteClient::GotBlock(const WantedMapSend &wms)
 {
-	if(m_blocks_sending.find(wms) != m_blocks_sending.end())
+	if (m_blocks_sending.find(wms) != m_blocks_sending.end()) {
+		m_blocks_sent[wms] = m_blocks_sending[wms];
 		m_blocks_sending.erase(wms);
-	else
-	{
+	} else {
 		m_excess_gotblocks++;
 	}
-	m_blocks_sent.insert(wms);
 }
 
 void RemoteClient::SendingBlock(const WantedMapSend &wms)
 {
-	if(m_blocks_sending.find(wms) == m_blocks_sending.end())
-		m_blocks_sending[wms] = 0.0;
+	if (m_blocks_sending.find(wms) == m_blocks_sending.end())
+		m_blocks_sending[wms] = time(NULL);
 	else
 		infostream<<"RemoteClient::SendingBlock(): Sent block"
 				" already in m_blocks_sending"<<std::endl;

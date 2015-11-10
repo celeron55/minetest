@@ -313,11 +313,6 @@ public:
 		m_fallback_autosend_active = false;
 	}
 
-	// Increments timeouts and removes timed-out blocks from list
-	// NOTE: This doesn't fix the server-not-sending-block bug
-	//       because it is related to emerging, not sending.
-	//void RunSendingTimeouts(float dtime, float timeout);
-
 	void PrintInfo(std::ostream &o)
 	{
 		o<<"RemoteClient "<<peer_id<<": "
@@ -333,8 +328,7 @@ public:
 	float m_time_from_building;
 
 	/*
-		List of active objects that the client knows of.
-		Value is dummy.
+		Set of active objects that the client knows of.
 	*/
 	std::set<u16> m_known_objects;
 
@@ -360,18 +354,16 @@ public:
 	void confirmSerializationVersion()
 		{ serialization_version = m_pending_serialization_version; }
 
-	/* get uptime */
+	/* uptime */
 	u32 uptime();
 
-	/* set version information */
+	/* version information */
 	void setVersionInfo(u8 major, u8 minor, u8 patch, std::string full) {
 		m_version_major = major;
 		m_version_minor = minor;
 		m_version_patch = patch;
 		m_full_version = full;
 	}
-
-	/* read version information */
 	u8 getMajor() { return m_version_major; }
 	u8 getMinor() { return m_version_minor; }
 	u8 getPatch() { return m_version_patch; }
@@ -409,22 +401,27 @@ private:
 		Blocks that have been sent to client.
 		- These don't have to be sent again.
 		- A block is cleared from here when client says it has
-		  deleted it from it's memory
-
-		Key is position, value is dummy.
-		No MapBlock* is stored here because the blocks can get deleted.
+		  deleted it from its memory
+		- Value is timestamp when block was sent. It is used for rate-limiting
+		  updates.
 	*/
-	std::set<WantedMapSend> m_blocks_sent;
+	std::map<WantedMapSend, time_t> m_blocks_sent;
 
 	/*
 		Blocks that are currently on the line.
-		This is used for throttling the sending of blocks.
+		- This is used for throttling the sending of blocks.
 		- The size of this list is limited to some value
-		Block is added when it is sent with BLOCKDATA.
-		Block is removed when GOTBLOCKS is received.
-		Value is time from sending. (not used at the moment)
+		- Block is added when it is sent with BLOCKDATA.
+		- Block is removed when GOTBLOCKS is received.
+		- Value is timestamp when block was sent. It is used for rate-limiting
+		  updates.
 	*/
-	std::map<WantedMapSend, float> m_blocks_sending;
+	std::map<WantedMapSend, time_t> m_blocks_sending;
+
+	/*
+		Blocks that have been updated
+	*/
+	std::set<WantedMapSend> m_blocks_updated_since_last_send;
 
 	/*
 		Count of excess GotBlocks().
