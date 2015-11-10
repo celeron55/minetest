@@ -687,6 +687,7 @@ void Client::step(float dtime)
 
 		std::vector<WantedMapSend> wanted_map_send_queue;
 
+#if 0
 		// Get player position (used for prioritizing requests)
 		v3s16 player_p;
 		Player *player = m_env.getLocalPlayer();
@@ -727,6 +728,7 @@ void Client::step(float dtime)
 		// Prioritize
 		std::sort(wanted_map_send_queue.begin(), wanted_map_send_queue.end(),
 				WMSPriority(player_p, far_weight));
+#endif
 
 		// Autosend parameters
 		s16 autosend_radius_map = map->suggestAutosendMapblocksRadius();
@@ -735,6 +737,7 @@ void Client::step(float dtime)
 		float autosend_far_weight = far_weight;
 		float autosend_fov = map->suggestAutosendFov();
 
+#if 0
 		// Periodically disable autosending MapBlocks from far away in order to
 		// get some FarBlocks at all times for now as autosend doesn't send
 		// FarBlocks yet.
@@ -743,6 +746,7 @@ void Client::step(float dtime)
 			if (autosend_radius_map > 2)
 				autosend_radius_map = 2;
 		}
+#endif
 
 		NetworkPacket pkt(TOSERVER_SET_WANTED_MAP_SEND_QUEUE, 0);
 		/*

@@ -969,6 +969,17 @@ struct WantedMapSend
 		if (p < other.p) return true;
 		return false;
 	}
+
+	std::string describe() {
+		if (type == WMST_INVALID)
+			return "INVALID";
+		else if(type == WMST_MAPBLOCK)
+			return "MAPBLOCK("+itos(p.X)+","+itos(p.Y)+","+itos(p.Z)+")";
+		else if(type == WMST_FARBLOCK)
+			return "FARBLOCK("+itos(p.X)+","+itos(p.Y)+","+itos(p.Z)+")";
+		else
+			return "?("+itos(p.X)+","+itos(p.Y)+","+itos(p.Z)+")";
+	}
 };
 
 enum FarBlocksResultStatus {

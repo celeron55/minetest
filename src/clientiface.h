@@ -206,6 +206,7 @@ class AutosendAlgorithm
 {
 public:
 	AutosendAlgorithm(RemoteClient *client);
+	~AutosendAlgorithm();
 
 	// Shall be called every time before starting to ask a bunch of blocks by
 	// calling getNextBlock()
