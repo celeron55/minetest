@@ -38,8 +38,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 FarBlock::FarBlock(v3s16 p):
 	p(p),
 	is_culled_by_server(false),
-	is_partly_loaded_by_server(false),
-	partly_loaded_refresh_counter(0),
+	load_in_progress_on_server(false),
+	refresh_from_server_counter(0),
 	crude_mesh(NULL),
 	fine_mesh(NULL),
 	generating_mesh(false),
@@ -166,7 +166,7 @@ std::string analyze_far_block(FarBlock *b)
 	std::string s = "["+analyze_far_block(
 			b->p, b->content, b->content_area, b->effective_area);
 	s += ", is_culled_by_server="+itos(b->is_culled_by_server);
-	s += ", is_partly_loaded_by_server="+itos(b->is_partly_loaded_by_server);
+	s += ", load_in_progress_on_server="+itos(b->load_in_progress_on_server);
 	s += ", generating_mesh="+itos(b->generating_mesh);
 	s += ", mesh_is_outdated="+itos(b->mesh_is_outdated);
 	s += ", mesh_is_empty="+itos(b->mesh_is_empty);
@@ -735,33 +735,28 @@ void FarBlockMeshGenerateTask::inThread()
 
 void FarBlockMeshGenerateTask::sync()
 {
-	if(block.crude_mesh || block.fine_mesh){
-		far_map->insertGeneratedBlockMesh(
-				block.p, block.crude_mesh, block.fine_mesh,
-				block.mapblock_meshes, block.mapblock2_meshes);
-		if (block.crude_mesh) {
-			block.crude_mesh->drop();
-			block.crude_mesh = NULL;
+	far_map->insertGeneratedBlockMesh(
+			block.p, block.crude_mesh, block.fine_mesh,
+			block.mapblock_meshes, block.mapblock2_meshes);
+	if (block.crude_mesh) {
+		block.crude_mesh->drop();
+		block.crude_mesh = NULL;
+	}
+	if (block.fine_mesh) {
+		block.fine_mesh->drop();
+		block.fine_mesh = NULL;
+	}
+	for (size_t i=0; i<block.mapblock_meshes.size(); i++) {
+		if (block.mapblock_meshes[i] != NULL) {
+			block.mapblock_meshes[i]->drop();
+			block.mapblock_meshes[i] = NULL;
 		}
-		if (block.fine_mesh) {
-			block.fine_mesh->drop();
-			block.fine_mesh = NULL;
+	}
+	for (size_t i=0; i<block.mapblock2_meshes.size(); i++) {
+		if (block.mapblock2_meshes[i] != NULL) {
+			block.mapblock2_meshes[i]->drop();
+			block.mapblock2_meshes[i] = NULL;
 		}
-		for (size_t i=0; i<block.mapblock_meshes.size(); i++) {
-			if (block.mapblock_meshes[i] != NULL) {
-				block.mapblock_meshes[i]->drop();
-				block.mapblock_meshes[i] = NULL;
-			}
-		}
-		for (size_t i=0; i<block.mapblock2_meshes.size(); i++) {
-			if (block.mapblock2_meshes[i] != NULL) {
-				block.mapblock2_meshes[i]->drop();
-				block.mapblock2_meshes[i] = NULL;
-			}
-		}
-	} else {
-		infostream<<"No FarBlock mesh result for "
-				<<PP(block.p)<<std::endl;
 	}
 }
 
@@ -955,8 +950,6 @@ FarMap::FarMap(
 	updateSettings();
 	
 	m_worker_thread.start();
-
-	// TODO: Add nodes to atlas
 }
 
 FarMap::~FarMap()
@@ -1049,7 +1042,7 @@ void FarMap::insertData(v3s16 fbp, v3s16 divs_per_mb,
 
 	FarBlock *b = getOrCreateBlock(fbp);
 	b->is_culled_by_server = false;
-	b->is_partly_loaded_by_server = is_partly_loaded;
+	b->load_in_progress_on_server = is_partly_loaded;
 	b->mesh_is_empty = false;
 	b->mesh_is_outdated = true;
 	b->resize(divs_per_mb);
@@ -1071,10 +1064,11 @@ void FarMap::insertData(v3s16 fbp, v3s16 divs_per_mb,
 		b->content[dst_i].light = lights[source_i];
 	}
 
-	if (!b->generating_mesh) {
+	// TODO: Remove
+	/*if (!b->generating_mesh) {
 		startGeneratingBlockMesh(b,
 				FarBlockMeshGenerateTask::GL_FINE_AND_AUX);
-	}
+	}*/
 
 	// Call this before starting line to keep lines mostly intact when
 	// multiple threads are printing
@@ -1087,7 +1081,7 @@ void FarMap::insertEmptyBlock(v3s16 fbp)
 	dstream<<PP(fbp)<<" reported empty"<<std::endl;
 	FarBlock *b = getOrCreateBlock(fbp);
 	b->is_culled_by_server = false;
-	b->is_partly_loaded_by_server = false;
+	b->load_in_progress_on_server = false;
 }
 
 void FarMap::insertCulledBlock(v3s16 fbp)
@@ -1095,7 +1089,7 @@ void FarMap::insertCulledBlock(v3s16 fbp)
 	dstream<<PP(fbp)<<" reported culled"<<std::endl;
 	FarBlock *b = getOrCreateBlock(fbp);
 	b->is_culled_by_server = true;
-	b->is_partly_loaded_by_server = false;
+	b->load_in_progress_on_server = false;
 }
 
 void FarMap::insertLoadInProgressBlock(v3s16 fbp)
@@ -1103,14 +1097,14 @@ void FarMap::insertLoadInProgressBlock(v3s16 fbp)
 	dstream<<PP(fbp)<<" reported load-in-progress"<<std::endl;
 	FarBlock *b = getOrCreateBlock(fbp);
 	b->is_culled_by_server = false;
-	b->is_partly_loaded_by_server = true;
+	b->load_in_progress_on_server = true;
 }
 
 void FarMap::startGeneratingBlockMesh(FarBlock *b,
 		FarBlockMeshGenerateTask::GenLevel level)
 {
 	dstream<<"FarMap::startGeneratingBlockMesh: "<<PP(b->p)
-			<<"level="<<level<<std::endl;
+			<<" level="<<level<<std::endl;
 
 	assert(!b->generating_mesh);
 
@@ -1128,6 +1122,13 @@ void FarMap::insertGeneratedBlockMesh(
 		const std::vector<scene::SMesh*> &mapblock_meshes,
 		const std::vector<scene::SMesh*> &mapblock2_meshes)
 {
+	dstream<<"FarMap::insertGeneratingBlockMesh: "<<PP(p)
+			<<": crude_mesh="<<!!crude_mesh
+			<<", mesh="<<!!fine_mesh
+			<<", mb1_meshes="<<!mapblock_meshes.empty()
+			<<", mb2_meshes="<<!mapblock2_meshes.empty()
+			<<std::endl;
+
 	FarBlock *b = getOrCreateBlock(p);
 
 	b->generating_mesh = false;
@@ -1313,20 +1314,20 @@ std::vector<v3s16> FarMap::suggestFarBlocksToFetch(v3s16 camera_p)
 			/*dstream<<"FarMap::suggestFarBlocksToFetch: "
 					<<PP(p)<<" = "<<b<<std::endl;*/
 			if (b != NULL) {
-				if (!b->is_partly_loaded_by_server) {
+				if (!b->load_in_progress_on_server) {
 					//dstream<<"* "<<PP(p)<<" is fully loaded"<<std::endl;
 					continue; // Exists and was received fully loaded
 				}
-				b->partly_loaded_refresh_counter++;
-				if (b->partly_loaded_refresh_counter < 5) {
-					/*dstream<<"* "<<PP(p)<<" is partly loaded; counting "
-							<<b->partly_loaded_refresh_counter<<std::endl;*/
+				b->refresh_from_server_counter++;
+				if (b->refresh_from_server_counter < 5) {
+					/*dstream<<"* "<<PP(p)<<" is being loaded on server; counting "
+							<<b->refresh_from_server_counter<<std::endl;*/
 					continue; // Don't try reloading this time
 				}
-				dstream<<"* "<<PP(p)<<" is partly loaded"
+				dstream<<"* "<<PP(p)<<" is being loaded on server"
 						<<"; asking update from server"<<std::endl;
 				// Try reloading this time
-				b->partly_loaded_refresh_counter = 0;
+				b->refresh_from_server_counter = 0;
 			} else {
 				dstream<<"* "<<PP(p)<<" is unfetched"
 						<<"; asking from server"<<std::endl;

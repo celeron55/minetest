@@ -64,8 +64,8 @@ struct FarBlock
 	// Information given by server. Really the important bit about this is that
 	// it's partially NOT loaded, which means we should ask again sometime so
 	// that the server may give us a more full loaded version.
-	bool is_partly_loaded_by_server;
-	s32 partly_loaded_refresh_counter;
+	bool load_in_progress_on_server;
+	s32 refresh_from_server_counter;
 
 	// Very crude mesh covering everything in this FarBlock
 	scene::SMesh *crude_mesh;
