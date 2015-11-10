@@ -200,83 +200,12 @@ enum ClientStateEvent
 };
 
 class RemoteClient;
+struct AutosendCycle;
 
 class AutosendAlgorithm
 {
-	struct Cycle
-	{
-		bool disabled;
-		AutosendAlgorithm *alg;
-		RemoteClient *client;
-		ServerEnvironment *env;
-
-		v3f camera_p;
-		v3f camera_dir;
-		v3s16 focus_point;
-
-		u16 max_simul_sends_setting;
-		float time_from_building_limit_s;
-		s16 max_block_send_distance_setting;
-		s16 max_block_generate_distance;
-
-		s16 max_block_send_distance;
-
-		s16 fov_limit_activation_distance;
-
-		struct Search {
-			s16 d_start;
-			s16 d_max;
-			s16 d;
-			size_t i;
-			s32 nearest_emergequeued_d;
-			s32 nearest_emergefull_d;
-			s32 nearest_sendqueued_d;
-		};
-		
-		Search mapblock;
-		Search farblock;
-
-		Cycle():
-			disabled(true)
-		{}
-
-		void init(AutosendAlgorithm *alg_,
-				RemoteClient *client_, ServerEnvironment *env_);
-
-		WantedMapSend getNextBlock(EmergeManager *emerge);
-
-		void finish();
-
-private:
-		WantedMapSend suggestNextMapBlock(bool *result_needs_emerge);
-		WantedMapSend suggestNextFarBlock(bool *result_needs_emerge);
-
-		struct SearchCycleResult {
-			s32 nearest_unsent_d;
-			bool searched_full_range;
-			bool result_may_be_available_later_at_this_d;
-
-			SearchCycleResult():
-				nearest_unsent_d(0),
-				searched_full_range(false),
-				result_may_be_available_later_at_this_d(false)
-			{}
-		};
-		SearchCycleResult finishSearchCycle(Search *search);
-	};
-
 public:
-	AutosendAlgorithm(RemoteClient *client):
-		m_client(client),
-		m_radius_map(0),
-		m_radius_far(0),
-		m_far_weight(8.0f),
-		m_fov(72.0f),
-		m_fov_limit_enabled(true),
-		m_nothing_sent_timer(0.0),
-		m_nearest_unsent_reset_timer(0.0),
-		m_nothing_to_send_pause_timer(0.0)
-	{}
+	AutosendAlgorithm(RemoteClient *client);
 
 	// Shall be called every time before starting to ask a bunch of blocks by
 	// calling getNextBlock()
@@ -297,15 +226,13 @@ public:
 	// If something is modified near a player, this should probably be called so
 	// that it gets sent as quickly as possible while being prioritized
 	// correctly
-	void resetSearchRadius() {
-		m_mapblock.nearest_unsent_d = 0;
-		m_cycle.i = 0;
-	}
+	void resetMapblockSearchRadius();
 
 	std::string describeStatus();
 
 private:
 	RemoteClient *m_client;
+	AutosendCycle *m_cycle;
 
 	struct SearchContinueState {
 		s16 nearest_unsent_d;
@@ -325,9 +252,7 @@ private:
 	float m_nearest_unsent_reset_timer;
 	float m_nothing_to_send_pause_timer; // CPU usage optimization
 
-	Cycle m_cycle;
-
-	friend struct Cycle;
+	friend struct AutosendCycle;
 };
 
 class RemoteClient
@@ -572,6 +497,7 @@ private:
 	const u32 m_connection_time;
 
 	friend class AutosendAlgorithm;
+	friend struct AutosendCycle;
 };
 
 class ClientInterface {

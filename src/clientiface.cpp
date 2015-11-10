@@ -54,17 +54,80 @@ u16 figure_out_max_simultaneous_block_sends(u16 base_setting,
 	return base_setting;
 }
 
-void AutosendAlgorithm::Cycle::init(AutosendAlgorithm *alg_,
+struct AutosendCycle
+{
+	bool disabled;
+	AutosendAlgorithm *alg;
+	RemoteClient *client;
+	ServerEnvironment *env;
+
+	v3f camera_p;
+	v3f camera_dir;
+	v3s16 focus_point;
+
+	u16 max_simul_sends_setting;
+	float time_from_building_limit_s;
+	s16 max_block_send_distance_setting;
+	s16 max_block_generate_distance;
+
+	s16 max_block_send_distance;
+
+	s16 fov_limit_activation_distance;
+
+	struct Search {
+		s16 d_start;
+		s16 d_max;
+		s16 d;
+		size_t i;
+		s32 nearest_emergequeued_d;
+		s32 nearest_emergefull_d;
+		s32 nearest_sendqueued_d;
+
+		void init(s16 nearest_unsent_d, s16 max_send_distance);
+
+		struct CycleResult {
+			s32 nearest_unsent_d;
+			bool searched_full_range;
+			bool result_may_be_available_later_at_this_d;
+
+			CycleResult():
+				nearest_unsent_d(0),
+				searched_full_range(false),
+				result_may_be_available_later_at_this_d(false)
+			{}
+		};
+		CycleResult finish();
+	};
+	
+	Search mapblock;
+	Search farblock;
+
+	AutosendCycle():
+		disabled(true)
+	{}
+
+	void init(AutosendAlgorithm *alg_,
+			RemoteClient *client_, ServerEnvironment *env_);
+
+	WantedMapSend getNextBlock(EmergeManager *emerge);
+
+	void finish();
+
+private:
+	WantedMapSend suggestNextMapBlock(bool *result_needs_emerge);
+	WantedMapSend suggestNextFarBlock(bool *result_needs_emerge);
+};
+
+void AutosendCycle::init(AutosendAlgorithm *alg_,
 		RemoteClient *client_, ServerEnvironment *env_)
 {
-	//dstream<<"AutosendAlgorithm::Cycle::init()"<<std::endl;
+	//dstream<<"AutosendCycle::init()"<<std::endl;
 
 	alg = alg_;
 	client = client_;
 	env = env_;
 
 	disabled = false;
-	i = 0;
 
 	if (alg->m_radius_map == 0 && alg->m_radius_far == 0) {
 		//dstream<<"radius=0"<<std::endl;
@@ -116,7 +179,8 @@ void AutosendAlgorithm::Cycle::init(AutosendAlgorithm *alg_,
 	// If focus point has changed to a different MapBlock, reset radius value
 	// for iterating from zero again
 	if (alg->m_last_focus_point != focus_point) {
-		alg->m_nearest_unsent_d = 0;
+		alg->m_mapblock.nearest_unsent_d = 0;
+		alg->m_farblock.nearest_unsent_d = 0;
 		alg->m_last_focus_point = focus_point;
 	}
 
@@ -139,7 +203,8 @@ void AutosendAlgorithm::Cycle::init(AutosendAlgorithm *alg_,
 	// reasons (this is somewhat guided by just heuristics, after all)
 	if (alg->m_nearest_unsent_reset_timer > 20.0) {
 		alg->m_nearest_unsent_reset_timer = 0;
-		alg->m_nearest_unsent_d = 0;
+		alg->m_mapblock.nearest_unsent_d = 0;
+		alg->m_farblock.nearest_unsent_d = 0;
 	}
 
 	// Out-of-FOV distance limit
@@ -147,76 +212,14 @@ void AutosendAlgorithm::Cycle::init(AutosendAlgorithm *alg_,
 	fov_limit_activation_distance = alg->m_fov_limit_enabled ?
 			max_block_send_distance / 2 : max_block_send_distance;
 
-	/*
-		MapBlock iteration
-	*/
+	// MapBlock search iteration
+	mapblock.init(alg->m_mapblock.nearest_unsent_d, max_block_send_distance);
 
-	// We will start from a radius that still has unsent MapBlocks
-	mapblock.d_start = alg->m_mapblock.nearest_unsent_d >= 0 ?
-			alg->m_mapblock.nearest_unsent_d : 0;
-	mapblock.d = mapblock.d_start;
-
-	//dstream<<"mapblock.d_start="<<mapblock.d_start<<std::endl;
-	//infostream<<"mapblock.d_start="<<mapblock.d_start<<std::endl;
-
-	// Don't loop very much at a time. This function is called each server tick
-	// so just a few steps will work fine (+2 is 3 steps per call).
-	mapblock.d_max = 0;
-	if (mapblock.d_start < 5)
-		mapblock.d_max = mapblock.d_start + 2;
-	else if (mapblock.d_max < 8)
-		mapblock.d_max = mapblock.d_start + 1;
-	else
-		mapblock.d_max = mapblock.d_start; // These iterations start to be rather heavy
-
-	if (mapblock.d_max > max_block_send_distance)
-		mapblock.d_max = max_block_send_distance;
-
-	//dstream<<"mapblock.d_max="<<mapblock.d_max<<std::endl;
-
-	// Keep track of... things. We need these in order to figure out where to
-	// continue iterating on the next call to this function.
-	// TODO: Put these in the class
-	mapblock.nearest_emergequeued_d = INT32_MAX;
-	mapblock.nearest_emergefull_d = INT32_MAX;
-	mapblock.nearest_sendqueued_d = INT32_MAX;
-
-	/*
-		FarBlock iteration
-	*/
-
-	// We will start from a radius that still has unsent FarBlocks
-	farblock.d_start = alg->m_farblock.nearest_unsent_d >= 0 ?
-			alg->m_farblock.nearest_unsent_d : 0;
-	farblock.d = farblock.d_start;
-
-	//dstream<<"farblock.d_start="<<farblock.d_start<<std::endl;
-	//infostream<<"farblock.d_start="<<farblock.d_start<<std::endl;
-
-	// Don't loop very much at a time. This function is called each server tick
-	// so just a few steps will work fine (+2 is 3 steps per call).
-	farblock.d_max = 0;
-	if (farblock.d_start < 5)
-		farblock.d_max = farblock.d_start + 2;
-	else if (farblock.d_max < 8)
-		farblock.d_max = farblock.d_start + 1;
-	else
-		farblock.d_max = farblock.d_start; // These iterations start to be rather heavy
-
-	if (farblock.d_max > max_block_send_distance)
-		farblock.d_max = max_block_send_distance;
-
-	//dstream<<"farblock.d_max="<<farblock.d_max<<std::endl;
-
-	// Keep track of... things. We need these in order to figure out where to
-	// continue iterating on the next call to this function.
-	// TODO: Put these in the class
-	farblock.nearest_emergequeued_d = INT32_MAX;
-	farblock.nearest_emergefull_d = INT32_MAX;
-	farblock.nearest_sendqueued_d = INT32_MAX;
+	// FarBlock search iteration
+	farblock.init(alg->m_farblock.nearest_unsent_d, alg->m_radius_far);
 }
 
-WantedMapSend AutosendAlgorithm::Cycle::suggestNextMapBlock(
+WantedMapSend AutosendCycle::suggestNextMapBlock(
 		bool *result_needs_emerge)
 {
 	for (; mapblock.d <= mapblock.d_max; mapblock.d++) {
@@ -361,7 +364,7 @@ WantedMapSend AutosendAlgorithm::Cycle::suggestNextMapBlock(
 	return WantedMapSend();
 }
 
-WantedMapSend AutosendAlgorithm::Cycle::suggestNextFarBlock()
+WantedMapSend AutosendCycle::suggestNextFarBlock()
 {
 	v3s16 focus_point_fb = getContainerPos(focus_point, FMP_SCALE);
 
@@ -541,11 +544,11 @@ WantedMapSend AutosendAlgorithm::Cycle::suggestNextFarBlock()
 	return WantedMapSend();
 }
 
-WantedMapSend AutosendAlgorithm::Cycle::getNextBlock(EmergeManager *emerge)
+WantedMapSend AutosendCycle::getNextBlock(EmergeManager *emerge)
 {
 	DSTACK(FUNCTION_NAME);
 
-	dstream<<"AutosendAlgorithm::Cycle::getNextBlock()"<<std::endl;
+	dstream<<"AutosendCycle::getNextBlock()"<<std::endl;
 
 	if (disabled)
 		return WantedMapSend();
@@ -710,11 +713,47 @@ WantedMapSend AutosendAlgorithm::Cycle::getNextBlock(EmergeManager *emerge)
 	return WantedMapSend();
 }
 
-SearchCycleResult AutosendAlgorithm::Cycle::finishSearchCycle(Search *search)
+void AutosendCycle::Search::init(
+		s16 nearest_unsent_d, s16 max_send_distance)
 {
-	/*infostream << "nearest_emergequeued_d = "<<search->nearest_emergequeued_d
-			<<", nearest_emergefull_d = "<<search->nearest_emergefull_d
-			<<", nearest_sendqueued_d = "<<search->nearest_sendqueued_d
+	i = 0;
+
+	// We will start from a radius that still has unsent MapBlocks
+	d_start = nearest_unsent_d >= 0 ? nearest_unsent_d : 0;
+	d = d_start;
+
+	//dstream<<"d_start="<<d_start<<std::endl;
+	//infostream<<"d_start="<<d_start<<std::endl;
+
+	// Don't loop very much at a time. This function is called each server tick
+	// so just a few steps will work fine (+2 is 3 steps per call).
+	d_max = 0;
+	if (d_start < 5)
+		d_max = d_start + 2;
+	else if (d_max < 8)
+		d_max = d_start + 1;
+	else
+		d_max = d_start; // These iterations start to be rather heavy
+
+	if (d_max > max_send_distance)
+		d_max = max_send_distance;
+
+	//dstream<<"d_max="<<d_max<<std::endl;
+
+	// Keep track of... things. We need these in order to figure out where to
+	// continue iterating on the next call to this function.
+	// TODO: Put these in the class
+	nearest_emergequeued_d = INT32_MAX;
+	nearest_emergefull_d = INT32_MAX;
+	nearest_sendqueued_d = INT32_MAX;
+}
+
+AutosendCycle::Search::CycleResult
+		AutosendCycle::Search::finish()
+{
+	/*infostream << "nearest_emergequeued_d = "<<nearest_emergequeued_d
+			<<", nearest_emergefull_d = "<<nearest_emergefull_d
+			<<", nearest_sendqueued_d = "<<nearest_sendqueued_d
 			<<std::endl;*/
 
 	// Because none of the things we queue for sending or emerging or anything
@@ -722,14 +761,14 @@ SearchCycleResult AutosendAlgorithm::Cycle::finishSearchCycle(Search *search)
 	// iterating from the closest radius of any of that happening so that we can
 	// check whether they were sent or emerged or otherwise handled.
 	s32 closest_required_re_check = INT32_MAX;
-	if (search->nearest_emergequeued_d < closest_required_re_check)
-		closest_required_re_check = search->nearest_emergequeued_d;
-	if (search->nearest_emergefull_d < closest_required_re_check)
-		closest_required_re_check = search->nearest_emergefull_d;
-	if (search->nearest_sendqueued_d < closest_required_re_check)
-		closest_required_re_check = search->nearest_sendqueued_d;
+	if (nearest_emergequeued_d < closest_required_re_check)
+		closest_required_re_check = nearest_emergequeued_d;
+	if (nearest_emergefull_d < closest_required_re_check)
+		closest_required_re_check = nearest_emergefull_d;
+	if (nearest_sendqueued_d < closest_required_re_check)
+		closest_required_re_check = nearest_sendqueued_d;
 
-	SearchCycleResult r;
+	Search::CycleResult r;
 
 	if (closest_required_re_check != INT32_MAX) {
 		// We did something that requires a result to be checked later. Continue
@@ -757,9 +796,9 @@ SearchCycleResult AutosendAlgorithm::Cycle::finishSearchCycle(Search *search)
 	return r;
 }
 
-void AutosendAlgorithm::Cycle::finish()
+void AutosendCycle::finish()
 {
-	//dstream<<"AutosendAlgorithm::Cycle::finish()"<<std::endl;
+	//dstream<<"AutosendCycle::finish()"<<std::endl;
 
 	if (disabled) {
 		// If disabled, none of our variables are even initialized
@@ -768,7 +807,7 @@ void AutosendAlgorithm::Cycle::finish()
 
 	// Handle MapBlock search
 	{
-		SearchCycleResult r = finishSearchCycle(&mapblock);
+		Search::CycleResult r = finishSearchCycle(&mapblock);
 
 		// Default to continuing iterating from the next radius next time.
 		alg->m_mapblock.nearest_unsent_d = r.nearest_unsent_d;
@@ -801,7 +840,7 @@ void AutosendAlgorithm::Cycle::finish()
 
 	// Handle FarBlock search
 	{
-		SearchCycleResult r = finishSearchCycle(&farblock);
+		Search::CycleResult r = finishSearchCycle(&farblock);
 
 		// Default to continuing iterating from the next radius next time.
 		alg->m_farblock.nearest_unsent_d = r.nearest_unsent_d;
@@ -810,21 +849,45 @@ void AutosendAlgorithm::Cycle::finish()
 	}
 }
 
-WantedMapSend AutosendAlgorithm::getNextBlock(EmergeManager *emerge)
+AutosendAlgorithm::AutosendAlgorithm(RemoteClient *client):
+	m_client(client),
+	m_cycle(new Cycle()),
+	m_radius_map(0),
+	m_radius_far(0),
+	m_far_weight(8.0f),
+	m_fov(72.0f),
+	m_fov_limit_enabled(true),
+	m_nothing_sent_timer(0.0),
+	m_nearest_unsent_reset_timer(0.0),
+	m_nothing_to_send_pause_timer(0.0)
+{}
+
+AutosendAlgorithm::~AutosendAlgorithm()
 {
-	return m_cycle.getNextBlock(emerge);
+	delete m_cycle;
 }
 
 void AutosendAlgorithm::cycle(float dtime, ServerEnvironment *env)
 {
-	m_cycle.finish();
+	m_cycle->finish();
 
 	// Increment timers
 	m_nothing_sent_timer += dtime;
 	m_nearest_unsent_reset_timer += dtime;
 	m_nothing_to_send_pause_timer -= dtime;
 
-	m_cycle.init(this, m_client, env);
+	m_cycle->init(this, m_client, env);
+}
+
+WantedMapSend AutosendAlgorithm::getNextBlock(EmergeManager *emerge)
+{
+	return m_cycle->getNextBlock(emerge);
+}
+
+void AutosendAlgorithm::resetMapblockSearchRadius()
+{
+	m_mapblock.nearest_unsent_d = 0;
+	m_cycle->mapblock.i = 0;
 }
 
 std::string AutosendAlgorithm::describeStatus()
@@ -1060,7 +1123,7 @@ void RemoteClient::SetBlockUpdated(const WantedMapSend &wms)
 {
 	// Reset autosend's search radius but only if it's a MapBlock
 	if (wms.type == WMST_MAPBLOCK) {
-		m_autosend.resetSearchRadius();
+		m_autosend.resetMapblockSearchRadius();
 	}
 
 	m_blocks_updated_since_last_send.insert(wms);
