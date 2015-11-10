@@ -970,7 +970,7 @@ struct WantedMapSend
 		return false;
 	}
 
-	std::string describe() {
+	std::string describe() const {
 		if (type == WMST_INVALID)
 			return "INVALID";
 		else if(type == WMST_MAPBLOCK)

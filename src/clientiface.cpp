@@ -300,9 +300,18 @@ WantedMapSend AutosendCycle::suggestNextMapBlock(
 			}
 
 			// Don't send blocks that have already been sent
-			if (client->m_blocks_sent.count(wms)) {
-				//dstream<<"continue: already sent"<<std::endl;
-				continue;
+			std::map<WantedMapSend, time_t>::const_iterator
+					blocks_sent_i = client->m_blocks_sent.find(wms);
+			if (blocks_sent_i != client->m_blocks_sent.end()){
+				if (client->m_blocks_updated_since_last_send.count(wms) == 0) {
+					/*dstream<<"AutosendMap: Already sent and not updated: "
+							<<wms.describe()<<std::endl;*/
+					continue;
+				}
+				// NOTE: Don't do rate limiting for MapBlocks
+				//time_t sent_time = blocks_sent_i->second;
+				dstream<<"AutosendMap: Already sent but updated: "
+						<<wms.describe()<<std::endl;
 			}
 
 			/*
@@ -427,9 +436,9 @@ WantedMapSend AutosendCycle::suggestNextFarBlock(bool *result_needs_emerge)
 					blocks_sent_i = client->m_blocks_sent.find(wms);
 			if (blocks_sent_i != client->m_blocks_sent.end()){
 				if (client->m_blocks_updated_since_last_send.count(wms) == 0) {
-					dstream<<"AutosendFar: Already sent and not updated: "
+					/*dstream<<"AutosendFar: Already sent and not updated: "
 							<<"("<<wms.p.X<<","<<wms.p.Y<<","<<wms.p.Z<<")"
-							<<std::endl;
+							<<std::endl;*/
 					continue;
 				}
 				time_t sent_time = blocks_sent_i->second;
@@ -514,11 +523,11 @@ WantedMapSend AutosendCycle::getNextBlock(EmergeManager *emerge)
 
 	// Get MapBlock and FarBlock suggestions
 
-	bool suggested_mb_needs_merge = false;
-	WantedMapSend suggested_mb = suggestNextMapBlock(&suggested_mb_needs_merge);
+	bool suggested_mb_needs_emerge = false;
+	WantedMapSend suggested_mb = suggestNextMapBlock(&suggested_mb_needs_emerge);
 
-	bool suggested_fb_needs_merge = false;
-	WantedMapSend suggested_fb = suggestNextFarBlock(&suggested_fb_needs_merge);
+	bool suggested_fb_needs_emerge = false;
+	WantedMapSend suggested_fb = suggestNextFarBlock(&suggested_fb_needs_emerge);
 
 	dstream<<"suggested_mb = "<<suggested_mb.describe()<<std::endl;
 	dstream<<"suggested_fb = "<<suggested_fb.describe()<<std::endl;
@@ -556,7 +565,7 @@ WantedMapSend AutosendCycle::getNextBlock(EmergeManager *emerge)
 		// TODO
 		bool generate_allowed = false;
 
-		if (suggested_mb_needs_merge) {
+		if (suggested_mb_needs_emerge) {
 			if (emerge->enqueueBlockEmerge(
 					client->peer_id, p, generate_allowed)) {
 				if (mapblock.nearest_emergequeued_d == INT32_MAX)
@@ -570,11 +579,20 @@ WantedMapSend AutosendCycle::getNextBlock(EmergeManager *emerge)
 
 		if(mapblock.nearest_sendqueued_d == INT32_MAX)
 			mapblock.nearest_sendqueued_d = mapblock.d;
+	}
 
-		// Select this block
-		alg->m_nothing_sent_timer = 0.0f;
+	if (wms.type == WMST_FARBLOCK) {
+		v3s16 p = wms.p;
+
+		if (suggested_mb_needs_emerge) {
+			// TODO: Emerge
+		}
+
+		if(farblock.nearest_sendqueued_d == INT32_MAX)
+			farblock.nearest_sendqueued_d = farblock.d;
 	}
 	
+	alg->m_nothing_sent_timer = 0.0f;
 	return wms;
 }
 
@@ -930,9 +948,9 @@ WantedMapSend RemoteClient::getNextBlock(EmergeManager *emerge)
 					blocks_sent_i = m_blocks_sent.find(wms);
 			if (blocks_sent_i != m_blocks_sent.end()){
 				if (m_blocks_updated_since_last_send.count(wms) == 0) {
-					dstream<<"RemoteClient: Already sent and not updated: "
+					/*dstream<<"RemoteClient: Already sent and not updated: "
 							<<"("<<wms.p.X<<","<<wms.p.Y<<","<<wms.p.Z<<")"
-							<<std::endl;
+							<<std::endl;*/
 					continue;
 				}
 				time_t sent_time = blocks_sent_i->second;
@@ -984,10 +1002,13 @@ void RemoteClient::SendingBlock(const WantedMapSend &wms)
 				" already in m_blocks_sending"<<std::endl;
 	}
 	m_blocks_sending[wms] = time(NULL);
+	m_blocks_updated_since_last_send.erase(wms);
 }
 
 void RemoteClient::SetBlockUpdated(const WantedMapSend &wms)
 {
+	dstream<<"SetBlockUpdated: "<<wms.describe()<<std::endl;
+
 	// Reset autosend's search radius but only if it's a MapBlock
 	if (wms.type == WMST_MAPBLOCK) {
 		m_autosend.resetMapblockSearchRadius();
