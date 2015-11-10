@@ -224,11 +224,10 @@ void AutosendCycle::init(AutosendAlgorithm *alg_,
 	farblock.init(alg->m_farblock.nearest_unsent_d, alg->m_radius_far);
 }
 
-WantedMapSend AutosendCycle::suggestNextMapBlock(
-		bool *result_needs_emerge)
+WantedMapSend AutosendCycle::suggestNextMapBlock(bool *result_needs_emerge)
 {
 	for (; mapblock.d <= mapblock.d_max; mapblock.d++) {
-		//dstream<<"mapblock.d="<<mapblock.d<<std::endl;
+		dstream<<"AutosendMap: mapblock.d="<<mapblock.d<<std::endl;
 		// Get the border/face dot coordinates of a mapblock.d-"radiused" box
 		std::vector<v3s16> face_ps = FacePositionCache::getFacePositions(mapblock.d);
 		// Continue from the last mapblock.i unless it was reset by something
@@ -247,7 +246,8 @@ WantedMapSend AutosendCycle::suggestNextMapBlock(
 			v3f blockpos_relative = blockpos_center - camera_p;
 			f32 distance = blockpos_relative.getLength();
 			if (distance > max_block_send_distance * MAP_BLOCKSIZE * BS) {
-				//dstream<<"continue: distance"<<std::endl;
+				dstream<<"AutosendMap: "<<wms.describe()
+						<<": continue: distance: "<<distance<<std::endl;
 				continue; // Not in range
 			}
 
@@ -261,19 +261,22 @@ WantedMapSend AutosendCycle::suggestNextMapBlock(
 
 			// Don't select too many blocks for sending
 			if (client->SendingCount() >= max_simultaneous_block_sends) {
-				//dstream<<"return: num_selected"<<std::endl;
+				dstream<<"AutosendMap: "<<wms.describe()
+						<<": return: num_selected"<<std::endl;
 				return WantedMapSend();
 			}
 
 			// Don't send blocks that are currently being transferred
 			if (client->m_blocks_sending.count(wms)) {
-				//dstream<<"continue: num sending"<<std::endl;
+				dstream<<"AutosendMap: "<<wms.describe()
+						<<": continue: num sending"<<std::endl;
 				continue;
 			}
 
 			// Don't go over hard map limits
 			if (blockpos_over_limit(p)) {
-				//dstream<<"continue: over limit"<<std::endl;
+				dstream<<"AutosendMap: "<<wms.describe()
+						<<": continue: over limit"<<std::endl;
 				continue;
 			}
 
@@ -294,7 +297,8 @@ WantedMapSend AutosendCycle::suggestNextMapBlock(
 				if(isBlockInSight(p, camera_p, camera_dir, alg->m_fov,
 						10000*BS) == false)
 				{
-					//dstream<<"continue: not in sight"<<std::endl;
+					dstream<<"AutosendMap: "<<wms.describe()
+							<<": continue: not in sight"<<std::endl;
 					continue;
 				}
 			}
@@ -304,14 +308,14 @@ WantedMapSend AutosendCycle::suggestNextMapBlock(
 					blocks_sent_i = client->m_blocks_sent.find(wms);
 			if (blocks_sent_i != client->m_blocks_sent.end()){
 				if (client->m_blocks_updated_since_last_send.count(wms) == 0) {
-					/*dstream<<"AutosendMap: Already sent and not updated: "
-							<<wms.describe()<<std::endl;*/
+					/*dstream<<"AutosendMap: "<<wms.describe()
+							<<": Already sent and not updated"<<std::endl;*/
 					continue;
 				}
 				// NOTE: Don't do rate limiting for MapBlocks
 				//time_t sent_time = blocks_sent_i->second;
-				dstream<<"AutosendMap: Already sent but updated: "
-						<<wms.describe()<<std::endl;
+				dstream<<"AutosendMap: "<<wms.describe()
+						<<": Already sent but updated"<<std::endl;
 			}
 
 			/*
@@ -1007,7 +1011,7 @@ void RemoteClient::SendingBlock(const WantedMapSend &wms)
 
 void RemoteClient::SetBlockUpdated(const WantedMapSend &wms)
 {
-	dstream<<"SetBlockUpdated: "<<wms.describe()<<std::endl;
+	//dstream<<"SetBlockUpdated: "<<wms.describe()<<std::endl;
 
 	// Reset autosend's search radius but only if it's a MapBlock
 	if (wms.type == WMST_MAPBLOCK) {
