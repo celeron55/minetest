@@ -20,13 +20,14 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define __FAR_MAP_COMMON_H__
 
 #include "irrlichttypes.h"
+#include "mapnode.h"
 
 struct FarNode
 {
 	u16 id;
 	u8 light;
 
-	FarNode(u16 id=0, u8 light=0): id(id), light(light) {}
+	FarNode(u16 id=CONTENT_IGNORE, u8 light=0): id(id), light(light) {}
 };
 
 #endif

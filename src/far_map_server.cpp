@@ -48,8 +48,7 @@ ServerFarBlock::ServerFarBlock(v3s16 p):
 
 	size_t content_size_n = content_area.getVolume();
 
-	node_ids.resize(content_size_n, CONTENT_IGNORE);
-	lights.resize(content_size_n);
+	content.resize(content_size_n, CONTENT_IGNORE);
 }
 
 ServerFarBlock::~ServerFarBlock()
@@ -68,8 +67,7 @@ void ServerFarMapPiece::generateFrom(VoxelManipulator &vm, INodeDefManager *ndef
 
 	size_t content_size_n = content_area.getVolume();
 
-	node_ids.resize(content_size_n, CONTENT_IGNORE);
-	lights.resize(content_size_n);
+	content.resize(content_size_n, CONTENT_IGNORE);
 
 	v3s16 fnp;
 	for (fnp.Y=content_area.MinEdge.Y; fnp.Y<=content_area.MaxEdge.Y; fnp.Y++)
@@ -106,8 +104,8 @@ void ServerFarMapPiece::generateFrom(VoxelManipulator &vm, INodeDefManager *ndef
 			np.Y++;
 		}
 
-		node_ids[i] = node_id;
-		lights[i] = light;
+		content[i].id = node_id;
+		content[i].light = light;
 	}
 }
 
@@ -177,8 +175,7 @@ void ServerFarMap::updateFrom(const ServerFarMapPiece &piece)
 				continue;
 			size_t source_i = piece.content_area.index(fp1);
 			size_t dst_i = b->content_area.index(fp1);
-			b->node_ids[dst_i] = piece.node_ids[source_i];
-			b->lights[dst_i] = piece.lights[source_i];
+			b->content[dst_i] = piece.content[source_i];
 		}
 	}
 }

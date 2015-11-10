@@ -19,6 +19,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #ifndef __SERVER_FAR_MAP_H__
 #define __SERVER_FAR_MAP_H__
 
+#include "far_map_common.h"
 #include "irrlichttypes.h"
 #include "voxel.h" // VoxelArea
 #include <map>
@@ -37,10 +38,7 @@ struct ServerFarBlock
 	// Contained area in FarNodes. Is used to index node_ids and lights.
 	VoxelArea content_area;
 
-	// TODO: Use FarNode
-
-	std::vector<u16> node_ids;
-	std::vector<u8> lights;
+	std::vector<FarNode> content;
 
 	// TODO: Keep track of which MapBlocks have been loaded into this
 
@@ -52,8 +50,7 @@ struct ServerFarMapPiece
 {
 	VoxelArea content_area;
 
-	std::vector<u16> node_ids;
-	std::vector<u8> lights;
+	std::vector<FarNode> content;
 
 	void generateFrom(VoxelManipulator &vm, INodeDefManager *ndef);
 };

@@ -2280,7 +2280,7 @@ void Server::SendBlocks(float dtime)
 			if (!g_settings->getBool("far_map_allow_generate"))
 				allow_generate = false;
 
-			size_t num_parts_found = 0;
+			s32 num_parts_found = 0;
 
 			// TODO: Is this loop really what we should be doing here?
 			v3s16 bp;
@@ -2349,10 +2349,10 @@ void Server::SendBlocks(float dtime)
 			pkt << divs_per_mb;
 			if (status == FBRS_FULLY_LOADED || status == FBRS_PARTLY_LOADED) {
 				std::ostringstream os(std::ios::binary);
-				for(size_t i=0; i<fb->node_ids.size(); i++)
-					writeU16(os, fb->node_ids[i]);
-				for(size_t i=0; i<fb->lights.size(); i++)
-					writeU8(os, fb->lights[i]);
+				for(size_t i=0; i<fb->content.size(); i++)
+					writeU16(os, fb->content[i].id);
+				for(size_t i=0; i<fb->content.size(); i++)
+					writeU8(os, fb->content[i].light);
 				std::ostringstream os2(std::ios::binary);
 				compressZlib(os.str(), os2);
 				pkt.putLongString(os2.str());
