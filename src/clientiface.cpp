@@ -246,8 +246,8 @@ WantedMapSend AutosendCycle::suggestNextMapBlock(bool *result_needs_emerge)
 			v3f blockpos_relative = blockpos_center - camera_p;
 			f32 distance = blockpos_relative.getLength();
 			if (distance > max_block_send_distance * MAP_BLOCKSIZE * BS) {
-				dstream<<"AutosendMap: "<<wms.describe()
-						<<": continue: distance: "<<distance<<std::endl;
+				/*dstream<<"AutosendMap: "<<wms.describe()
+						<<": continue: distance: "<<distance<<std::endl;*/
 				continue; // Not in range
 			}
 
@@ -297,8 +297,8 @@ WantedMapSend AutosendCycle::suggestNextMapBlock(bool *result_needs_emerge)
 				if(isBlockInSight(p, camera_p, camera_dir, alg->m_fov,
 						10000*BS) == false)
 				{
-					dstream<<"AutosendMap: "<<wms.describe()
-							<<": continue: not in sight"<<std::endl;
+					/*dstream<<"AutosendMap: "<<wms.describe()
+							<<": continue: not in sight"<<std::endl;*/
 					continue;
 				}
 			}
@@ -406,33 +406,23 @@ WantedMapSend AutosendCycle::suggestNextFarBlock(bool *result_needs_emerge)
 
 			// Don't select too many blocks for sending
 			if (client->SendingCount() >= max_simultaneous_block_sends) {
-				//dstream<<"return: num_selected"<<std::endl;
+				dstream<<"AutosendFar: "<<wms.describe()
+						<<": return: num_selected"<<std::endl;
 				return WantedMapSend();
 			}
 
 			// Don't send blocks that are currently being transferred
 			if (client->m_blocks_sending.count(wms)) {
-				//dstream<<"continue: num sending"<<std::endl;
+				dstream<<"AutosendFar: "<<wms.describe()
+						<<": continue: num sending"<<std::endl;
 				continue;
 			}
 
 			// Don't go over hard map limits
 			if (blockpos_over_limit(p * FMP_SCALE)) {
-				//dstream<<"continue: over limit"<<std::endl;
+				dstream<<"AutosendFar: "<<wms.describe()
+						<<": continue: over limit"<<std::endl;
 				continue;
-			}
-
-			// If this is true, inexistent blocks will be made from scratch
-			//bool generate_allowed = farblock.d <= max_block_generate_distance;
-
-			if (farblock.d >= fov_limit_activation_distance) {
-				// Don't generate or send if not in sight
-				if(isBlockInSight(p, camera_p, camera_dir, alg->m_fov,
-						10000*BS) == false)
-				{
-					//dstream<<"continue: not in sight"<<std::endl;
-					continue;
-				}
 			}
 
 			// Don't send blocks that have already been sent
@@ -440,21 +430,18 @@ WantedMapSend AutosendCycle::suggestNextFarBlock(bool *result_needs_emerge)
 					blocks_sent_i = client->m_blocks_sent.find(wms);
 			if (blocks_sent_i != client->m_blocks_sent.end()){
 				if (client->m_blocks_updated_since_last_send.count(wms) == 0) {
-					/*dstream<<"AutosendFar: Already sent and not updated: "
-							<<"("<<wms.p.X<<","<<wms.p.Y<<","<<wms.p.Z<<")"
-							<<std::endl;*/
+					/*dstream<<"AutosendFar: "<<wms.describe()
+							<<": Already sent and not updated"<<std::endl;*/
 					continue;
 				}
 				time_t sent_time = blocks_sent_i->second;
 				if (sent_time + 5 > time(NULL)) {
-					/*dstream<<"AutosendFar: Already sent; rate-limiting: "
-							<<"("<<wms.p.X<<","<<wms.p.Y<<","<<wms.p.Z<<")"
-							<<std::endl;*/
+					/*dstream<<"AutosendFar: "<<wms.describe()
+							<<": Already sent; rate-limiting"<<std::endl;*/
 					continue;
 				}
-				dstream<<"AutosendFar: Already sent but updated; allowing: "
-						<<"("<<wms.p.X<<","<<wms.p.Y<<","<<wms.p.Z<<")"
-						<<std::endl;
+				dstream<<"AutosendFar: "<<wms.describe()
+						<<": Already sent but updated; allowing"<<std::endl;
 			}
 
 			/*
