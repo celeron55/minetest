@@ -272,10 +272,10 @@ public:
 	void GotBlock(const WantedMapSend &wms);
 	void SendingBlock(const WantedMapSend &wms);
 
-	void SetBlockNotSent(const WantedMapSend &wms);
+	void SetBlockUpdated(const WantedMapSend &wms);
 	// Also sets the corresponding FarBlock
-	void SetMapBlockNotSent(v3s16 p);
-	void SetMapBlocksNotSent(std::map<v3s16, MapBlock*> &blocks);
+	void SetMapBlockUpdated(v3s16 p);
+	void SetMapBlocksUpdated(std::map<v3s16, MapBlock*> &blocks);
 
 	/**
 	 * tell client about this block being modified right now.

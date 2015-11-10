@@ -877,7 +877,7 @@ void Server::handleCommand_DeletedBlocks(NetworkPacket* pkt)
 		v3s16 p;
 		*pkt >> p;
 
-		client->SetMapBlockNotSent(p);
+		client->SetMapBlockUpdated(p);
 	}
 }
 
@@ -1375,7 +1375,7 @@ void Server::handleCommand_Interact(NetworkPacket* pkt)
 			// Re-send block to revert change on client-side
 			RemoteClient *client = getClient(pkt->getPeerId());
 			v3s16 blockpos = getNodeBlockPos(floatToInt(pointed_pos_under, BS));
-			client->SetMapBlockNotSent(blockpos);
+			client->SetMapBlockUpdated(blockpos);
 			// Call callbacks
 			m_script->on_cheat(playersao, "interacted_too_far");
 			// Do nothing else
@@ -1395,12 +1395,12 @@ void Server::handleCommand_Interact(NetworkPacket* pkt)
 		// Digging completed -> under
 		if (action == 2) {
 			v3s16 blockpos = getNodeBlockPos(floatToInt(pointed_pos_under, BS));
-			client->SetMapBlockNotSent(blockpos);
+			client->SetMapBlockUpdated(blockpos);
 		}
 		// Placement -> above
 		if (action == 3) {
 			v3s16 blockpos = getNodeBlockPos(floatToInt(pointed_pos_above, BS));
-			client->SetMapBlockNotSent(blockpos);
+			client->SetMapBlockUpdated(blockpos);
 		}
 		return;
 	}
@@ -1578,7 +1578,7 @@ void Server::handleCommand_Interact(NetworkPacket* pkt)
 			// Send unusual result (that is, node not being removed)
 			if (m_env->getMap().getNodeNoEx(p_under).getContent() != CONTENT_AIR) {
 				// Re-send block to revert change on client-side
-				client->SetMapBlockNotSent(blockpos);
+				client->SetMapBlockUpdated(blockpos);
 			}
 			else {
 				client->ResendMapBlockIfOnWire(blockpos);
@@ -1627,9 +1627,9 @@ void Server::handleCommand_Interact(NetworkPacket* pkt)
 		v3s16 blockpos = getNodeBlockPos(floatToInt(pointed_pos_above, BS));
 		v3s16 blockpos2 = getNodeBlockPos(floatToInt(pointed_pos_under, BS));
 		if (item.getDefinition(m_itemdef).node_placement_prediction != "") {
-			client->SetMapBlockNotSent(blockpos);
+			client->SetMapBlockUpdated(blockpos);
 			if (blockpos2 != blockpos) {
-				client->SetMapBlockNotSent(blockpos2);
+				client->SetMapBlockUpdated(blockpos2);
 			}
 		}
 		else {

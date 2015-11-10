@@ -57,7 +57,7 @@ void RemoteClient::ResendBlockIfOnWire(const WantedMapSend &wms)
 {
 	// if this block is on wire, mark it for sending again as soon as possible
 	if (m_blocks_sending.find(wms) != m_blocks_sending.end()) {
-		SetBlockNotSent(wms);
+		SetBlockUpdated(wms);
 	}
 }
 
@@ -106,9 +106,12 @@ void RemoteClient::GetNextBlocks (
 			if (m_blocks_sending.find(wms) != m_blocks_sending.end())
 				continue;
 
-			// Don't send blocks that have already been sent
-			if (m_blocks_sent.find(wms) != m_blocks_sent.end())
-				continue;
+			// Don't send blocks that have already been sent, unless it has been
+			// updated
+			if (m_blocks_sent.find(wms) != m_blocks_sent.end()) {
+				if (m_blocks_updated_since_last_send.count(wms) == 0)
+					continue;
+			}
 
 			// If the MapBlock is not loaded, it will be queued to be loaded or
 			// generated. Otherwise it will be added to 'dest'.
@@ -194,14 +197,31 @@ void RemoteClient::GetNextBlocks (
 				continue;
 
 			// Don't send blocks that have already been sent
-			if (m_blocks_sent.find(wms) != m_blocks_sent.end()){
-				dstream<<"RemoteClient: Already sent: "
+			std::map<WantedMapSend, time_t>::const_iterator
+					blocks_sent_i = m_blocks_sent.find(wms);
+			if (blocks_sent_i != m_blocks_sent.end()){
+				if (m_blocks_updated_since_last_send.count(wms) == 0) {
+					dstream<<"RemoteClient: Already sent and not updated: "
+							<<"("<<wms.p.X<<","<<wms.p.Y<<","<<wms.p.Z<<")"
+							<<std::endl;
+					continue;
+				}
+				time_t sent_time = blocks_sent_i->second;
+				if (sent_time + 5 > time(NULL)) {
+					/*dstream<<"RemoteClient: Already sent; rate-limiting: "
+							<<"("<<wms.p.X<<","<<wms.p.Y<<","<<wms.p.Z<<")"
+							<<std::endl;*/
+					continue;
+				}
+				dstream<<"RemoteClient: Already sent but updated; allowing re-send: "
 						<<"("<<wms.p.X<<","<<wms.p.Y<<","<<wms.p.Z<<")"
 						<<std::endl;
-				continue;
 			}
 
-			// TODO: Use modification counter
+			// TODO: Stay determined at which FarBlock to load so that we don't
+			//       load them all at the same time in weird stripes
+
+			// TODO: Use modification counter?
 
 			// TODO: Check if data for this is available and if not, possibly
 			//       request an emerge of the required area
@@ -550,37 +570,37 @@ void RemoteClient::GotBlock(const WantedMapSend &wms)
 
 void RemoteClient::SendingBlock(const WantedMapSend &wms)
 {
-	if (m_blocks_sending.find(wms) == m_blocks_sending.end())
-		m_blocks_sending[wms] = time(NULL);
-	else
-		infostream<<"RemoteClient::SendingBlock(): Sent block"
+	if (m_blocks_sending.find(wms) == m_blocks_sending.end()) {
+		warningstream<<"RemoteClient::SendingBlock(): Sent block"
 				" already in m_blocks_sending"<<std::endl;
+	}
+	m_blocks_sending[wms] = time(NULL);
 }
 
-void RemoteClient::SetBlockNotSent(const WantedMapSend &wms)
+void RemoteClient::SetBlockUpdated(const WantedMapSend &wms)
 {
-	m_nearest_unsent_d = 0;
+	// Only reset send algorithm's radius when MapBlocks are modified
+	if (wms.type == WMST_MAPBLOCK) {
+		m_nearest_unsent_d = 0;
+	}
 
-	if(m_blocks_sending.find(wms) != m_blocks_sending.end())
-		m_blocks_sending.erase(wms);
-	if(m_blocks_sent.find(wms) != m_blocks_sent.end())
-		m_blocks_sent.erase(wms);
+	m_blocks_updated_since_last_send.insert(wms);
 }
 
-void RemoteClient::SetMapBlockNotSent(v3s16 p)
+void RemoteClient::SetMapBlockUpdated(v3s16 p)
 {
-	SetBlockNotSent(WantedMapSend(WMST_MAPBLOCK, p));
+	SetBlockUpdated(WantedMapSend(WMST_MAPBLOCK, p));
 
 	// Also set the corresponding FarBlock not sent
 	v3s16 farblock_p = getContainerPos(p, FMP_SCALE);
-	SetBlockNotSent(WantedMapSend(WMST_FARBLOCK, farblock_p));
+	SetBlockUpdated(WantedMapSend(WMST_FARBLOCK, farblock_p));
 
 	/*dstream<<"RemoteClient: now not sent: MB"<<"("<<p.X<<","<<p.Y<<","<<p.Z<<")"
 			<<" FB"<<"("<<farblock_p.X<<","<<farblock_p.Y<<","<<farblock_p.Z<<")"
 			<<std::endl;*/
 }
 
-void RemoteClient::SetMapBlocksNotSent(std::map<v3s16, MapBlock*> &blocks)
+void RemoteClient::SetMapBlocksUpdated(std::map<v3s16, MapBlock*> &blocks)
 {
 	m_nearest_unsent_d = 0;
 
@@ -589,7 +609,7 @@ void RemoteClient::SetMapBlocksNotSent(std::map<v3s16, MapBlock*> &blocks)
 			i != blocks.end(); ++i)
 	{
 		v3s16 p = i->first;
-		SetMapBlockNotSent(p);
+		SetMapBlockUpdated(p);
 	}
 }
 

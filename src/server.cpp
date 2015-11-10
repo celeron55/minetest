@@ -636,7 +636,7 @@ void Server::AsyncRunStep(bool initial_step)
 		*/
 		if(!modified_blocks.empty())
 		{
-			SetMapBlocksNotSent(modified_blocks);
+			SetMapBlocksUpdated(modified_blocks);
 		}
 	}
 	m_clients.step(dtime);
@@ -946,7 +946,7 @@ void Server::AsyncRunStep(bool initial_step)
 				Set blocks not sent to far players
 			*/
 			if(!far_players.empty()) {
-				// Convert list format to that wanted by SetMapBlocksNotSent
+				// Convert list format to that wanted by SetMapBlocksUpdated
 				std::map<v3s16, MapBlock*> modified_blocks2;
 				for(std::set<v3s16>::iterator
 						i = event->modified_blocks.begin();
@@ -960,7 +960,7 @@ void Server::AsyncRunStep(bool initial_step)
 						i = far_players.begin();
 						i != far_players.end(); ++i) {
 					if(RemoteClient *client = getClient(*i))
-						client->SetMapBlocksNotSent(modified_blocks2);
+						client->SetMapBlocksUpdated(modified_blocks2);
 				}
 			}
 
@@ -1348,7 +1348,7 @@ void Server::setInventoryModified(const InventoryLocation &loc, bool playerSend)
 	}
 }
 
-void Server::SetMapBlocksNotSent(std::map<v3s16, MapBlock *>& block)
+void Server::SetMapBlocksUpdated(std::map<v3s16, MapBlock *>& block)
 {
 	std::vector<u16> clients = m_clients.getClientIDs();
 	m_clients.lock();
@@ -1356,7 +1356,7 @@ void Server::SetMapBlocksNotSent(std::map<v3s16, MapBlock *>& block)
 	for (std::vector<u16>::iterator i = clients.begin();
 			 i != clients.end(); ++i) {
 		if (RemoteClient *client = m_clients.lockedGetClientNoEx(*i))
-			client->SetMapBlocksNotSent(block);
+			client->SetMapBlocksUpdated(block);
 	}
 	m_clients.unlock();
 }
@@ -2113,7 +2113,7 @@ void Server::sendAddNode(v3s16 p, MapNode n, u16 ignore_id,
 				if (client->net_proto_version <= 21) {
 					// Old clients always clear metadata; fix it
 					// by sending the full block again.
-					client->SetMapBlockNotSent(getNodeBlockPos(p));
+					client->SetMapBlockUpdated(getNodeBlockPos(p));
 				}
 			}
 		}
@@ -2132,7 +2132,7 @@ void Server::setBlockNotSent(v3s16 p)
 	for(std::vector<u16>::iterator i = clients.begin();
 		i != clients.end(); ++i) {
 		RemoteClient *client = m_clients.lockedGetClientNoEx(*i);
-		client->SetMapBlockNotSent(p);
+		client->SetMapBlockUpdated(p);
 	}
 	m_clients.unlock();
 }
