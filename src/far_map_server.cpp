@@ -21,6 +21,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "constants.h"
 #include "nodedef.h"
 #include "util/numeric.h"
+#include "util/string.h"
 
 #define PP(x) "("<<(x).X<<","<<(x).Y<<","<<(x).Z<<")"
 
@@ -29,7 +30,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 ServerFarBlock::ServerFarBlock(v3s16 p):
-	p(p)
+	p(p),
+	modification_counter(0)
 {
 	// Block's effective origin in FarNodes based on block_div
 	v3s16 fnp0 = v3s16(
@@ -59,8 +61,10 @@ std::string analyze_far_block(ServerFarBlock *b)
 {
 	if (b == NULL)
 		return "NULL";
-	return "["+analyze_far_block(
-			b->p, b->content, b->content_area, b->content_area)+"]";
+	std::string s = "["+analyze_far_block(
+			b->p, b->content, b->content_area, b->content_area);
+	s += ", modification_counter="+itos(b->modification_counter);
+	return s+"]";
 }
 
 /*
@@ -182,6 +186,8 @@ void ServerFarMap::updateFrom(const ServerFarMapPiece &piece)
 			size_t dst_i = b->content_area.index(fp1);
 			b->content[dst_i] = piece.content[source_i];
 		}
+
+		b->modification_counter++;
 
 		// Call this before starting line to keep lines mostly intact when
 		// multiple threads are printing

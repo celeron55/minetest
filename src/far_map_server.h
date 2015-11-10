@@ -40,7 +40,9 @@ struct ServerFarBlock
 
 	std::vector<FarNode> content;
 
-	// TODO: Keep track of which MapBlocks have been loaded into this
+	u32 modification_counter;
+
+	// TODO: Keep track of which MapBlocks have been loaded into this?
 
 	ServerFarBlock(v3s16 p);
 	~ServerFarBlock();
