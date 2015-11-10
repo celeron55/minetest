@@ -19,15 +19,20 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #ifndef __FAR_MAP_COMMON_H__
 #define __FAR_MAP_COMMON_H__
 
-#include "irrlichttypes.h"
-#include "mapnode.h"
+#include "irrlichttypes.h" // v3s16
+#include "mapnode.h" // CONTENT_IGNORE
+#include "voxel.h" // VoxelArea
+#include <string>
 
 struct FarNode
 {
 	u16 id;
-	u8 light;
+	u8 light; // (day | (night << 4))
 
 	FarNode(u16 id=CONTENT_IGNORE, u8 light=0): id(id), light(light) {}
 };
+
+std::string analyze_far_block(v3s16 p, const std::vector<FarNode> &content,
+		const VoxelArea &content_area, const VoxelArea &effective_area);
 
 #endif

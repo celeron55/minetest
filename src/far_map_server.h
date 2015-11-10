@@ -16,8 +16,8 @@ You should have received a copy of the GNU Lesser General Public License along
 with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-#ifndef __SERVER_FAR_MAP_H__
-#define __SERVER_FAR_MAP_H__
+#ifndef __FAR_MAP_SERVER_H__
+#define __FAR_MAP_SERVER_H__
 
 #include "far_map_common.h"
 #include "irrlichttypes.h"
@@ -45,6 +45,8 @@ struct ServerFarBlock
 	ServerFarBlock(v3s16 p);
 	~ServerFarBlock();
 };
+
+std::string analyze_far_block(ServerFarBlock *b);
 
 struct ServerFarMapPiece
 {

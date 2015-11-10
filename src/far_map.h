@@ -119,6 +119,8 @@ struct FarBlock
 	}
 };
 
+std::string analyze_far_block(FarBlock *b);
+
 // For some reason sectors seem to be faster than just a plain std::map<v3s16,
 // FarBlock*>, so that's what we use here.
 struct FarSector

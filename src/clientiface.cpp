@@ -574,9 +574,9 @@ void RemoteClient::SetMapBlockNotSent(v3s16 p)
 	v3s16 farblock_p = getContainerPos(p, FMP_SCALE);
 	SetBlockNotSent(WantedMapSend(WMST_FARBLOCK, farblock_p));
 
-	dstream<<"RemoteClient: now not sent: MB"<<"("<<p.X<<","<<p.Y<<","<<p.Z<<")"
+	/*dstream<<"RemoteClient: now not sent: MB"<<"("<<p.X<<","<<p.Y<<","<<p.Z<<")"
 			<<" FB"<<"("<<farblock_p.X<<","<<farblock_p.Y<<","<<farblock_p.Z<<")"
-			<<std::endl;
+			<<std::endl;*/
 }
 
 void RemoteClient::SetMapBlocksNotSent(std::map<v3s16, MapBlock*> &blocks)

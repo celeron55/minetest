@@ -55,6 +55,14 @@ ServerFarBlock::~ServerFarBlock()
 {
 }
 
+std::string analyze_far_block(ServerFarBlock *b)
+{
+	if (b == NULL)
+		return "NULL";
+	return "["+analyze_far_block(
+			b->p, b->content, b->content_area, b->content_area)+"]";
+}
+
 /*
 	ServerFarMapPiece
 */
@@ -97,7 +105,7 @@ void ServerFarMapPiece::generateFrom(VoxelManipulator &vm, INodeDefManager *ndef
 			} else {
 				// TODO: Get light of a nearby node; something that defines
 				//       how brightly this division should be rendered
-				// (day | (night << 8))
+				// (day | (night << 4))
 				light = (15) | (0<<4);
 				node_id = n.getContent();
 			}
@@ -158,9 +166,6 @@ void ServerFarMap::updateFrom(const ServerFarMapPiece &piece)
 	for (fbp.Y=fb_area.MinEdge.Y; fbp.Y<=fb_area.MaxEdge.Y; fbp.Y++)
 	for (fbp.X=fb_area.MinEdge.X; fbp.X<=fb_area.MaxEdge.X; fbp.X++)
 	for (fbp.Z=fb_area.MinEdge.Z; fbp.Z<=fb_area.MaxEdge.Z; fbp.Z++) {
-		dstream<<"ServerFarMap::updateFrom: ServerFarBlock "
-				<<PP(fbp)<<std::endl;
-
 		ServerFarBlock *b = getOrCreateBlock(fbp);
 
 		v3s16 fp00 = piece.content_area.MinEdge;
@@ -177,6 +182,11 @@ void ServerFarMap::updateFrom(const ServerFarMapPiece &piece)
 			size_t dst_i = b->content_area.index(fp1);
 			b->content[dst_i] = piece.content[source_i];
 		}
+
+		// Call this before starting line to keep lines mostly intact when
+		// multiple threads are printing
+		std::string s = analyze_far_block(b);
+		dstream<<"ServerFarMap: Updated block: "<<s<<std::endl;
 	}
 }
 

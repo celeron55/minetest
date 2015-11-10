@@ -159,6 +159,20 @@ void FarBlock::resetCameraOffset(v3s16 camera_offset)
 	updateCameraOffset(camera_offset);
 }
 
+std::string analyze_far_block(FarBlock *b)
+{
+	if (b == NULL)
+		return "NULL";
+	std::string s = "["+analyze_far_block(
+			b->p, b->content, b->content_area, b->effective_area);
+	s += ", is_culled_by_server="+itos(b->is_culled_by_server);
+	s += ", is_partly_loaded_by_server="+itos(b->is_partly_loaded_by_server);
+	s += ", generating_mesh="+itos(b->generating_mesh);
+	s += ", mesh_is_outdated="+itos(b->mesh_is_outdated);
+	s += ", mesh_is_empty="+itos(b->mesh_is_empty);
+	return s+"]";
+}
+
 /*
 	FarSector
 */
@@ -1061,6 +1075,11 @@ void FarMap::insertData(v3s16 fbp, v3s16 divs_per_mb,
 		startGeneratingBlockMesh(b,
 				FarBlockMeshGenerateTask::GL_FINE_AND_AUX);
 	}
+
+	// Call this before starting line to keep lines mostly intact when
+	// multiple threads are printing
+	std::string s = analyze_far_block(b);
+	dstream<<"FarMap: Updated block: "<<s<<std::endl;
 }
 
 void FarMap::insertEmptyBlock(v3s16 fbp)
@@ -1090,7 +1109,10 @@ void FarMap::insertLoadInProgressBlock(v3s16 fbp)
 void FarMap::startGeneratingBlockMesh(FarBlock *b,
 		FarBlockMeshGenerateTask::GenLevel level)
 {
-	dstream<<"FarMap::startGeneratingBlockMesh: "<<PP(b->p)<<std::endl;
+	dstream<<"FarMap::startGeneratingBlockMesh: "<<PP(b->p)
+			<<"level="<<level<<std::endl;
+
+	assert(!b->generating_mesh);
 
 	b->generating_mesh = true;
 	b->mesh_is_outdated = false;
@@ -1384,7 +1406,7 @@ static void renderBlock(FarMap *far_map, FarBlock *b,
 		size_t *profiler_num_rendered_fbmbparts,
 		size_t *profiler_num_rendered_fbmb2parts)
 {
-	if (b->mesh_is_empty) {
+	if (b->mesh_is_empty && !b->mesh_is_outdated) {
 		/*infostream<<"FarMap::renderBlock: "<<PP(b->p)<<": Mesh is empty"
 				<<std::endl;*/
 		return;

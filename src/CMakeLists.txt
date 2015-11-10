@@ -410,6 +410,7 @@ set(common_SRCS
 	version.cpp
 	voxel.cpp
 	voxelalgorithms.cpp
+	far_map_common.cpp
 	far_map_server.cpp
 	${common_network_SRCS}
 	${JTHREAD_SRCS}
