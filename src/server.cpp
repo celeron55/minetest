@@ -2199,7 +2199,8 @@ void Server::SendBlocks(float dtime)
 
 			std::vector<WantedMapSend> &wanted_map_sends =
 					wanted_map_sends_to_players[peer_id].wms;
-			client->GetNextBlocks(m_env, m_emerge, dtime, wanted_map_sends);
+			// TODO
+			client->getNextBlocks(m_env, m_emerge, dtime, wanted_map_sends);
 
 			/*verbosestream << "Client " << peer_id << ": "
 					<< "wanted_map_sends.size()="<<wanted_map_sends.size()

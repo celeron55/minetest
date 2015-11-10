@@ -199,6 +199,111 @@ enum ClientStateEvent
 	CSE_Disconnect
 };
 
+class RemoteClient;
+
+class AutosendAlgorithm
+{
+	struct Cycle
+	{
+		bool disabled;
+		AutosendAlgorithm *alg;
+		RemoteClient *client;
+		ServerEnvironment *env;
+		EmergeManager *emerge;
+
+		v3f camera_p;
+		v3f camera_dir;
+		v3s16 focus_point;
+
+		u16 max_simul_sends_setting;
+		float time_from_building_limit_s;
+		s16 max_block_send_distance_setting;
+		s16 max_block_generate_distance;
+
+		s16 max_block_send_distance;
+
+		u32 num_blocks_selected;
+		s16 fov_limit_activation_distance;
+
+		s16 d_start;
+		s16 d_max;
+		s16 d; // Current radius in MapBlocks
+		s32 nearest_emergequeued_d;
+		s32 nearest_emergefull_d;
+		s32 nearest_sendqueued_d;
+
+		Cycle(): disabled(true) {}
+
+		void init(AutosendAlgorithm *alg_,
+				RemoteClient *client_, ServerEnvironment *env_,
+				EmergeManager *emerge_);
+
+		WantedMapSend getNextBlock();
+
+		void finish();
+	};
+
+public:
+	AutosendAlgorithm(RemoteClient *client):
+		m_client(client),
+		m_radius_map(0),
+		m_radius_far(0),
+		m_far_weight(8.0f),
+		m_fov(72.0f),
+		m_nearest_unsent_d(0),
+		m_nearest_unsent_i(0),
+		m_fov_limit_enabled(true),
+		m_nothing_sent_timer(0.0),
+		m_nearest_unsent_reset_timer(0.0),
+		m_nothing_to_send_pause_timer(0.0)
+	{}
+
+	// Shall be called every time before starting to ask a bunch of blocks by
+	// calling getNextBlock()
+	void cycle(float dtime, ServerEnvironment *env, EmergeManager *emerge);
+
+	// Finds a block that should be sent next to the client.
+	// Environment should be locked when this is called.
+	WantedMapSend getNextBlock();
+
+	void setParameters(s16 radius_map, s16 radius_far, float far_weight,
+			float fov) {
+		m_radius_map = radius_map;
+		m_radius_far = radius_far;
+		m_far_weight = far_weight;
+		m_fov = fov;
+	}
+
+	// If something is modified near a player, this should probably be called so
+	// that it gets sent as quickly as possible while being prioritized
+	// correctly
+	void resetSearchRadius() {
+		m_nearest_unsent_d = 0;
+		m_nearest_unsent_i = 0;
+	}
+
+	std::string describeStatus();
+
+private:
+	RemoteClient *m_client;
+
+	s16 m_radius_map; // Updated by the client; 0 disables autosend.
+	s16 m_radius_far; // Updated by the client; 0 disables autosend.
+	float m_far_weight; // Updated by the client; 0 is invalid.
+	float m_fov; // Updated by the client; 0 disables FOV limit.
+	s16 m_nearest_unsent_d;
+	size_t m_nearest_unsent_i;
+	v3s16 m_last_focus_point;
+	bool m_fov_limit_enabled; // Automatically turned off to transfer the rest
+	float m_nothing_sent_timer;
+	float m_nearest_unsent_reset_timer;
+	float m_nothing_to_send_pause_timer; // CPU usage optimization
+
+	Cycle m_cycle;
+
+	friend struct Cycle;
+};
+
 class RemoteClient
 {
 public:
@@ -235,15 +340,7 @@ public:
 		m_time_from_building(9999),
 		m_pending_serialization_version(SER_FMT_VER_INVALID),
 		m_state(CS_Created),
-		m_autosend_radius_map(0),
-		m_autosend_radius_far(0),
-		m_autosend_far_weight(8.0f),
-		m_autosend_fov(72.0f),
-		m_nearest_unsent_d(0),
-		m_fov_limit_enabled(true),
-		m_nothing_sent_timer(0.0),
-		m_nearest_unsent_reset_timer(0.0),
-		m_nothing_to_send_pause_timer(0.0),
+		m_autosend(this),
 		m_fallback_autosend_active(true),
 		m_excess_gotblocks(0),
 		m_name(""),
@@ -259,15 +356,14 @@ public:
 	{
 	}
 
-	// Finds block that should be sent next to the client.
+	// Finds a block that should be sent next to the client.
 	// Environment should be locked when this is called.
-	// Result shall be appended to dest with the most important one first.
-	void GetNextBlocks(ServerEnvironment *env, EmergeManager* emerge,
-			float dtime, std::vector<WantedMapSend> &dest);
+	WantedMapSend getNextBlock(ServerEnvironment *env,
+			EmergeManager* emerge);
 
-	// Called by GetNextBlocks
-	void GetNextAutosendBlocks(ServerEnvironment *env, EmergeManager* emerge,
-			float dtime, std::vector<WantedMapSend> &dest);
+	// Shall be called every time before starting to ask a bunch of blocks by
+	// calling getNextBlock()
+	void cycleAutosendAlgorithm(float dtime);
 
 	void GotBlock(const WantedMapSend &wms);
 	void SendingBlock(const WantedMapSend &wms);
@@ -296,10 +392,7 @@ public:
 	void setAutosendParameters(s16 radius_map, s16 radius_far, float far_weight,
 			float fov)
 	{
-		m_autosend_radius_map = radius_map;
-		m_autosend_radius_far = radius_far;
-		m_autosend_far_weight = far_weight;
-		m_autosend_fov = fov;
+		m_autosend.setParameters(radius_map, radius_far, far_weight, fov);
 
 		// Disable fallback algorithm
 		m_fallback_autosend_active = false;
@@ -318,8 +411,8 @@ public:
 		o<<"RemoteClient "<<peer_id<<": "
 				<<"m_blocks_sent.size()="<<m_blocks_sent.size()
 				<<", m_blocks_sending.size()="<<m_blocks_sending.size()
-				<<", m_nearest_unsent_d="<<m_nearest_unsent_d
 				<<", m_excess_gotblocks="<<m_excess_gotblocks
+				<<", m_autosend.describeStatus()="<<m_autosend.describeStatus()
 				<<std::endl;
 		m_excess_gotblocks = 0;
 	}
@@ -372,22 +465,18 @@ private:
 	// Version is stored in here after INIT before INIT2
 	u8 m_pending_serialization_version;
 
-	/* current state of client */
 	ClientState m_state;
 
 	/*
-		Autosend algorithm
+		Autosend Algorithm
+
+		Normally this is used to select blocks for sending and emerging. The
+		client can disable this and set m_map_send_queue instead.
 	*/
-	s16 m_autosend_radius_map; // Updated by the client; 0 disables autosend.
-	s16 m_autosend_radius_far; // Updated by the client; 0 disables autosend.
-	float m_autosend_far_weight; // Updated by the client; 0 is invalid.
-	float m_autosend_fov; // Updated by the client; 0 disables FOV limit.
-	s16 m_nearest_unsent_d;
-	v3s16 m_last_focus_point;
-	bool m_fov_limit_enabled; // Automatically turned off to transfer the rest
-	float m_nothing_sent_timer;
-	float m_nearest_unsent_reset_timer;
-	float m_nothing_to_send_pause_timer; // CPU usage optimization
+	AutosendAlgorithm m_autosend;
+	// If the client has not given us autosend parameters, this is true and
+	// autosend parameters are automatically set by us in order to implement old
+	// server behavior.
 	bool m_fallback_autosend_active;
 
 	/*
@@ -452,6 +541,8 @@ private:
 		time this client was created
 	 */
 	const u32 m_connection_time;
+
+	friend class AutosendAlgorithm;
 };
 
 class ClientInterface {
