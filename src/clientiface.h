@@ -223,15 +223,22 @@ class AutosendAlgorithm
 
 		s16 fov_limit_activation_distance;
 
-		s16 d_start;
-		s16 d_max;
-		s16 d; // Current radius in MapBlocks
-		size_t i;
-		s32 nearest_emergequeued_d;
-		s32 nearest_emergefull_d;
-		s32 nearest_sendqueued_d;
+		struct Search {
+			s16 d_start;
+			s16 d_max;
+			s16 d;
+			size_t i;
+			s32 nearest_emergequeued_d;
+			s32 nearest_emergefull_d;
+			s32 nearest_sendqueued_d;
+		};
+		
+		Search mapblock;
+		Search farblock;
 
-		Cycle(): disabled(true) {}
+		Cycle():
+			disabled(true)
+		{}
 
 		void init(AutosendAlgorithm *alg_,
 				RemoteClient *client_, ServerEnvironment *env_);
@@ -239,6 +246,23 @@ class AutosendAlgorithm
 		WantedMapSend getNextBlock(EmergeManager *emerge);
 
 		void finish();
+
+private:
+		WantedMapSend suggestNextMapBlock(bool *result_needs_emerge);
+		WantedMapSend suggestNextFarBlock(bool *result_needs_emerge);
+
+		struct SearchCycleResult {
+			s32 nearest_unsent_d;
+			bool searched_full_range;
+			bool result_may_be_available_later_at_this_d;
+
+			SearchCycleResult():
+				nearest_unsent_d(0),
+				searched_full_range(false),
+				result_may_be_available_later_at_this_d(false)
+			{}
+		};
+		SearchCycleResult finishSearchCycle(Search *search);
 	};
 
 public:
@@ -248,7 +272,6 @@ public:
 		m_radius_far(0),
 		m_far_weight(8.0f),
 		m_fov(72.0f),
-		m_nearest_unsent_d(0),
 		m_fov_limit_enabled(true),
 		m_nothing_sent_timer(0.0),
 		m_nearest_unsent_reset_timer(0.0),
@@ -275,7 +298,7 @@ public:
 	// that it gets sent as quickly as possible while being prioritized
 	// correctly
 	void resetSearchRadius() {
-		m_nearest_unsent_d = 0;
+		m_mapblock.nearest_unsent_d = 0;
 		m_cycle.i = 0;
 	}
 
@@ -284,11 +307,18 @@ public:
 private:
 	RemoteClient *m_client;
 
+	struct SearchContinueState {
+		s16 nearest_unsent_d;
+
+		SearchContinueState(): nearest_unsent_d(0) {}
+	};
+
 	s16 m_radius_map; // Updated by the client; 0 disables autosend.
 	s16 m_radius_far; // Updated by the client; 0 disables autosend.
 	float m_far_weight; // Updated by the client; 0 is invalid.
 	float m_fov; // Updated by the client; 0 disables FOV limit.
-	s16 m_nearest_unsent_d;
+	SearchContinueState m_mapblock;
+	SearchContinueState m_farblock;
 	v3s16 m_last_focus_point;
 	bool m_fov_limit_enabled; // Automatically turned off to transfer the rest
 	float m_nothing_sent_timer;

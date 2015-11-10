@@ -142,38 +142,403 @@ void AutosendAlgorithm::Cycle::init(AutosendAlgorithm *alg_,
 		alg->m_nearest_unsent_d = 0;
 	}
 
-	// We will start from a radius that still has unsent MapBlocks
-	d_start = alg->m_nearest_unsent_d >= 0 ? alg->m_nearest_unsent_d : 0;
-	d = d_start;
+	// Out-of-FOV distance limit
+	// TODO: FarBlocks should use this multiplied by alg->m_far_weight
+	fov_limit_activation_distance = alg->m_fov_limit_enabled ?
+			max_block_send_distance / 2 : max_block_send_distance;
 
-	//dstream<<"d_start="<<d_start<<std::endl;
-	//infostream<<"d_start="<<d_start<<std::endl;
+	/*
+		MapBlock iteration
+	*/
+
+	// We will start from a radius that still has unsent MapBlocks
+	mapblock.d_start = alg->m_mapblock.nearest_unsent_d >= 0 ?
+			alg->m_mapblock.nearest_unsent_d : 0;
+	mapblock.d = mapblock.d_start;
+
+	//dstream<<"mapblock.d_start="<<mapblock.d_start<<std::endl;
+	//infostream<<"mapblock.d_start="<<mapblock.d_start<<std::endl;
 
 	// Don't loop very much at a time. This function is called each server tick
 	// so just a few steps will work fine (+2 is 3 steps per call).
-	d_max = 0;
-	if (d_start < 5)
-		d_max = d_start + 2;
-	else if (d_max < 8)
-		d_max = d_start + 1;
+	mapblock.d_max = 0;
+	if (mapblock.d_start < 5)
+		mapblock.d_max = mapblock.d_start + 2;
+	else if (mapblock.d_max < 8)
+		mapblock.d_max = mapblock.d_start + 1;
 	else
-		d_max = d_start; // These iterations start to be rather heavy
+		mapblock.d_max = mapblock.d_start; // These iterations start to be rather heavy
 
-	if (d_max > max_block_send_distance)
-		d_max = max_block_send_distance;
+	if (mapblock.d_max > max_block_send_distance)
+		mapblock.d_max = max_block_send_distance;
 
-	//dstream<<"d_max="<<d_max<<std::endl;
-
-	// Out-of-FOV distance limit
-	fov_limit_activation_distance = alg->m_fov_limit_enabled ?
-			max_block_send_distance / 2 : max_block_send_distance;
+	//dstream<<"mapblock.d_max="<<mapblock.d_max<<std::endl;
 
 	// Keep track of... things. We need these in order to figure out where to
 	// continue iterating on the next call to this function.
 	// TODO: Put these in the class
-	nearest_emergequeued_d = INT32_MAX;
-	nearest_emergefull_d = INT32_MAX;
-	nearest_sendqueued_d = INT32_MAX;
+	mapblock.nearest_emergequeued_d = INT32_MAX;
+	mapblock.nearest_emergefull_d = INT32_MAX;
+	mapblock.nearest_sendqueued_d = INT32_MAX;
+
+	/*
+		FarBlock iteration
+	*/
+
+	// We will start from a radius that still has unsent FarBlocks
+	farblock.d_start = alg->m_farblock.nearest_unsent_d >= 0 ?
+			alg->m_farblock.nearest_unsent_d : 0;
+	farblock.d = farblock.d_start;
+
+	//dstream<<"farblock.d_start="<<farblock.d_start<<std::endl;
+	//infostream<<"farblock.d_start="<<farblock.d_start<<std::endl;
+
+	// Don't loop very much at a time. This function is called each server tick
+	// so just a few steps will work fine (+2 is 3 steps per call).
+	farblock.d_max = 0;
+	if (farblock.d_start < 5)
+		farblock.d_max = farblock.d_start + 2;
+	else if (farblock.d_max < 8)
+		farblock.d_max = farblock.d_start + 1;
+	else
+		farblock.d_max = farblock.d_start; // These iterations start to be rather heavy
+
+	if (farblock.d_max > max_block_send_distance)
+		farblock.d_max = max_block_send_distance;
+
+	//dstream<<"farblock.d_max="<<farblock.d_max<<std::endl;
+
+	// Keep track of... things. We need these in order to figure out where to
+	// continue iterating on the next call to this function.
+	// TODO: Put these in the class
+	farblock.nearest_emergequeued_d = INT32_MAX;
+	farblock.nearest_emergefull_d = INT32_MAX;
+	farblock.nearest_sendqueued_d = INT32_MAX;
+}
+
+WantedMapSend AutosendAlgorithm::Cycle::suggestNextMapBlock(
+		bool *result_needs_emerge)
+{
+	for (; mapblock.d <= mapblock.d_max; mapblock.d++) {
+		//dstream<<"mapblock.d="<<mapblock.d<<std::endl;
+		// Get the border/face dot coordinates of a mapblock.d-"radiused" box
+		std::vector<v3s16> face_ps = FacePositionCache::getFacePositions(mapblock.d);
+		// Continue from the last mapblock.i unless it was reset by something
+		for (; mapblock.i < face_ps.size(); mapblock.i++) {
+			v3s16 p = face_ps[mapblock.i] + focus_point;
+			WantedMapSend wms(WMST_MAPBLOCK, p);
+
+			// Limit fetched MapBlocks to a ball radius instead of a square
+			// because that is how they are limited when drawing too
+			v3s16 blockpos_nodes = p * MAP_BLOCKSIZE;
+			v3f blockpos_center(
+					blockpos_nodes.X * BS + MAP_BLOCKSIZE/2 * BS,
+					blockpos_nodes.Y * BS + MAP_BLOCKSIZE/2 * BS,
+					blockpos_nodes.Z * BS + MAP_BLOCKSIZE/2 * BS
+			);
+			v3f blockpos_relative = blockpos_center - camera_p;
+			f32 distance = blockpos_relative.getLength();
+			if (distance > max_block_send_distance * MAP_BLOCKSIZE * BS) {
+				//dstream<<"continue: distance"<<std::endl;
+				continue; // Not in range
+			}
+
+			// Calculate this thing
+			u16 max_simultaneous_block_sends =
+					figure_out_max_simultaneous_block_sends(
+							max_simul_sends_setting,
+							client->m_time_from_building,
+							time_from_building_limit_s,
+							mapblock.d);
+
+			// Don't select too many blocks for sending
+			if (num_blocks_selected >= max_simultaneous_block_sends) {
+				//dstream<<"return: num_selected"<<std::endl;
+				return WantedMapSend();
+			}
+
+			// Don't send blocks that are currently being transferred
+			if (client->m_blocks_sending.count(wms)) {
+				//dstream<<"continue: num sending"<<std::endl;
+				continue;
+			}
+
+			// Don't go over hard map limits
+			if (blockpos_over_limit(p)) {
+				//dstream<<"continue: over limit"<<std::endl;
+				continue;
+			}
+
+			// If this is true, inexistent blocks will be made from scratch
+			bool generate_allowed = mapblock.d <= max_block_generate_distance;
+
+			/*// Limit the generating area vertically to 2/3
+			if(abs(p.Y - focus_point.Y) >
+					max_block_generate_distance - max_block_generate_distance / 3)
+				generate_allowed = false;*/
+
+			/*// Limit the send area vertically to 1/2
+			if (abs(p.Y - focus_point.Y) > max_block_send_distance / 2)
+				continue;*/
+
+			if (mapblock.d >= fov_limit_activation_distance) {
+				// Don't generate or send if not in sight
+				if(isBlockInSight(p, camera_p, camera_dir, alg->m_fov,
+						10000*BS) == false)
+				{
+					//dstream<<"continue: not in sight"<<std::endl;
+					continue;
+				}
+			}
+
+			// Don't send blocks that have already been sent
+			if (client->m_blocks_sent.count(wms)) {
+				//dstream<<"continue: already sent"<<std::endl;
+				continue;
+			}
+
+			/*
+				Check if map has this block
+			*/
+			MapBlock *block = env->getMap().getBlockNoCreateNoEx(p);
+
+			bool surely_not_found_on_disk = false;
+			bool emerge_required = false;
+			if(block != NULL)
+			{
+				// Reset usage timer, this block will be of use in the future.
+				block->resetUsageTimer();
+
+				// Block is dummy if data doesn't exist.
+				// It means it has been not found from disk and not generated
+				if(block->isDummy())
+					surely_not_found_on_disk = true;
+
+				// Block is valid if lighting is up-to-date and data exists
+				if(block->isValid() == false)
+					emerge_required = true;
+
+				// If a block hasn't been generated but we would ask it to be
+				// generated, it's invalid.
+				if(block->isGenerated() == false && generate_allowed)
+					emerge_required = true;
+
+				// This check is disabled because it mis-guesses sea floors to
+				// not be worth transferring to the client, while they are.
+				/*if (mapblock.d >= 4 && block->getDayNightDiff() == false)
+					continue;*/
+			}
+
+			/*
+				If block has been marked to not exist on disk (dummy)
+				and generating new ones is not wanted, skip block.
+			*/
+			if(generate_allowed == false && surely_not_found_on_disk == true)
+			{
+				//dstream<<"continue: not on disk, no generate"<<std::endl;
+				// get next one.
+				continue;
+			}
+
+			/*
+				Add inexistent block to emerge queue.
+			*/
+			if(block == NULL || surely_not_found_on_disk || emerge_required)
+			{
+				if (result_needs_emerge)
+					*result_needs_emerge = true;
+			}
+
+			// Suggest this block
+			return wms;
+		}
+
+		// Now reset i as we go to next d level
+		mapblock.i = 0;
+	}
+
+	// Nothing to suggest
+	return WantedMapSend();
+}
+
+WantedMapSend AutosendAlgorithm::Cycle::suggestNextFarBlock()
+{
+	v3s16 focus_point_fb = getContainerPos(focus_point, FMP_SCALE);
+
+	// Avoid running the algorithm through all the close FarBlocks that probably
+	// have already been fetched, except once in a while to catch up with
+	// possible missed FarBlocks due to player movement or whatever.
+	s16 start_d = m_farblocks_exist_up_to_d; // Start one lower than have to
+	if (++m_farblocks_exist_up_to_d_reset_counter >= 10) {
+		m_farblocks_exist_up_to_d_reset_counter = 0;
+		start_d = 0;
+	}
+	m_farblocks_exist_up_to_d = -1; // Reset and recalculate
+	if (start_d < 0)
+		start_d = 0;
+
+	for (s16 d = start_d; d <= alg->m_radius_far; d++) {
+		std::vector<v3s16> ps = FacePositionCache::getFacePositions(d);
+		for (size_t i=0; i<ps.size(); i++) {
+			v3s16 p = focus_point_fb + ps[i];
+			FarBlock *b = getBlock(p);
+			/*dstream<<"FarMap::suggestFarBlocksToFetch: "
+					<<PP(p)<<" = "<<b<<std::endl;*/
+			if (b != NULL) {
+				if (!b->load_in_progress_on_server) {
+					//dstream<<"* "<<PP(p)<<" is fully loaded"<<std::endl;
+					continue; // Exists and was received fully loaded
+				}
+				b->refresh_from_server_counter++;
+				if (b->refresh_from_server_counter < 5) {
+					/*dstream<<"* "<<PP(p)<<" is being loaded on server; counting "
+							<<b->refresh_from_server_counter<<std::endl;*/
+					continue; // Don't try reloading this time
+				}
+				dstream<<"* "<<PP(p)<<" is being loaded on server"
+						<<"; asking update from server"<<std::endl;
+				// Try reloading this time
+				b->refresh_from_server_counter = 0;
+			} else {
+				dstream<<"* "<<PP(p)<<" is unfetched"
+						<<"; asking from server"<<std::endl;
+			}
+			if (m_farblocks_exist_up_to_d == -1)
+				m_farblocks_exist_up_to_d = d - 1;
+			suggested_fbs.push_back(p);
+			if (suggested_fbs.size() >= wanted_num_results)
+				goto done;
+		}
+	}
+
+	for (; farblock.d <= farblock.d_max; farblock.d++) {
+		//dstream<<"farblock.d="<<farblock.d<<std::endl;
+		// Get the border/face dot coordinates of a farblock.d-"radiused" box
+		std::vector<v3s16> face_ps = FacePositionCache::getFacePositions(farblock.d);
+		// Continue from the last farblock.i unless it was reset by something
+		for (; farblock.i < face_ps.size(); farblock.i++) {
+			v3s16 p = focus_point_fb + face_ps[farblock.i];
+
+			WantedMapSend wms(WMST_MAPBLOCK, p);
+
+			FarBlock *b = getBlock(p);
+
+			// Calculate this thing
+			u16 max_simultaneous_block_sends =
+					figure_out_max_simultaneous_block_sends(
+							max_simul_sends_setting,
+							client->m_time_from_building,
+							time_from_building_limit_s,
+							farblock.d);
+
+			// Don't select too many blocks for sending
+			if (num_blocks_selected >= max_simultaneous_block_sends) {
+				//dstream<<"return: num_selected"<<std::endl;
+				return WantedMapSend();
+			}
+
+			// Don't send blocks that are currently being transferred
+			if (client->m_blocks_sending.count(wms)) {
+				//dstream<<"continue: num sending"<<std::endl;
+				continue;
+			}
+
+			// Don't go over hard map limits
+			if (blockpos_over_limit(p)) {
+				//dstream<<"continue: over limit"<<std::endl;
+				continue;
+			}
+
+			// If this is true, inexistent blocks will be made from scratch
+			bool generate_allowed = farblock.d <= max_block_generate_distance;
+
+			/*// Limit the generating area vertically to 2/3
+			if(abs(p.Y - focus_point.Y) >
+					max_block_generate_distance - max_block_generate_distance / 3)
+				generate_allowed = false;*/
+
+			/*// Limit the send area vertically to 1/2
+			if (abs(p.Y - focus_point.Y) > max_block_send_distance / 2)
+				continue;*/
+
+			if (farblock.d >= fov_limit_activation_distance) {
+				// Don't generate or send if not in sight
+				if(isBlockInSight(p, camera_p, camera_dir, alg->m_fov,
+						10000*BS) == false)
+				{
+					//dstream<<"continue: not in sight"<<std::endl;
+					continue;
+				}
+			}
+
+			// Don't send blocks that have already been sent
+			if (client->m_blocks_sent.count(wms)) {
+				//dstream<<"continue: already sent"<<std::endl;
+				continue;
+			}
+
+			/*
+				Check if map has this block
+			*/
+			MapBlock *block = env->getMap().getBlockNoCreateNoEx(p);
+
+			bool surely_not_found_on_disk = false;
+			bool emerge_required = false;
+			if(block != NULL)
+			{
+				// Reset usage timer, this block will be of use in the future.
+				block->resetUsageTimer();
+
+				// Block is dummy if data doesn't exist.
+				// It means it has been not found from disk and not generated
+				if(block->isDummy())
+					surely_not_found_on_disk = true;
+
+				// Block is valid if lighting is up-to-date and data exists
+				if(block->isValid() == false)
+					emerge_required = true;
+
+				// If a block hasn't been generated but we would ask it to be
+				// generated, it's invalid.
+				if(block->isGenerated() == false && generate_allowed)
+					emerge_required = true;
+
+				// This check is disabled because it mis-guesses sea floors to
+				// not be worth transferring to the client, while they are.
+				/*if (farblock.d >= 4 && block->getDayNightDiff() == false)
+					continue;*/
+			}
+
+			/*
+				If block has been marked to not exist on disk (dummy)
+				and generating new ones is not wanted, skip block.
+			*/
+			if(generate_allowed == false && surely_not_found_on_disk == true)
+			{
+				//dstream<<"continue: not on disk, no generate"<<std::endl;
+				// get next one.
+				continue;
+			}
+
+			/*
+				Add inexistent block to emerge queue.
+			*/
+			if(block == NULL || surely_not_found_on_disk || emerge_required)
+			{
+				if (result_needs_emerge)
+					*result_needs_emerge = true;
+			}
+
+			// Suggest this block
+			return wms;
+		}
+
+		// Now reset i as we go to next d level
+		farblock.i = 0;
+	}
+
+	// Nothing to suggest
+	return WantedMapSend();
 }
 
 WantedMapSend AutosendAlgorithm::Cycle::getNextBlock(EmergeManager *emerge)
@@ -345,6 +710,53 @@ WantedMapSend AutosendAlgorithm::Cycle::getNextBlock(EmergeManager *emerge)
 	return WantedMapSend();
 }
 
+SearchCycleResult AutosendAlgorithm::Cycle::finishSearchCycle(Search *search)
+{
+	/*infostream << "nearest_emergequeued_d = "<<search->nearest_emergequeued_d
+			<<", nearest_emergefull_d = "<<search->nearest_emergefull_d
+			<<", nearest_sendqueued_d = "<<search->nearest_sendqueued_d
+			<<std::endl;*/
+
+	// Because none of the things we queue for sending or emerging or anything
+	// will necessarily be sent or anything, next time we need to continue
+	// iterating from the closest radius of any of that happening so that we can
+	// check whether they were sent or emerged or otherwise handled.
+	s32 closest_required_re_check = INT32_MAX;
+	if (search->nearest_emergequeued_d < closest_required_re_check)
+		closest_required_re_check = search->nearest_emergequeued_d;
+	if (search->nearest_emergefull_d < closest_required_re_check)
+		closest_required_re_check = search->nearest_emergefull_d;
+	if (search->nearest_sendqueued_d < closest_required_re_check)
+		closest_required_re_check = search->nearest_sendqueued_d;
+
+	SearchCycleResult r;
+
+	if (closest_required_re_check != INT32_MAX) {
+		// We did something that requires a result to be checked later. Continue
+		// from that on the next time.
+		r.nearest_unsent_d = closest_required_re_check;
+		// If nothing has been sent in a moment, indicating that the emerge
+		// thread is not finding anything on disk anymore, caller should start a
+		// fresh pass without the FOV limit.
+		r.result_may_be_available_later_at_this_d = true;
+	} else if (d > max_block_send_distance) {
+		// We iterated all the way through to the end of the send radius, if you
+		// can believe that.
+		r.nearest_unsent_d = 0;
+		r.searched_full_range = true;
+		// Caller should do a second pass with FOV limiting disabled or start
+		// from the beginning after a short idle delay. (with FOV limiting
+		// enabled because nobody knows what the future holds.)
+		r.result_may_be_available_later_at_this_d = true;
+	} else {
+		// Absolutely nothing interesting happened. Next time we will continue
+		// iterating from the next radius.
+		r.nearest_unsent_d = d;
+	}
+
+	return r;
+}
+
 void AutosendAlgorithm::Cycle::finish()
 {
 	//dstream<<"AutosendAlgorithm::Cycle::finish()"<<std::endl;
@@ -354,56 +766,47 @@ void AutosendAlgorithm::Cycle::finish()
 		return;
 	}
 
-	/*infostream << "nearest_emergequeued_d = "<<nearest_emergequeued_d
-			<<", nearest_emergefull_d = "<<nearest_emergefull_d
-			<<", nearest_sendqueued_d = "<<nearest_sendqueued_d
-			<<std::endl;*/
+	// Handle MapBlock search
+	{
+		SearchCycleResult r = finishSearchCycle(&mapblock);
 
-	// Because none of the things we queue for sending or emerging or anything
-	// will necessarily be sent or anything, next time we need to continue
-	// iterating from the closest radius of any of that happening so that we can
-	// check whether they were sent or emerged or otherwise handled.
-	s32 closest_required_re_check = INT32_MAX;
-	if (nearest_emergequeued_d < closest_required_re_check)
-		closest_required_re_check = nearest_emergequeued_d;
-	if (nearest_emergefull_d < closest_required_re_check)
-		closest_required_re_check = nearest_emergefull_d;
-	if (nearest_sendqueued_d < closest_required_re_check)
-		closest_required_re_check = nearest_sendqueued_d;
+		// Default to continuing iterating from the next radius next time.
+		alg->m_mapblock.nearest_unsent_d = r.nearest_unsent_d;
 
-	if (closest_required_re_check != INT32_MAX) {
-		// We did something that requires a result to be checked later. Continue
-		// from that on the next time.
-		alg->m_nearest_unsent_d = closest_required_re_check;
-
-		// If nothing has been sent in a moment, indicating that the emerge
-		// thread is not finding anything on disk anymore, start a fresh pass
-		// without the FOV limit.
-		if (alg->m_nothing_sent_timer >= 3.0f && alg->m_fov != 0.0f &&
-				alg->m_fov_limit_enabled) {
-			alg->m_nearest_unsent_d = 0;
-			alg->m_fov_limit_enabled = false;
-			// Have to be reset in order to not trigger this immediately again
-			alg->m_nothing_sent_timer = 0.0f;
+		// Trigger FOV limit removal in certain situations
+		if (r.result_may_be_available_later_at_this_d) {
+			// If nothing has been sent in a moment, indicating that the emerge
+			// thread is not finding anything on disk anymore, start a fresh
+			// pass without the FOV limit.
+			if (alg->m_fov_limit_enabled && alg->m_nothing_sent_timer >= 3.0f &&
+					alg->m_fov != 0.0f && alg->m_fov_limit_enabled) {
+				alg->m_fov_limit_enabled = false;
+				// Have to be reset in order to not trigger this immediately again
+				alg->m_nothing_sent_timer = 0.0f;
+			}
+		} else if(r.searched_full_range) {
+			// We iterated all the way through to the end of the send radius, if you
+			// can believe that.
+			if (alg->m_fov != 0.0f && alg->m_fov_limit_enabled) {
+				// Do a second pass with FOV limiting disabled
+				alg->m_fov_limit_enabled = false;
+			} else {
+				// Start from the beginning after a short idle delay, with FOV
+				// limiting enabled because nobody knows what the future holds.
+				alg->m_fov_limit_enabled = true;
+				alg->m_nothing_to_send_pause_timer = 2.0;
+			}
 		}
-	} else if (d > max_block_send_distance) {
-		// We iterated all the way through to the end of the send radius, if you
-		// can believe that.
-		if (alg->m_fov != 0.0f && alg->m_fov_limit_enabled) {
-			// Do a second pass with FOV limiting disabled
-			alg->m_nearest_unsent_d = 0;
-			alg->m_fov_limit_enabled = false;
-		} else {
-			// Start from the beginning after a short idle delay, with FOV
-			// limiting enabled because nobody knows what the future holds.
-			alg->m_nearest_unsent_d = 0;
-			alg->m_fov_limit_enabled = true;
-			alg->m_nothing_to_send_pause_timer = 2.0;
-		}
-	} else {
-		// Absolutely nothing interesting happened. Next time we will continue
-		// iterating from the next radius.
-		alg->m_nearest_unsent_d = d;
+	}
+
+	// Handle FarBlock search
+	{
+		SearchCycleResult r = finishSearchCycle(&farblock);
+
+		// Default to continuing iterating from the next radius next time.
+		alg->m_farblock.nearest_unsent_d = r.nearest_unsent_d;
+
+		// We don't really care about the result otherwise
 	}
 }
 
