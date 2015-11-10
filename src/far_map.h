@@ -19,6 +19,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #ifndef __FAR_MAP_H__
 #define __FAR_MAP_H__
 
+#include "far_map_common.h"
 #include "irrlichttypes_bloated.h"
 #include "util/thread.h" // UpdateThread
 #include "threading/atomic.h"
@@ -30,15 +31,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <map>
 
 class Client;
-struct FarMap;
-
-struct FarNode
-{
-	u16 id;
-	u8 light;
-
-	FarNode(u16 id=0, u8 light=0): id(id), light(light) {}
-};
+class FarMap;
 
 struct FarBlock
 {

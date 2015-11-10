@@ -62,7 +62,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "util/base64.h"
 #include "util/sha1.h"
 #include "util/hex.h"
-#include "server_far_map.h"
+#include "far_map_server.h"
 
 class ClientNotFoundException : public BaseException
 {

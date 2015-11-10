@@ -37,6 +37,8 @@ struct ServerFarBlock
 	// Contained area in FarNodes. Is used to index node_ids and lights.
 	VoxelArea content_area;
 
+	// TODO: Use FarNode
+
 	std::vector<u16> node_ids;
 	std::vector<u8> lights;
 

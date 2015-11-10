@@ -52,7 +52,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "serverobject.h"
 #include "settings.h"
 #include "voxel.h"
-#include "server_far_map.h"
+#include "far_map_server.h"
 
 
 struct MapgenDesc {
