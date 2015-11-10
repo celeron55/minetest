@@ -209,7 +209,6 @@ class AutosendAlgorithm
 		AutosendAlgorithm *alg;
 		RemoteClient *client;
 		ServerEnvironment *env;
-		EmergeManager *emerge;
 
 		v3f camera_p;
 		v3f camera_dir;
@@ -222,12 +221,12 @@ class AutosendAlgorithm
 
 		s16 max_block_send_distance;
 
-		u32 num_blocks_selected;
 		s16 fov_limit_activation_distance;
 
 		s16 d_start;
 		s16 d_max;
 		s16 d; // Current radius in MapBlocks
+		size_t i;
 		s32 nearest_emergequeued_d;
 		s32 nearest_emergefull_d;
 		s32 nearest_sendqueued_d;
@@ -235,10 +234,9 @@ class AutosendAlgorithm
 		Cycle(): disabled(true) {}
 
 		void init(AutosendAlgorithm *alg_,
-				RemoteClient *client_, ServerEnvironment *env_,
-				EmergeManager *emerge_);
+				RemoteClient *client_, ServerEnvironment *env_);
 
-		WantedMapSend getNextBlock();
+		WantedMapSend getNextBlock(EmergeManager *emerge);
 
 		void finish();
 	};
@@ -251,7 +249,6 @@ public:
 		m_far_weight(8.0f),
 		m_fov(72.0f),
 		m_nearest_unsent_d(0),
-		m_nearest_unsent_i(0),
 		m_fov_limit_enabled(true),
 		m_nothing_sent_timer(0.0),
 		m_nearest_unsent_reset_timer(0.0),
@@ -260,11 +257,11 @@ public:
 
 	// Shall be called every time before starting to ask a bunch of blocks by
 	// calling getNextBlock()
-	void cycle(float dtime, ServerEnvironment *env, EmergeManager *emerge);
+	void cycle(float dtime, ServerEnvironment *env);
 
 	// Finds a block that should be sent next to the client.
 	// Environment should be locked when this is called.
-	WantedMapSend getNextBlock();
+	WantedMapSend getNextBlock(EmergeManager *emerge);
 
 	void setParameters(s16 radius_map, s16 radius_far, float far_weight,
 			float fov) {
@@ -279,7 +276,7 @@ public:
 	// correctly
 	void resetSearchRadius() {
 		m_nearest_unsent_d = 0;
-		m_nearest_unsent_i = 0;
+		m_cycle.i = 0;
 	}
 
 	std::string describeStatus();
@@ -292,7 +289,6 @@ private:
 	float m_far_weight; // Updated by the client; 0 is invalid.
 	float m_fov; // Updated by the client; 0 disables FOV limit.
 	s16 m_nearest_unsent_d;
-	size_t m_nearest_unsent_i;
 	v3s16 m_last_focus_point;
 	bool m_fov_limit_enabled; // Automatically turned off to transfer the rest
 	float m_nothing_sent_timer;
@@ -330,7 +326,7 @@ public:
 	bool isMechAllowed(AuthMechanism mech)
 	{ return allowed_auth_mechs & mech; }
 
-	RemoteClient():
+	RemoteClient(ServerEnvironment *env):
 		peer_id(PEER_ID_INEXISTENT),
 		serialization_version(SER_FMT_VER_INVALID),
 		net_proto_version(0),
@@ -338,6 +334,7 @@ public:
 		chosen_mech(AUTH_MECHANISM_NONE),
 		auth_data(NULL),
 		m_time_from_building(9999),
+		m_env(env),
 		m_pending_serialization_version(SER_FMT_VER_INVALID),
 		m_state(CS_Created),
 		m_autosend(this),
@@ -358,8 +355,7 @@ public:
 
 	// Finds a block that should be sent next to the client.
 	// Environment should be locked when this is called.
-	WantedMapSend getNextBlock(ServerEnvironment *env,
-			EmergeManager* emerge);
+	WantedMapSend getNextBlock(EmergeManager *emerge);
 
 	// Shall be called every time before starting to ask a bunch of blocks by
 	// calling getNextBlock()
@@ -461,7 +457,10 @@ public:
 	u8 getMinor() { return m_version_minor; }
 	u8 getPatch() { return m_version_patch; }
 	std::string getVersion() { return m_full_version; }
+
 private:
+	ServerEnvironment *m_env;
+
 	// Version is stored in here after INIT before INIT2
 	u8 m_pending_serialization_version;
 

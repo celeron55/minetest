@@ -2177,70 +2177,55 @@ void Server::SendBlocks(float dtime)
 
 	ScopeProfiler sp(g_profiler, "Server: sel and send blocks to clients");
 
-	s32 total_sending = 0;
-
-	// Fill this with whatever each RemoteClient thinks they need
-	std::map<u16, WantedMapSendQueue> wanted_map_sends_to_players;
-	{
-		ScopeProfiler sp(g_profiler, "Server: selecting blocks for sending");
-
-		std::vector<u16> clients = m_clients.getClientIDs();
-
-		m_clients.lock();
-		for (size_t i=0; i<clients.size(); i++) {
-			u16 peer_id = clients[i];
-			RemoteClient *client = m_clients.lockedGetClientNoEx(
-					peer_id, CS_Active);
-
-			if (client == NULL)
-				continue;
-
-			total_sending += client->SendingCount();
-
-			std::vector<WantedMapSend> &wanted_map_sends =
-					wanted_map_sends_to_players[peer_id].wms;
-			// TODO
-			client->getNextBlocks(m_env, m_emerge, dtime, wanted_map_sends);
-
-			/*verbosestream << "Client " << peer_id << ": "
-					<< "wanted_map_sends.size()="<<wanted_map_sends.size()
-					<< std::endl;*/
-		}
-		m_clients.unlock();
-	}
-
-	// Create a random order in which to handle clients in order to treat each
-	// of them fairly no matter how tight the budget
-	std::vector<u16> random_order;
-	random_order.reserve(wanted_map_sends_to_players.size());
-	for (std::map<u16, WantedMapSendQueue>::iterator
-			it = wanted_map_sends_to_players.begin();
-			it != wanted_map_sends_to_players.end(); ++it) {
-		random_order.push_back(it->first);
-	}
-	std::random_shuffle(random_order.begin(), random_order.end());
-
 	bool max_simultaneous_block_sends_server_total =
 			g_settings->getS32("max_simultaneous_block_sends_server_total");
 
-	// Send stuff to alternating clients until we have no stuff to send or we
-	// are sending maximum amount of stuff
+	std::vector<u16> clients = m_clients.getClientIDs();
+	// Create a random order in which to handle clients in order to treat each
+	// of them fairly no matter how tight the budget
+	std::random_shuffle(clients.begin(), clients.end());
+
 	m_clients.lock();
-	for (size_t i=0; i<random_order.size(); i++) {
+
+	s32 total_sending = 0;
+
+	// First pass through clients
+	// - Calculate initial value for total_sending
+	// - Autosend cycle
+	for (size_t i=0; i<clients.size(); i++) {
+		u16 peer_id = clients[i];
+
+		RemoteClient *client = m_clients.lockedGetClientNoEx(peer_id, CS_Active);
+		if (!client)
+			continue;
+
+		total_sending += client->SendingCount();
+
+		client->cycleAutosendAlgorithm(dtime);
+	}
+
+	// Second pass through clients
+	// - Ask RemoteClients what they want to have sent
+	// - Send the things possibly if they are available
+	for (size_t i=0; i<clients.size(); i++) {
+		u16 peer_id = clients[i];
+
 		if (total_sending >= max_simultaneous_block_sends_server_total)
 			break;
 
-		u16 peer_id = random_order[i];
-
-		RemoteClient *client = m_clients.lockedGetClientNoEx(
-				peer_id, CS_Active);
+		RemoteClient *client = m_clients.lockedGetClientNoEx(peer_id, CS_Active);
 		if(!client)
 			continue;
 
-		WantedMapSendQueue &wmsq = wanted_map_sends_to_players[peer_id];
-		if (wmsq.i >= wmsq.wms.size())
+		WantedMapSend wms = client->getNextBlock(m_emerge);
+
+		/*dstream << "Client " << peer_id << ": "
+				<< "wms.type=" << wms.type
+				<< std::endl;*/
+
+		if (wms.type == WMST_INVALID) {
 			continue;
-		const WantedMapSend &wms = wmsq.wms[wmsq.i++];
+		}
 
 		if (wms.type == WMST_MAPBLOCK) {
 			/*infostream << "Server: Sending to "<<peer_id<<": MapBlock ("
@@ -2369,6 +2354,7 @@ void Server::SendBlocks(float dtime)
 			total_sending++;
 		}
 	}
+
 	m_clients.unlock();
 }
 

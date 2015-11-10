@@ -55,28 +55,33 @@ u16 figure_out_max_simultaneous_block_sends(u16 base_setting,
 }
 
 void AutosendAlgorithm::Cycle::init(AutosendAlgorithm *alg_,
-		RemoteClient *client_, ServerEnvironment *env_,
-		EmergeManager *emerge_)
+		RemoteClient *client_, ServerEnvironment *env_)
 {
+	//dstream<<"AutosendAlgorithm::Cycle::init()"<<std::endl;
+
 	alg = alg_;
 	client = client_;
 	env = env_;
-	emerge = emerge_;
 
 	disabled = false;
+	i = 0;
 
 	if (alg->m_radius_map == 0 && alg->m_radius_far == 0) {
+		//dstream<<"radius=0"<<std::endl;
 		disabled = true;
 		return;
 	}
 
-	if (alg->m_nothing_to_send_pause_timer >= 0) {
+	// TODO: Enable
+	/*if (alg->m_nothing_to_send_pause_timer >= 0) {
+		dstream<<"nothing to send pause"<<std::endl;
 		disabled = true;
 		return;
-	}
+	}*/
 
 	Player *player = env->getPlayer(client->peer_id);
 	if (player == NULL) {
+		//dstream<<"player==NULL"<<std::endl;
 		// This can happen sometimes; clients and players are not in perfect sync.
 		disabled = true;
 		return;
@@ -85,6 +90,7 @@ void AutosendAlgorithm::Cycle::init(AutosendAlgorithm *alg_,
 	// Won't send anything if already sending
 	if (client->m_blocks_sending.size() >= g_settings->getU16
 			("max_simultaneous_block_sends_per_client")) {
+		//dstream<<"max_simul_sends"<<std::endl;
 		//infostream<<"Not sending any blocks, Queue full."<<std::endl;
 		disabled = true;
 		return;
@@ -100,7 +106,7 @@ void AutosendAlgorithm::Cycle::init(AutosendAlgorithm *alg_,
 	// Predict to next block
 	v3f camera_p_predicted = camera_p + player_speed_dir*MAP_BLOCKSIZE*BS;
 	v3s16 focus_point_nodepos = floatToInt(camera_p_predicted, BS);
-	v3s16 focus_point = getNodeBlockPos(focus_point_nodepos);
+	focus_point = getNodeBlockPos(focus_point_nodepos);
 
 	// Camera position and direction
 	camera_dir = v3f(0,0,1);
@@ -111,7 +117,6 @@ void AutosendAlgorithm::Cycle::init(AutosendAlgorithm *alg_,
 	// for iterating from zero again
 	if (alg->m_last_focus_point != focus_point) {
 		alg->m_nearest_unsent_d = 0;
-		alg->m_nearest_unsent_i = 0;
 		alg->m_last_focus_point = focus_point;
 	}
 
@@ -130,21 +135,18 @@ void AutosendAlgorithm::Cycle::init(AutosendAlgorithm *alg_,
 			alg->m_radius_map < max_block_send_distance_setting ?
 			alg->m_radius_map : max_block_send_distance_setting;
 
-	// Number of blocks sending + number of blocks selected for sending
-	num_blocks_selected = client->m_blocks_sending.size();
-
 	// Reset periodically to workaround possible glitches due to whatever
 	// reasons (this is somewhat guided by just heuristics, after all)
 	if (alg->m_nearest_unsent_reset_timer > 20.0) {
 		alg->m_nearest_unsent_reset_timer = 0;
 		alg->m_nearest_unsent_d = 0;
-		alg->m_nearest_unsent_i = 0;
 	}
 
 	// We will start from a radius that still has unsent MapBlocks
 	d_start = alg->m_nearest_unsent_d >= 0 ? alg->m_nearest_unsent_d : 0;
 	d = d_start;
 
+	//dstream<<"d_start="<<d_start<<std::endl;
 	//infostream<<"d_start="<<d_start<<std::endl;
 
 	// Don't loop very much at a time. This function is called each server tick
@@ -160,6 +162,8 @@ void AutosendAlgorithm::Cycle::init(AutosendAlgorithm *alg_,
 	if (d_max > max_block_send_distance)
 		d_max = max_block_send_distance;
 
+	//dstream<<"d_max="<<d_max<<std::endl;
+
 	// Out-of-FOV distance limit
 	fov_limit_activation_distance = alg->m_fov_limit_enabled ?
 			max_block_send_distance / 2 : max_block_send_distance;
@@ -172,22 +176,26 @@ void AutosendAlgorithm::Cycle::init(AutosendAlgorithm *alg_,
 	nearest_sendqueued_d = INT32_MAX;
 }
 
-WantedMapSend AutosendAlgorithm::Cycle::getNextBlock()
+WantedMapSend AutosendAlgorithm::Cycle::getNextBlock(EmergeManager *emerge)
 {
 	DSTACK(FUNCTION_NAME);
+
+	dstream<<"AutosendAlgorithm::Cycle::getNextBlock()"<<std::endl;
 
 	if (disabled)
 		return WantedMapSend();
 
+	u32 num_blocks_selected = client->m_blocks_sending.size();
+
 	// TODO: Get FarBlocks
 
 	for (; d <= d_max; d++) {
+		//dstream<<"d="<<d<<std::endl;
 		// Get the border/face dot coordinates of a d-"radiused" box
 		std::vector<v3s16> face_ps = FacePositionCache::getFacePositions(d);
-		for (; alg->m_nearest_unsent_i < face_ps.size();
-				alg->m_nearest_unsent_i++)
-		{
-			v3s16 p = face_ps[alg->m_nearest_unsent_i] + focus_point;
+		// Continue from the last i unless it was reset by something
+		for (; i < face_ps.size(); i++) {
+			v3s16 p = face_ps[i] + focus_point;
 			WantedMapSend wms(WMST_MAPBLOCK, p);
 
 			// Limit fetched MapBlocks to a ball radius instead of a square
@@ -200,8 +208,10 @@ WantedMapSend AutosendAlgorithm::Cycle::getNextBlock()
 			);
 			v3f blockpos_relative = blockpos_center - camera_p;
 			f32 distance = blockpos_relative.getLength();
-			if (distance > max_block_send_distance * MAP_BLOCKSIZE * BS)
+			if (distance > max_block_send_distance * MAP_BLOCKSIZE * BS) {
+				//dstream<<"continue: distance"<<std::endl;
 				continue; // Not in range
+			}
 
 			// Calculate this thing
 			u16 max_simultaneous_block_sends =
@@ -212,16 +222,22 @@ WantedMapSend AutosendAlgorithm::Cycle::getNextBlock()
 							d);
 
 			// Don't select too many blocks for sending
-			if (num_blocks_selected >= max_simultaneous_block_sends)
+			if (num_blocks_selected >= max_simultaneous_block_sends) {
+				//dstream<<"return: num_selected"<<std::endl;
 				return WantedMapSend();
+			}
 
 			// Don't send blocks that are currently being transferred
-			if (client->m_blocks_sending.count(wms))
+			if (client->m_blocks_sending.count(wms)) {
+				//dstream<<"continue: num sending"<<std::endl;
 				continue;
+			}
 
 			// Don't go over hard map limits
-			if (blockpos_over_limit(p))
+			if (blockpos_over_limit(p)) {
+				//dstream<<"continue: over limit"<<std::endl;
 				continue;
+			}
 
 			// If this is true, inexistent blocks will be made from scratch
 			bool generate_allowed = d <= max_block_generate_distance;
@@ -240,13 +256,16 @@ WantedMapSend AutosendAlgorithm::Cycle::getNextBlock()
 				if(isBlockInSight(p, camera_p, camera_dir, alg->m_fov,
 						10000*BS) == false)
 				{
+					//dstream<<"continue: not in sight"<<std::endl;
 					continue;
 				}
 			}
 
 			// Don't send blocks that have already been sent
-			if (client->m_blocks_sent.count(wms))
+			if (client->m_blocks_sent.count(wms)) {
+				//dstream<<"continue: already sent"<<std::endl;
 				continue;
+			}
 
 			/*
 				Check if map has this block
@@ -286,6 +305,7 @@ WantedMapSend AutosendAlgorithm::Cycle::getNextBlock()
 			*/
 			if(generate_allowed == false && surely_not_found_on_disk == true)
 			{
+				//dstream<<"continue: not on disk, no generate"<<std::endl;
 				// get next one.
 				continue;
 			}
@@ -306,6 +326,7 @@ WantedMapSend AutosendAlgorithm::Cycle::getNextBlock()
 				}
 
 				// get next one.
+				//dstream<<"continue: emerging"<<std::endl;
 				continue;
 			}
 
@@ -313,16 +334,21 @@ WantedMapSend AutosendAlgorithm::Cycle::getNextBlock()
 				nearest_sendqueued_d = d;
 
 			// Select this block
-			num_blocks_selected += 1;
 			alg->m_nothing_sent_timer = 0.0f;
 			return wms;
 		}
+
+		// Now reset i
+		i = 0;
 	}
+	//dstream<<"return: nothing found"<<std::endl;
 	return WantedMapSend();
 }
 
 void AutosendAlgorithm::Cycle::finish()
 {
+	//dstream<<"AutosendAlgorithm::Cycle::finish()"<<std::endl;
+
 	if (disabled) {
 		// If disabled, none of our variables are even initialized
 		return;
@@ -349,7 +375,6 @@ void AutosendAlgorithm::Cycle::finish()
 		// We did something that requires a result to be checked later. Continue
 		// from that on the next time.
 		alg->m_nearest_unsent_d = closest_required_re_check;
-		alg->m_nearest_unsent_i = 0;
 
 		// If nothing has been sent in a moment, indicating that the emerge
 		// thread is not finding anything on disk anymore, start a fresh pass
@@ -357,7 +382,6 @@ void AutosendAlgorithm::Cycle::finish()
 		if (alg->m_nothing_sent_timer >= 3.0f && alg->m_fov != 0.0f &&
 				alg->m_fov_limit_enabled) {
 			alg->m_nearest_unsent_d = 0;
-			alg->m_nearest_unsent_i = 0;
 			alg->m_fov_limit_enabled = false;
 			// Have to be reset in order to not trigger this immediately again
 			alg->m_nothing_sent_timer = 0.0f;
@@ -368,13 +392,11 @@ void AutosendAlgorithm::Cycle::finish()
 		if (alg->m_fov != 0.0f && alg->m_fov_limit_enabled) {
 			// Do a second pass with FOV limiting disabled
 			alg->m_nearest_unsent_d = 0;
-			alg->m_nearest_unsent_i = 0;
 			alg->m_fov_limit_enabled = false;
 		} else {
 			// Start from the beginning after a short idle delay, with FOV
 			// limiting enabled because nobody knows what the future holds.
 			alg->m_nearest_unsent_d = 0;
-			alg->m_nearest_unsent_i = 0;
 			alg->m_fov_limit_enabled = true;
 			alg->m_nothing_to_send_pause_timer = 2.0;
 		}
@@ -382,17 +404,15 @@ void AutosendAlgorithm::Cycle::finish()
 		// Absolutely nothing interesting happened. Next time we will continue
 		// iterating from the next radius.
 		alg->m_nearest_unsent_d = d;
-		alg->m_nearest_unsent_i = 0;
 	}
 }
 
-WantedMapSend AutosendAlgorithm::getNextBlock()
+WantedMapSend AutosendAlgorithm::getNextBlock(EmergeManager *emerge)
 {
-	return m_cycle.getNextBlock();
+	return m_cycle.getNextBlock(emerge);
 }
 
-void AutosendAlgorithm::cycle(float dtime, ServerEnvironment *env,
-		EmergeManager *emerge)
+void AutosendAlgorithm::cycle(float dtime, ServerEnvironment *env)
 {
 	m_cycle.finish();
 
@@ -401,7 +421,7 @@ void AutosendAlgorithm::cycle(float dtime, ServerEnvironment *env,
 	m_nearest_unsent_reset_timer += dtime;
 	m_nothing_to_send_pause_timer -= dtime;
 
-	m_cycle.init(this, m_client, env, emerge);
+	m_cycle.init(this, m_client, env);
 }
 
 std::string AutosendAlgorithm::describeStatus()
@@ -439,8 +459,7 @@ void RemoteClient::ResendBlockIfOnWire(const WantedMapSend &wms)
 	}
 }
 
-WantedMapSend RemoteClient::getNextBlock(ServerEnvironment *env,
-		EmergeManager* emerge)
+WantedMapSend RemoteClient::getNextBlock(EmergeManager *emerge)
 {
 	// If the client has not indicated it supports the new algorithm, fill in
 	// autosend parameters and things should work fine
@@ -456,13 +475,13 @@ WantedMapSend RemoteClient::getNextBlock(ServerEnvironment *env,
 	}
 
 	/*
-		Auto-send
+		Autosend
 
 		NOTE: All auto-sent stuff is considered higher priority than custom
 		transfers. If the client wants to get custom stuff quickly, it has to
 		disable autosend.
 	*/
-	WantedMapSend wms = m_autosend.getNextBlock();
+	WantedMapSend wms = m_autosend.getNextBlock(emerge);
 	if (wms.type != WMST_INVALID)
 		return wms;
 
@@ -496,7 +515,7 @@ WantedMapSend RemoteClient::getNextBlock(ServerEnvironment *env,
 
 			const bool generate_allowed = true;
 
-			MapBlock *block = env->getMap().getBlockNoCreateNoEx(wms.p);
+			MapBlock *block = m_env->getMap().getBlockNoCreateNoEx(wms.p);
 
 			bool surely_not_found_on_disk = false;
 			bool emerge_required = false;
@@ -608,6 +627,11 @@ WantedMapSend RemoteClient::getNextBlock(ServerEnvironment *env,
 	}
 
 	return WantedMapSend();
+}
+
+void RemoteClient::cycleAutosendAlgorithm(float dtime)
+{
+	m_autosend.cycle(dtime, m_env);
 }
 
 void RemoteClient::GotBlock(const WantedMapSend &wms)
@@ -1043,7 +1067,7 @@ void ClientInterface::CreateClient(u16 peer_id)
 	if(n != m_clients.end()) return;
 
 	// Create client
-	RemoteClient *client = new RemoteClient();
+	RemoteClient *client = new RemoteClient(m_env);
 	client->peer_id = peer_id;
 	m_clients[client->peer_id] = client;
 }
