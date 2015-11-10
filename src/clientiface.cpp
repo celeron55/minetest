@@ -387,7 +387,7 @@ WantedMapSend AutosendCycle::suggestNextFarBlock(bool *result_needs_emerge)
 	v3s16 focus_point_fb = getContainerPos(focus_point, FMP_SCALE);
 
 	for (; farblock.d <= farblock.d_max; farblock.d++) {
-		//dstream<<"farblock.d="<<farblock.d<<std::endl;
+		dstream<<"AutosendFar: farblock.d="<<farblock.d<<std::endl;
 		// Get the border/face dot coordinates of a farblock.d-"radiused" box
 		std::vector<v3s16> face_ps = FacePositionCache::getFacePositions(farblock.d);
 		// Continue from the last farblock.i unless it was reset by something
@@ -402,7 +402,7 @@ WantedMapSend AutosendCycle::suggestNextFarBlock(bool *result_needs_emerge)
 							max_simul_sends_setting,
 							client->m_time_from_building,
 							time_from_building_limit_s,
-							farblock.d);
+							farblock.d * FMP_SCALE);
 
 			// Don't select too many blocks for sending
 			if (client->SendingCount() >= max_simultaneous_block_sends) {
