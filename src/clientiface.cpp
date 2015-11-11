@@ -445,8 +445,8 @@ WMSSuggestion AutosendCycle::suggestNextFarBlock(
 
 			// Don't select too many blocks for sending
 			if (client->SendingCount() >= max_simultaneous_block_sends) {
-				dstream<<"AutosendFar: "<<wms.describe()
-						<<": return: num_selected"<<std::endl;
+				/*dstream<<"AutosendFar: "<<wms.describe()
+						<<": return: num_selected"<<std::endl;*/
 				// Nothing to suggest
 				return WMSSuggestion();
 			}
@@ -459,24 +459,24 @@ WMSSuggestion AutosendCycle::suggestNextFarBlock(
 			);
 			float df = (camera_p - farblock_pf).getLength();
 			if (df > max_distance_f) {
-				dstream<<"AutosendFar: "<<wms.describe()
+				/*dstream<<"AutosendFar: "<<wms.describe()
 						<<": continue: distance"
 						<<" (df="<<df<<", max_distance_f="<<max_distance_f<<")"
-						<<std::endl;
+						<<std::endl;*/
 				continue;
 			}
 
 			// Don't send blocks that are currently being transferred
 			if (client->m_blocks_sending.count(wms)) {
-				dstream<<"AutosendFar: "<<wms.describe()
-						<<": continue: num sending"<<std::endl;
+				/*dstream<<"AutosendFar: "<<wms.describe()
+						<<": continue: num sending"<<std::endl;*/
 				continue;
 			}
 
 			// Don't go over hard map limits
 			if (blockpos_over_limit(p * FMP_SCALE)) {
-				dstream<<"AutosendFar: "<<wms.describe()
-						<<": continue: over limit"<<std::endl;
+				/*dstream<<"AutosendFar: "<<wms.describe()
+						<<": continue: over limit"<<std::endl;*/
 				continue;
 			}
 
@@ -504,8 +504,8 @@ WMSSuggestion AutosendCycle::suggestNextFarBlock(
 			// This potentially skips a lot of FarBlocks that don't contain
 			// anything interesting
 			if (none_loaded && !allow_load) {
-				dstream<<"AutosendFar: "<<wms.describe()
-						<<": continue: not loaded and load disabled"<<std::endl;
+				/*dstream<<"AutosendFar: "<<wms.describe()
+						<<": continue: not loaded and load disabled"<<std::endl;*/
 				continue;
 			}
 
@@ -546,8 +546,8 @@ WMSSuggestion AutosendCycle::suggestNextFarBlock(
 full_break:
 
 			if (none_loaded) {
-				dstream<<"AutosendFar: "<<wms.describe()
-						<<": continue: not loaded"<<std::endl;
+				/*dstream<<"AutosendFar: "<<wms.describe()
+						<<": continue: not loaded"<<std::endl;*/
 
 				// No MapBlocks inside this FarBlock have been loaded.
 				// Many of them are being queued, so just wait for them and
@@ -562,18 +562,18 @@ full_break:
 					blocks_sent_i = client->m_blocks_sent.find(wms);
 			if (blocks_sent_i != client->m_blocks_sent.end()){
 				if (client->m_blocks_updated_since_last_send.count(wms) == 0) {
-					dstream<<"AutosendFar: "<<wms.describe()
-							<<": Already sent and not updated"<<std::endl;
+					/*dstream<<"AutosendFar: "<<wms.describe()
+							<<": Already sent and not updated"<<std::endl;*/
 					continue;
 				}
 				time_t sent_time = blocks_sent_i->second;
 				if (sent_time + 5 > time(NULL)) {
-					dstream<<"AutosendFar: "<<wms.describe()
-							<<": Already sent; rate-limiting"<<std::endl;
+					/*dstream<<"AutosendFar: "<<wms.describe()
+							<<": Already sent; rate-limiting"<<std::endl;*/
 					continue;
 				}
-				dstream<<"AutosendFar: "<<wms.describe()
-						<<": Already sent but updated; allowing"<<std::endl;
+				/*dstream<<"AutosendFar: "<<wms.describe()
+						<<": Already sent but updated; allowing"<<std::endl;*/
 			}
 
 			// Suggest this block
@@ -605,8 +605,8 @@ WMSSuggestion AutosendCycle::getNextBlock(
 	WMSSuggestion suggested_mb = suggestNextMapBlock(emerge);
 	WMSSuggestion suggested_fb = suggestNextFarBlock(emerge, far_map);
 
-	dstream<<"suggested_mb = "<<suggested_mb.describe()<<std::endl;
-	dstream<<"suggested_fb = "<<suggested_fb.describe()<<std::endl;
+	//dstream<<"suggested_mb = "<<suggested_mb.describe()<<std::endl;
+	//dstream<<"suggested_fb = "<<suggested_fb.describe()<<std::endl;
 
 	// Prioritize suggestions
 
@@ -631,7 +631,7 @@ WMSSuggestion AutosendCycle::getNextBlock(
 	// Take the most important one
 	WMSSuggestion wmss = suggestions[0];
 
-	dstream<<"wmss = "<<wmss.describe()<<std::endl;
+	//dstream<<"wmss = "<<wmss.describe()<<std::endl;
 
 	// Keep track of the distance of the closest block being sent (separetely
 	// for MapBlocks and FarBlocks)

@@ -2232,11 +2232,14 @@ void Server::SendBlocks(float dtime)
 		}
 
 		if (wms.type == WMST_MAPBLOCK) {
-			dstream << "Server: Sending to "<<peer_id<<": "
-					<<wmss.describe()<<std::endl;
+			/*dstream << "Server: Sending to "<<peer_id<<": "
+					<<wmss.describe()<<std::endl;*/
 
 			MapBlock *block = m_env->getMap().getBlockNoCreateNoEx(wms.p);
 			if (!block) {
+				// client->getNextBlock() is technically allowed to reuturn an
+				// inexisting MapBlock, but it shouldn't generally happen. Warn
+				// about it so we can see where it happens.
 				warningstream<<"client->getNextBlock() returned inexisting "
 						"MapBlock"<<std::endl;
 				continue;
@@ -2248,8 +2251,8 @@ void Server::SendBlocks(float dtime)
 			total_sending++;
 		}
 		if (wms.type == WMST_FARBLOCK) {
-			dstream << "Server: Sending to "<<peer_id<<": "
-					<<wmss.describe()<<std::endl;
+			/*dstream << "Server: Sending to "<<peer_id<<": "
+					<<wmss.describe()<<std::endl;*/
 
 			ServerFarBlock *fb = m_far_map->getBlock(wms.p);
 
