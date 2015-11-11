@@ -2256,17 +2256,17 @@ void Server::SendBlocks(float dtime)
 
 			if (fb) {
 				if (wmss.is_fully_loaded) {
-					dstream<<"ServerFarBlock "<<PP(wms.p)<<" fully loaded"
-							<<std::endl;
+					/*dstream<<"ServerFarBlock "<<PP(wms.p)<<" fully loaded"
+							<<std::endl;*/
 					status = FBRS_FULLY_LOADED;
 				} else {
-					dstream<<"ServerFarBlock "<<PP(wms.p)<<" partly loaded"
-							<<std::endl;
+					/*dstream<<"ServerFarBlock "<<PP(wms.p)<<" partly loaded"
+							<<std::endl;*/
 					status = FBRS_PARTLY_LOADED;
 				}
 			} else {
-				dstream<<"ServerFarBlock "<<PP(wms.p)<<" not found"
-						<<std::endl;
+				/*dstream<<"ServerFarBlock "<<PP(wms.p)<<" not found"
+						<<std::endl;*/
 				status = FBRS_LOAD_IN_PROGRESS;
 			}
 

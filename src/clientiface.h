@@ -486,9 +486,17 @@ private:
 	std::map<WantedMapSend, time_t> m_blocks_sending;
 
 	/*
-		Blocks that have been updated
+		Blocks that have been updated since they were last sent to the client.
+		The autosend algorithm re-sends these based on some priority.
 	*/
 	std::set<WantedMapSend> m_blocks_updated_since_last_send;
+
+	/*
+		Blocks that have been updated while they are still being sent. Subset of
+		m_blocks_sending. This is not strictly needed, but allows for this
+		complex system to validate the correctness of itself.
+	*/
+	std::set<WantedMapSend> m_blocks_updated_while_sending;
 
 	/*
 		Count of excess GotBlocks().

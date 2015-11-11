@@ -602,7 +602,7 @@ WMSSuggestion AutosendCycle::getNextBlock(
 	// Take the most important one
 	WMSSuggestion wmss = suggestions[0];
 
-	dstream<<"wmss = "<<wmss.describe()<<std::endl;
+	//dstream<<"wmss = "<<wmss.describe()<<std::endl;
 
 	// Keep track of the distance of the closest block being sent (separetely
 	// for MapBlocks and FarBlocks)
@@ -828,14 +828,6 @@ std::string ClientInterface::state2Name(ClientState state)
 	return statenames[state];
 }
 
-void RemoteClient::ResendBlockIfOnWire(const WantedMapSend &wms)
-{
-	// if this block is on wire, mark it for sending again as soon as possible
-	if (m_blocks_sending.find(wms) != m_blocks_sending.end()) {
-		SetBlockUpdated(wms);
-	}
-}
-
 WMSSuggestion RemoteClient::getNextBlock(
 		EmergeManager *emerge, ServerFarMap *far_map)
 {
@@ -862,10 +854,12 @@ WMSSuggestion RemoteClient::getNextBlock(
 	WMSSuggestion wmss = m_autosend.getNextBlock(emerge, far_map);
 	WantedMapSend wms = wmss.wms;
 	if (wms.type != WMST_INVALID)
-		return wms;
+		return wmss;
 
 	/*
 		Handle map send queue as set by the client for custom map transfers
+
+		// TODO: This needs rework
 	*/
 	for (size_t i=0; i<m_map_send_queue.size(); i++) {
 		const WantedMapSend &wms = m_map_send_queue[i];
@@ -1025,12 +1019,14 @@ void RemoteClient::GotBlock(const WantedMapSend &wms)
 
 void RemoteClient::SendingBlock(const WantedMapSend &wms)
 {
-	if (m_blocks_sending.find(wms) == m_blocks_sending.end()) {
-		warningstream<<"RemoteClient::SendingBlock(): Sent block"
-				" already in m_blocks_sending"<<std::endl;
-	}
+	assert(!m_blocks_sending.count(wms) ||
+			m_blocks_updated_while_sending.count(wms) &&
+			"Block shouldn't be re-sent if it is being sent and was not"
+			" updated while being sent");
+
 	m_blocks_sending[wms] = time(NULL);
 	m_blocks_updated_since_last_send.erase(wms);
+	m_blocks_updated_while_sending.erase(wms);
 }
 
 void RemoteClient::SetBlockUpdated(const WantedMapSend &wms)
@@ -1043,6 +1039,10 @@ void RemoteClient::SetBlockUpdated(const WantedMapSend &wms)
 	}
 
 	m_blocks_updated_since_last_send.insert(wms);
+
+	if (m_blocks_sending.count(wms)) {
+		m_blocks_updated_while_sending.insert(wms);
+	}
 }
 
 void RemoteClient::SetMapBlockUpdated(v3s16 p)
@@ -1066,6 +1066,14 @@ void RemoteClient::SetMapBlocksUpdated(std::map<v3s16, MapBlock*> &blocks)
 	{
 		v3s16 p = i->first;
 		SetMapBlockUpdated(p);
+	}
+}
+
+void RemoteClient::ResendBlockIfOnWire(const WantedMapSend &wms)
+{
+	// if this block is on wire, mark it for sending again as soon as possible
+	if (m_blocks_sending.find(wms) != m_blocks_sending.end()) {
+		SetBlockUpdated(wms);
 	}
 }
 
