@@ -321,7 +321,7 @@
 #    A priorization factor for far map transfers is created by dividing distance
 #    of FarBlocks by this and then comparing it to distance to regular
 #    MapBlocks. The one having the smaller value is sent first.
-# far_map_far_weight = 8.0
+# far_map_far_weight = 4.0
 
 #### Filtering
 
