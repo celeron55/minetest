@@ -263,6 +263,7 @@ struct CAtlasRegistry: public AtlasRegistry
 							(int)(x * fx + src_size.X / 2) % src_size.X,
 							(int)(y * fy + src_size.Y / 2) % src_size.Y
 					);*/
+					// TODO: Not sure if this is right
 					v2s32 src_p = src_off + v2s32(
 							(x + seg_size.X / 2) % seg_size.X,
 							(y + seg_size.Y / 2) % seg_size.Y
@@ -282,6 +283,12 @@ struct CAtlasRegistry: public AtlasRegistry
 		} else {
 			int lod = def.lod_simulation & 0x00ff;
 			uint16_t flags = def.lod_simulation & 0xff00;
+
+			// Cache for an on-demand search of an opaque pixel
+			bool any_opaque_color_searched = false;
+			video::SColor any_opaque_color;
+			any_opaque_color.setAlpha(0);
+
 			for(int y = 0; y<seg_size.Y * 2; y++){
 				for(int x = 0; x<seg_size.X * 2; x++){
 					float fx = (float)src_size.X * lod / seg_size.X;
@@ -297,9 +304,52 @@ struct CAtlasRegistry: public AtlasRegistry
 					);*/
 					v2s32 dst_p = dst_p00 + v2s32(x, y);
 
+					video::SColor c = seg_img->getPixel(src_p.X, src_p.Y);
+
+					// Try to get a pixel that isn't transparent
+					if (c.getAlpha() < 255) {
+						video::SColor c2;
+						c2.setAlpha(0);
+						for (s32 x = src_p.X-1; x <= src_p.X + 1 &&
+								c2.getAlpha() < 255; x++)
+						for (s32 y = src_p.Y-1; y <= src_p.Y + 1 &&
+								c2.getAlpha() < 255; y++) {
+							if (x < 0 || x >= src_size.X ||
+									y < 0 || y > src_size.Y)
+								continue;
+							c2 = seg_img->getPixel(x, y);
+						}
+						if (c2.getAlpha() == 255) {
+							c = c2;
+						} else if(any_opaque_color_searched) {
+							if (any_opaque_color.getAlpha() != 0) {
+								c = any_opaque_color;
+							} else {
+								// We don't have any
+							}
+						} else {
+							any_opaque_color_searched = true;
+							// Well, crap. Search for the whole source texture
+							// for a non-transparent pixel then. There's
+							// probably at least one in it, and if there isn't,
+							// at least we tried.
+							for (s32 x = src_off.X; x < src_off.X + src_size.X &&
+									c2.getAlpha() < 255; x++)
+							for (s32 y = src_off.Y; y < src_off.Y + src_size.Y &&
+									c2.getAlpha() < 255; y++) {
+								c2 = seg_img->getPixel(x, y);
+							}
+							if (c2.getAlpha() == 255) {
+								c = c2;
+								any_opaque_color = c2;
+							} else {
+								// Tough luck
+							}
+						}
+					}
+
 					if(flags & ATLAS_LOD_TOP_FACE){
 						// Preserve original colors
-						video::SColor c = seg_img->getPixel(src_p.X, src_p.Y);
 						if(flags & ATLAS_LOD_BAKE_SHADOWS){
 							// This value has been calibrated
 							c.set(
@@ -320,7 +370,6 @@ struct CAtlasRegistry: public AtlasRegistry
 						acache.image->setPixel(dst_p.X, dst_p.Y, c);
 					} else {
 						// Simulate sides
-						video::SColor c = seg_img->getPixel(src_p.X, src_p.Y);
 						// Leave horizontal edges look like they are bright
 						// topsides
 						// TODO: This should be variable according to the
