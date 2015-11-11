@@ -608,7 +608,7 @@ void FarBlockMeshGenerateTask::inThread()
 	}
 
 	// Auxiliary meshes
-	if (level >= GL_FINE_AND_AUX) {
+	if (level >= GL_FINE_AND_SMALL) {
 		v3s16 mp;
 
 		// MapBlock-sized meshes
@@ -1042,7 +1042,7 @@ void FarMap::insertData(v3s16 fbp, v3s16 divs_per_mb,
 	// TODO: Remove
 	/*if (!b->generating_mesh) {
 		startGeneratingBlockMesh(b,
-				FarBlockMeshGenerateTask::GL_FINE_AND_AUX);
+				FarBlockMeshGenerateTask::GL_FINE_AND_SMALL);
 	}*/
 
 	// Call this before starting line to keep lines mostly intact when
@@ -1466,14 +1466,16 @@ big_break:;
 			FarBlockMeshGenerateTask::GL_CRUDE;
 
 	if (fb_being_normally_rendered) {
-		level_wanted = FarBlockMeshGenerateTask::GL_FINE_AND_AUX;
+		level_wanted = FarBlockMeshGenerateTask::GL_FINE_AND_SMALL;
 	}
+
+	bool missing_small_meshes =
+			(b->mapblock_meshes.empty() || b->mapblock2_meshes.empty());
 
 	bool render_in_pieces = fb_being_normally_rendered;
 	bool avoid_crude_mesh = false;
 
-	if (render_in_pieces && (b->mapblock_meshes.empty() ||
-			b->mapblock2_meshes.empty())) {
+	if (render_in_pieces && missing_small_meshes) {
 		// Can't render in pieces because we don't have meshes for the pieces.
 		// Render normally so that things don't blink annoyingly meanwhile.
 		render_in_pieces = false;
@@ -1569,14 +1571,11 @@ big_break:;
 						FarBlockMeshGenerateTask::GL_FINE);
 			}
 			break;
-		case FarBlockMeshGenerateTask::GL_FINE_AND_AUX:
-			if (!b->fine_mesh || b->mapblock_meshes.empty() ||
-					b->mapblock2_meshes.empty()) {
-				if (b->mesh_is_outdated || !b->content.empty()) {
-					// We need small meshes for this ASAP
-					far_map->startGeneratingBlockMesh(b,
-							FarBlockMeshGenerateTask::GL_FINE_AND_AUX);
-				}
+		case FarBlockMeshGenerateTask::GL_FINE_AND_SMALL:
+			if (!b->fine_mesh || missing_small_meshes || b->mesh_is_outdated) {
+				// We need small meshes for this ASAP
+				far_map->startGeneratingBlockMesh(b,
+						FarBlockMeshGenerateTask::GL_FINE_AND_SMALL);
 			}
 			break;
 		default:

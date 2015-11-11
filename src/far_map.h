@@ -148,7 +148,7 @@ struct FarBlockMeshGenerateTask: public FarMapTask
 	enum GenLevel {
 		GL_CRUDE,
 		GL_FINE,
-		GL_FINE_AND_AUX
+		GL_FINE_AND_SMALL
 	};
 
 	FarMap *far_map;
