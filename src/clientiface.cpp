@@ -163,7 +163,7 @@ void AutosendCycle::start(AutosendAlgorithm *alg_,
 	// Disable if MapBlock and FarBlock pauses are active
 	if (mapblock.nothing_to_send_pause_timer >= 0 &&
 			farblock.nothing_to_send_pause_timer >= 0) {
-		dstream<<"nothing to send pause (map+far)"<<std::endl;
+		//dstream<<"nothing to send pause (map+far)"<<std::endl;
 		disabled = true;
 		return;
 	}
