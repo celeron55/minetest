@@ -2204,6 +2204,9 @@ void Server::SendBlocks(float dtime)
 		client->cycleAutosendAlgorithm(dtime);
 	}
 
+	// TODO: Go multiple times through the clients table until
+	//       total_sending >= max_simultaneous_block_sends_server_total
+
 	// Second pass through clients
 	// - Ask RemoteClients what they want to have sent
 	// - Send the things possibly if they are available
@@ -2229,9 +2232,8 @@ void Server::SendBlocks(float dtime)
 		}
 
 		if (wms.type == WMST_MAPBLOCK) {
-			/*infostream << "Server: Sending to "<<peer_id<<": MapBlock ("
-					<<wms.p.X<<","<<wms.p.Y<<","<<wms.p.Z<<")"
-					<< std::endl;*/
+			dstream << "Server: Sending to "<<peer_id<<": "
+					<<wmss.describe()<<std::endl;
 
 			MapBlock *block = m_env->getMap().getBlockNoCreateNoEx(wms.p);
 			if (!block) {
@@ -2246,9 +2248,8 @@ void Server::SendBlocks(float dtime)
 			total_sending++;
 		}
 		if (wms.type == WMST_FARBLOCK) {
-			/*infostream << "Server: Sending to "<<peer_id<<": FarBlock ("
-					<<wms.p.X<<","<<wms.p.Y<<","<<wms.p.Z<<")"
-					<< std::endl;*/
+			dstream << "Server: Sending to "<<peer_id<<": "
+					<<wmss.describe()<<std::endl;
 
 			ServerFarBlock *fb = m_far_map->getBlock(wms.p);
 

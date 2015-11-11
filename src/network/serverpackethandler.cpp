@@ -2062,13 +2062,13 @@ void Server::handleCommand_SetWantedMapSendQueue(NetworkPacket* pkt_in)
 	float autosend_fov = pkt_in->read<float>();
 	u32 wanted_map_send_queue_len = pkt_in->read<u32>();
 
-	verbosestream << "Client " << pkt_in->getPeerId()
+	/*dstream << "Client " << pkt_in->getPeerId()
 			<< ": radius_map=" << autosend_radius_map
 			<< ", radius_far=" << autosend_radius_far
 			<< ", far_weight=" << autosend_far_weight
 			<< ", fov=" << autosend_fov
 			<< ", wanted_map_send_queue_len=" << wanted_map_send_queue_len
-			<< std::endl;
+			<< std::endl;*/
 
 	// Use a vector, because this is not really strictly a queue. It's more like
 	// a pre-prioritized list.

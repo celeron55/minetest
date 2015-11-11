@@ -1402,9 +1402,9 @@ static void renderBlock(FarMap *far_map, FarBlock *b,
 		far_map->current_camera_offset.Z * BS
 	);
 	v3f block_pf(
-		b->p.X * FMP_SCALE * MAP_BLOCKSIZE * BS,
-		b->p.Y * FMP_SCALE * MAP_BLOCKSIZE * BS,
-		b->p.Z * FMP_SCALE * MAP_BLOCKSIZE * BS
+		((float)b->p.X + 0.5) * FMP_SCALE * MAP_BLOCKSIZE * BS,
+		((float)b->p.Y + 0.5) * FMP_SCALE * MAP_BLOCKSIZE * BS,
+		((float)b->p.Z + 0.5) * FMP_SCALE * MAP_BLOCKSIZE * BS
 	);
 	float d = (camera_pf - block_pf).getLength();
 
