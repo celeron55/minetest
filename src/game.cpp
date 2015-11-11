@@ -3956,6 +3956,9 @@ void Game::updateFrame(std::vector<aabb3f> &highlight_boxes,
 			// Fog starts at halfway where normal rendering ends; this makes a
 			// good effect
 			runData->fog_range_start = draw_control->wanted_range * BS / 2;
+			// But 60 nodes at maximum
+			if (runData->fog_range_start > BS * 60)
+				runData->fog_range_start = BS * 60;
 		} else {
 			runData->fog_range = draw_control->wanted_range * BS
 					+ 0.0 * MAP_BLOCKSIZE * BS;
