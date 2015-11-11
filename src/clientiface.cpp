@@ -114,13 +114,13 @@ struct AutosendCycle
 	void init(AutosendAlgorithm *alg_,
 			RemoteClient *client_, ServerEnvironment *env_);
 
-	WantedMapSend getNextBlock(EmergeManager *emerge);
+	WMSSuggestion getNextBlock(EmergeManager *emerge, ServerFarMap *far_map);
 
 	void finish();
 
 private:
-	WantedMapSend suggestNextMapBlock(bool *result_needs_emerge);
-	WantedMapSend suggestNextFarBlock(bool *result_needs_emerge);
+	WMSSuggestion suggestNextMapBlock();
+	WMSSuggestion suggestNextFarBlock(ServerFarMap *far_map);
 };
 
 void AutosendCycle::init(AutosendAlgorithm *alg_,
@@ -224,7 +224,7 @@ void AutosendCycle::init(AutosendAlgorithm *alg_,
 	farblock.init(alg->m_farblock.nearest_unsent_d, alg->m_radius_far);
 }
 
-WantedMapSend AutosendCycle::suggestNextMapBlock(bool *result_needs_emerge)
+WMSSuggestion AutosendCycle::suggestNextMapBlock()
 {
 	for (; mapblock.d <= mapblock.d_max; mapblock.d++) {
 		dstream<<"AutosendMap: mapblock.d="<<mapblock.d<<std::endl;
@@ -263,7 +263,8 @@ WantedMapSend AutosendCycle::suggestNextMapBlock(bool *result_needs_emerge)
 			if (client->SendingCount() >= max_simultaneous_block_sends) {
 				dstream<<"AutosendMap: "<<wms.describe()
 						<<": return: num_selected"<<std::endl;
-				return WantedMapSend();
+				// Nothing to suggest
+				return WMSSuggestion();
 			}
 
 			// Don't send blocks that are currently being transferred
@@ -281,12 +282,12 @@ WantedMapSend AutosendCycle::suggestNextMapBlock(bool *result_needs_emerge)
 			}
 
 			// If this is true, inexistent blocks will be made from scratch
-			bool generate_allowed = mapblock.d <= max_block_generate_distance;
+			bool allow_generate = mapblock.d <= max_block_generate_distance;
 
 			/*// Limit the generating area vertically to 2/3
 			if(abs(p.Y - focus_point.Y) >
 					max_block_generate_distance - max_block_generate_distance / 3)
-				generate_allowed = false;*/
+				allow_generate = false;*/
 
 			/*// Limit the send area vertically to 1/2
 			if (abs(p.Y - focus_point.Y) > max_block_send_distance / 2)
@@ -341,7 +342,7 @@ WantedMapSend AutosendCycle::suggestNextMapBlock(bool *result_needs_emerge)
 
 				// If a block hasn't been generated but we would ask it to be
 				// generated, it's invalid.
-				if(block->isGenerated() == false && generate_allowed)
+				if(block->isGenerated() == false && allow_generate)
 					emerge_required = true;
 
 				// This check is disabled because it mis-guesses sea floors to
@@ -354,35 +355,32 @@ WantedMapSend AutosendCycle::suggestNextMapBlock(bool *result_needs_emerge)
 				If block has been marked to not exist on disk (dummy)
 				and generating new ones is not wanted, skip block.
 			*/
-			if(generate_allowed == false && surely_not_found_on_disk == true)
+			if(allow_generate == false && surely_not_found_on_disk == true)
 			{
 				//dstream<<"continue: not on disk, no generate"<<std::endl;
 				// get next one.
 				continue;
 			}
 
-			/*
-				Add inexistent block to emerge queue.
-			*/
 			if(block == NULL || surely_not_found_on_disk || emerge_required)
 			{
-				if (result_needs_emerge)
-					*result_needs_emerge = true;
+				// Suggest this block (has to be emerged)
+				return WMSSuggestion(wms, true, allow_generate);
+			} else {
+				// Suggest this block (is already loaded)
+				return WMSSuggestion(wms, false, allow_generate);
 			}
-
-			// Suggest this block
-			return wms;
 		}
 
-		// Now reset i as we go to next d level
+		// Now reset i as we go to next d
 		mapblock.i = 0;
 	}
 
 	// Nothing to suggest
-	return WantedMapSend();
+	return WMSSuggestion();
 }
 
-WantedMapSend AutosendCycle::suggestNextFarBlock(bool *result_needs_emerge)
+WMSSuggestion AutosendCycle::suggestNextFarBlock(ServerFarMap *far_map)
 {
 	v3s16 focus_point_fb = getContainerPos(focus_point, FMP_SCALE);
 
@@ -408,7 +406,8 @@ WantedMapSend AutosendCycle::suggestNextFarBlock(bool *result_needs_emerge)
 			if (client->SendingCount() >= max_simultaneous_block_sends) {
 				dstream<<"AutosendFar: "<<wms.describe()
 						<<": return: num_selected"<<std::endl;
-				return WantedMapSend();
+				// Nothing to suggest
+				return WMSSuggestion();
 			}
 
 			// Don't send blocks that are currently being transferred
@@ -425,7 +424,32 @@ WantedMapSend AutosendCycle::suggestNextFarBlock(bool *result_needs_emerge)
 				continue;
 			}
 
-			// Don't send blocks that have already been sent
+			// We really can't generate everything; it would bloat up
+			// the world database way too much.
+			// TODO: Figure out how to do this in a good way
+			bool allow_generate = wms.p.Y >= -1 && wms.p.Y <= 1;
+
+			if (!g_settings->getBool("far_map_allow_generate"))
+				allow_generate = false;
+
+			ServerFarBlock *fb = far_map->getBlock(wms.p);
+
+			if (!fb) {
+				// No MapBlocks inside this FarBlock has been loaded
+				// Suggest this block (has to be emerged)
+				return WMSSuggestion(wms, true, allow_generate);
+			}
+
+			if (fb->loaded_mapblocks.count(true) < fb->loaded_mapblocks.size()) {
+				// Some MapBlocks inside this FarBlock have been loaded
+				// Suggest this block (and emerge more)
+				return WMSSuggestion(wms, true, allow_generate);
+			}
+
+			// All MapBlocks inside this FarBlock have been loaded
+
+			// Don't send blocks that have already been sent and have not been
+			// updated
 			std::map<WantedMapSend, time_t>::const_iterator
 					blocks_sent_i = client->m_blocks_sent.find(wms);
 			if (blocks_sent_i != client->m_blocks_sent.end()){
@@ -444,96 +468,47 @@ WantedMapSend AutosendCycle::suggestNextFarBlock(bool *result_needs_emerge)
 						<<": Already sent but updated; allowing"<<std::endl;
 			}
 
-			/*
-				Check if map has this FarBlock
-			*/
-
-			// FarBlock area in divisions (FarNodes)
-			static const v3s16 divs_per_mb(
-					SERVER_FB_MB_DIV, SERVER_FB_MB_DIV, SERVER_FB_MB_DIV);
-
-			v3s16 area_offset_mb(
-				FMP_SCALE * wms.p.X,
-				FMP_SCALE * wms.p.Y,
-				FMP_SCALE * wms.p.Z
-			);
-
-			v3s16 area_size_mb(FMP_SCALE, FMP_SCALE, FMP_SCALE);
-
-			// We really can't generate everything; it would bloat up
-			// the world database way too much.
-			// TODO: Figure out how to do this in a good way
-			bool allow_generate = wms.p.Y >= -1 && wms.p.Y <= 1;
-
-			if (!g_settings->getBool("far_map_allow_generate"))
-				allow_generate = false;
-
-			s32 num_parts_found = 0;
-			//s32 total_parts = area_size_mb.X * area_size_mb.Y * area_size_mb.Z;
-
-			// TODO: Is this loop really what we should be doing here?
-			v3s16 bp;
-			for (bp.Z=area_offset_mb.Z; bp.Z<area_offset_mb.Z+area_size_mb.Z; bp.Z++)
-			for (bp.Y=area_offset_mb.Y; bp.Y<area_offset_mb.Y+area_size_mb.Y; bp.Y++)
-			for (bp.X=area_offset_mb.X; bp.X<area_offset_mb.X+area_size_mb.X; bp.X++)
-			{
-				MapBlock *b = env->getMap().getBlockNoCreateNoEx(bp);
-				if (b) {
-					num_parts_found++;
-				}
-			}
-
-			// TODO
-
-			/*// TODO: I guess currently it does need emerging
-			if (allow_generate) {
-				if (result_needs_emerge)
-					*result_needs_emerge = true;
-			}*/
-
-			// Suggest this block
-			return wms;
+			// Suggest this block (is already loaded)
+			return WMSSuggestion(wms, false, allow_generate);
 		}
 
-		// Now reset i as we go to next d level
+		// Now reset i as we go to next d
 		farblock.i = 0;
 	}
 
 	// Nothing to suggest
-	return WantedMapSend();
+	return WMSSuggestion();
 }
 
-WantedMapSend AutosendCycle::getNextBlock(EmergeManager *emerge)
+WMSSuggestion AutosendCycle::getNextBlock(
+		EmergeManager *emerge, ServerFarMap *far_map)
 {
 	DSTACK(FUNCTION_NAME);
 
 	dstream<<"AutosendCycle::getNextBlock()"<<std::endl;
 
 	if (disabled)
-		return WantedMapSend();
+		return WMSSuggestion();
 
 	// Get MapBlock and FarBlock suggestions
 
-	bool suggested_mb_needs_emerge = false;
-	WantedMapSend suggested_mb = suggestNextMapBlock(&suggested_mb_needs_emerge);
-
-	bool suggested_fb_needs_emerge = false;
-	WantedMapSend suggested_fb = suggestNextFarBlock(&suggested_fb_needs_emerge);
+	WMSSuggestion suggested_mb = suggestNextMapBlock();
+	WMSSuggestion suggested_fb = suggestNextFarBlock(far_map);
 
 	dstream<<"suggested_mb = "<<suggested_mb.describe()<<std::endl;
 	dstream<<"suggested_fb = "<<suggested_fb.describe()<<std::endl;
 
 	// Prioritize suggestions
 
-	std::vector<WantedMapSend> suggestions;
-	if (suggested_mb.type != WMST_INVALID)
+	std::vector<WMSSuggestion> suggestions;
+	if (suggested_mb.wms.type != WMST_INVALID)
 		suggestions.push_back(suggested_mb);
-	if (suggested_fb.type != WMST_INVALID)
+	if (suggested_fb.wms.type != WMST_INVALID)
 		suggestions.push_back(suggested_fb);
 
 	if (suggestions.empty()) {
 		// Nothing to send or prioritize
-		return WantedMapSend();
+		return WMSSuggestion();
 	}
 
 	// Prioritize if there is more than one option
@@ -544,27 +519,28 @@ WantedMapSend AutosendCycle::getNextBlock(EmergeManager *emerge)
 	}
 
 	// Take the most important one
-	WantedMapSend wms = suggestions[0];
+	WMSSuggestion wmss = suggestions[0];
 
-	dstream<<"wms = "<<wms.describe()<<std::endl;
+	dstream<<"wmss = "<<wmss.describe()<<std::endl;
 
 	// We will prepare wms to be sent.
 
-	if (wms.type == WMST_MAPBLOCK) {
-		v3s16 p = wms.p;
+	if (wmss.wms.type == WMST_MAPBLOCK) {
+		v3s16 p = wmss.wms.p;
 
 		// TODO
-		bool generate_allowed = false;
+		bool allow_generate = false;
 
-		if (suggested_mb_needs_emerge) {
+		if (wmss.emerge_required) {
 			if (emerge->enqueueBlockEmerge(
-					client->peer_id, p, generate_allowed)) {
+					client->peer_id, p, allow_generate)) {
 				if (mapblock.nearest_emergequeued_d == INT32_MAX)
 					mapblock.nearest_emergequeued_d = mapblock.d;
 			} else {
 				if (mapblock.nearest_emergefull_d == INT32_MAX)
 					mapblock.nearest_emergefull_d = mapblock.d;
-				return WantedMapSend();
+				// TODO: Skip to MapBlock instead in this case
+				return WMSSuggestion();
 			}
 		}
 
@@ -572,8 +548,8 @@ WantedMapSend AutosendCycle::getNextBlock(EmergeManager *emerge)
 			mapblock.nearest_sendqueued_d = mapblock.d;
 	}
 
-	if (wms.type == WMST_FARBLOCK) {
-		v3s16 p = wms.p;
+	if (wmss.wms.type == WMST_FARBLOCK) {
+		v3s16 p = wmss.wms.p;
 
 		if (suggested_mb_needs_emerge) {
 			// TODO: Emerge
@@ -754,9 +730,10 @@ void AutosendAlgorithm::cycle(float dtime, ServerEnvironment *env)
 	m_cycle->init(this, m_client, env);
 }
 
-WantedMapSend AutosendAlgorithm::getNextBlock(EmergeManager *emerge)
+WMSSuggestion AutosendAlgorithm::getNextBlock(
+		EmergeManager *emerge, ServerFarMap *far_map)
 {
-	return m_cycle->getNextBlock(emerge);
+	return m_cycle->getNextBlock(emerge, far_map);
 }
 
 void AutosendAlgorithm::resetMapblockSearchRadius()
@@ -801,7 +778,8 @@ void RemoteClient::ResendBlockIfOnWire(const WantedMapSend &wms)
 	}
 }
 
-WantedMapSend RemoteClient::getNextBlock(EmergeManager *emerge)
+WMSSuggestion RemoteClient::getNextBlock(
+		EmergeManager *emerge, ServerFarMap *far_map)
 {
 	// If the client has not indicated it supports the new algorithm, fill in
 	// autosend parameters and things should work fine
@@ -823,7 +801,7 @@ WantedMapSend RemoteClient::getNextBlock(EmergeManager *emerge)
 		transfers. If the client wants to get custom stuff quickly, it has to
 		disable autosend.
 	*/
-	WantedMapSend wms = m_autosend.getNextBlock(emerge);
+	WantedMapSend wms = m_autosend.getNextBlock(emerge, far_map);
 	if (wms.type != WMST_INVALID)
 		return wms;
 
@@ -855,7 +833,7 @@ WantedMapSend RemoteClient::getNextBlock(EmergeManager *emerge)
 			// If the MapBlock is not loaded, it will be queued to be loaded or
 			// generated. Otherwise it will be added to 'dest'.
 
-			const bool generate_allowed = true;
+			const bool allow_generate = true;
 
 			MapBlock *block = m_env->getMap().getBlockNoCreateNoEx(wms.p);
 
@@ -875,7 +853,7 @@ WantedMapSend RemoteClient::getNextBlock(EmergeManager *emerge)
 				if(block->isValid() == false)
 					emerge_required = true;
 
-				if(block->isGenerated() == false && generate_allowed)
+				if(block->isGenerated() == false && allow_generate)
 					emerge_required = true;
 
 				// This check is disabled because it mis-guesses sea floors to
@@ -884,7 +862,7 @@ WantedMapSend RemoteClient::getNextBlock(EmergeManager *emerge)
 					continue;*/
 			}
 
-			if(generate_allowed == false && surely_not_found_on_disk == true) {
+			if(allow_generate == false && surely_not_found_on_disk == true) {
 				// NOTE: If we wanted to avoid generating new blocks based on
 				// some criterion, that check woould go here and we would call
 				// 'continue' if the block should not be generated.

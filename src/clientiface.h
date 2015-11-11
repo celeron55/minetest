@@ -201,6 +201,34 @@ enum ClientStateEvent
 
 class RemoteClient;
 struct AutosendCycle;
+class ServerFarMap;
+
+struct WMSSuggestion {
+	WantedMapSend wms;
+	// The base algorithm has to already figure this out in order to select
+	// blocks wisely, but it's way too early for it to actually emerge
+	// something because other clients might be completely prioritized over
+	// whatever it suggests. Thus, this is passed all the way to the final send
+	// algorithm.
+	bool emerge_required;
+	bool allow_generate;
+
+	WMSSuggestion():
+		emerge_required(false),
+		allow_generate(false)
+	{}
+	WMSSuggestion(WantedMapSend wms,
+			bool emerge_required, bool allow_generate):
+		wms(wms),
+		emerge_required(emerge_required),
+		allow_generate(allow_generate)
+	{}
+	std::string describe() const {
+		return wms.describe() +
+				": emerge_required=" + (emerge_required?"1":"0") +
+				", allow_generate=" + (allow_generate?"1":"0");
+	}
+};
 
 class AutosendAlgorithm
 {
@@ -214,7 +242,7 @@ public:
 
 	// Finds a block that should be sent next to the client.
 	// Environment should be locked when this is called.
-	WantedMapSend getNextBlock(EmergeManager *emerge);
+	WMSSuggestion getNextBlock(EmergeManager *emerge);
 
 	void setParameters(s16 radius_map, s16 radius_far, float far_weight,
 			float fov) {
@@ -311,7 +339,7 @@ public:
 
 	// Finds a block that should be sent next to the client.
 	// Environment should be locked when this is called.
-	WantedMapSend getNextBlock(EmergeManager *emerge);
+	WMSSuggestion getNextBlock(EmergeManager *emerge, ServerFarMap *far_map);
 
 	// Shall be called every time before starting to ask a bunch of blocks by
 	// calling getNextBlock()

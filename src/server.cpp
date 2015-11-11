@@ -2217,7 +2217,7 @@ void Server::SendBlocks(float dtime)
 		if(!client)
 			continue;
 
-		WantedMapSend wms = client->getNextBlock(m_emerge);
+		WantedMapSend wms = client->getNextBlock(m_emerge, m_far_map);
 
 		/*dstream << "Client " << peer_id << ": "
 				<< "wms.type=" << wms.type
