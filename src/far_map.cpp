@@ -725,9 +725,9 @@ void FarBlockMeshGenerateTask::inThread()
 				block.mapblock2_meshes[mi] = create_farblock_mesh(
 						block.mapblock2_meshes[mi], far_map, &collector);
 				// This gives Irrlicht permission to store this mesh on the GPU
-				block.crude_mesh->setHardwareMappingHint(scene::EHM_STATIC);
+				block.mapblock2_meshes[mi]->setHardwareMappingHint(scene::EHM_STATIC);
 				// TODO: Check whether these get correctly deleted from the GPU
-				// when block.mapblock2_meshes are dropped
+				//       when block.mapblock2_meshes are dropped
 			}
 		}
 	}
