@@ -20,6 +20,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "far_map_server.h"
 #include "constants.h"
 #include "nodedef.h"
+#include "profiler.h"
 #include "util/numeric.h"
 #include "util/string.h"
 
@@ -78,6 +79,8 @@ std::string analyze_far_block(ServerFarBlock *b)
 
 void ServerFarMapPiece::generateFrom(VoxelManipulator &vm, INodeDefManager *ndef)
 {
+	TimeTaker tt(NULL, NULL, PRECISION_MICRO);
+
 	v3s16 fnp0 = getContainerPos(vm.m_area.MinEdge, SERVER_FN_SIZE);
 	v3s16 fnp1 = getContainerPos(vm.m_area.MaxEdge, SERVER_FN_SIZE);
 	content_area = VoxelArea(fnp0, fnp1);
@@ -124,6 +127,8 @@ void ServerFarMapPiece::generateFrom(VoxelManipulator &vm, INodeDefManager *ndef
 		content[i].id = node_id;
 		content[i].light = light;
 	}
+
+	g_profiler->avg("Far: gen from MapBlock (avg us)", tt.stop(true));
 }
 
 void ServerFarMapPiece::generateEmpty(const VoxelArea &area_nodes)
