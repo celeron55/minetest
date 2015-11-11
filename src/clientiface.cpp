@@ -157,12 +157,11 @@ void AutosendCycle::init(AutosendAlgorithm *alg_,
 		return;
 	}
 
-	// TODO: Enable
-	/*if (alg->m_nothing_to_send_pause_timer >= 0) {
+	if (alg->m_nothing_to_send_pause_timer >= 0) {
 		dstream<<"nothing to send pause"<<std::endl;
 		disabled = true;
 		return;
-	}*/
+	}
 
 	Player *player = env->getPlayer(client->peer_id);
 	if (player == NULL) {
@@ -610,14 +609,15 @@ WMSSuggestion AutosendCycle::getNextBlock(
 	if (wmss.wms.type == WMST_MAPBLOCK) {
 		if(mapblock.nearest_sendqueued_d == INT32_MAX)
 			mapblock.nearest_sendqueued_d = mapblock.d;
+		alg->m_mapblock.nothing_to_send_timer = 0.0f;
 	}
 
 	if (wmss.wms.type == WMST_FARBLOCK) {
 		if(farblock.nearest_sendqueued_d == INT32_MAX)
 			farblock.nearest_sendqueued_d = farblock.d;
+		alg->m_farblock.nothing_to_send_timer = 0.0f;
 	}
 
-	alg->m_nothing_sent_timer = 0.0f;
 	return wmss;
 }
 
@@ -691,11 +691,10 @@ AutosendCycle::Search::CycleResult
 		// We iterated all the way through to the end of the send radius, if you
 		// can believe that.
 		r.nearest_unsent_d = 0;
-		r.searched_full_range = true;
 		// Caller should do a second pass with FOV limiting disabled or start
 		// from the beginning after a short idle delay. (with FOV limiting
 		// enabled because nobody knows what the future holds.)
-		r.result_may_be_available_later_at_this_d = true;
+		r.searched_full_range = true;
 	} else {
 		// Absolutely nothing interesting happened. Next time we will continue
 		// iterating from the next radius.
@@ -723,27 +722,39 @@ void AutosendCycle::finish()
 
 		// Trigger FOV limit removal in certain situations
 		if (r.result_may_be_available_later_at_this_d) {
+			dstream<<"AutosendCycle: Result may be available later at "
+					<<alg->m_mapblock.nearest_unsent_d<<std::endl;
 			// If nothing has been sent in a moment, indicating that the emerge
 			// thread is not finding anything on disk anymore, start a fresh
 			// pass without the FOV limit.
-			if (alg->m_fov_limit_enabled && alg->m_nothing_sent_timer >= 3.0f &&
+			if (alg->m_fov_limit_enabled &&
+					alg->m_mapblock.nothing_to_send_timer >= 3.0f &&
 					alg->m_fov != 0.0f && alg->m_fov_limit_enabled) {
+				dstream<<"AutosendCycle: Nothing to send"
+						<<"; Disabling FOV limit"<<std::endl;
 				alg->m_fov_limit_enabled = false;
 				// Have to be reset in order to not trigger this immediately again
-				alg->m_nothing_sent_timer = 0.0f;
+				alg->m_mapblock.nothing_to_send_timer = 0.0f;
 			}
 		} else if(r.searched_full_range) {
+			dstream<<"AutosendCycle: Searched full range"<<std::endl;
 			// We iterated all the way through to the end of the send radius, if you
 			// can believe that.
 			if (alg->m_fov != 0.0f && alg->m_fov_limit_enabled) {
+				dstream<<"AutosendCycle: Iterated all the way through"
+						<<"; Disabling FOV limit"<<std::endl;
 				// Do a second pass with FOV limiting disabled
 				alg->m_fov_limit_enabled = false;
 			} else {
 				// Start from the beginning after a short idle delay, with FOV
 				// limiting enabled because nobody knows what the future holds.
 				alg->m_fov_limit_enabled = true;
+				dstream<<"AutosendCycle: Initiating idle sleep"<<std::endl;
 				alg->m_nothing_to_send_pause_timer = 2.0;
 			}
+		} else {
+			dstream<<"AutosendCycle: Continuing at "
+					<<alg->m_mapblock.nearest_unsent_d<<std::endl;
 		}
 	}
 
@@ -766,9 +777,7 @@ AutosendAlgorithm::AutosendAlgorithm(RemoteClient *client):
 	m_far_weight(8.0f),
 	m_fov(72.0f),
 	m_fov_limit_enabled(true),
-	m_nothing_sent_timer(0.0),
-	m_nearest_unsent_reset_timer(0.0),
-	m_nothing_to_send_pause_timer(0.0)
+	m_nearest_unsent_reset_timer(0.0)
 {}
 
 AutosendAlgorithm::~AutosendAlgorithm()
@@ -781,9 +790,11 @@ void AutosendAlgorithm::cycle(float dtime, ServerEnvironment *env)
 	m_cycle->finish();
 
 	// Increment timers
-	m_nothing_sent_timer += dtime;
+	m_mapblock.nothing_to_send_timer += dtime;
+	m_farblock.nothing_to_send_timer += dtime;
+	m_mapblock.nothing_to_send_pause_timer -= dtime;
+	m_farblock.nothing_to_send_pause_timer -= dtime;
 	m_nearest_unsent_reset_timer += dtime;
-	m_nothing_to_send_pause_timer -= dtime;
 
 	m_cycle->init(this, m_client, env);
 }
