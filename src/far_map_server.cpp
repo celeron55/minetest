@@ -89,6 +89,7 @@ void ServerFarMapPiece::generateFrom(VoxelManipulator &vm, INodeDefManager *ndef
 
 	content.resize(content_size_n, CONTENT_IGNORE);
 
+#if 0
 	v3s16 fnp;
 	for (fnp.Y=content_area.MinEdge.Y; fnp.Y<=content_area.MaxEdge.Y; fnp.Y++)
 	for (fnp.X=content_area.MinEdge.X; fnp.X<=content_area.MaxEdge.X; fnp.X++)
@@ -127,8 +128,267 @@ void ServerFarMapPiece::generateFrom(VoxelManipulator &vm, INodeDefManager *ndef
 		content[i].id = node_id;
 		content[i].light = light;
 	}
+#endif
 
-	g_profiler->avg("Far: gen from MapBlock (avg us)", tt.stop(true));
+#if 0
+	v3s16 fnp;
+	for (fnp.Z=content_area.MinEdge.Z; fnp.Z<=content_area.MaxEdge.Z; fnp.Z++)
+	for (fnp.Y=content_area.MinEdge.Y; fnp.Y<=content_area.MaxEdge.Y; fnp.Y++)
+	for (fnp.X=content_area.MinEdge.X; fnp.X<=content_area.MaxEdge.X; fnp.X++) {
+		size_t i = content_area.index(fnp);
+
+		std::map<u16, u16> node_amounts;
+		// (day | (night << 4))
+		u8 light = (15) | (0<<4);
+		bool light_found = false;
+
+		// Node at center of FarNode (horizontally)
+		v3s16 np0(
+			fnp.X * SERVER_FN_SIZE,
+			fnp.Y * SERVER_FN_SIZE,
+			fnp.Z * SERVER_FN_SIZE);
+		v3s16 np1(
+			fnp.X * SERVER_FN_SIZE + SERVER_FN_SIZE - 1,
+			fnp.Y * SERVER_FN_SIZE + SERVER_FN_SIZE - 1,
+			fnp.Z * SERVER_FN_SIZE + SERVER_FN_SIZE - 1);
+		v3s16 np;
+
+		for (np.Z = np0.Z; np.Z <= np1.Z; np.Z++)
+		for (np.Y = np0.Y; np.Y <= np1.Y; np.Y++)
+		for (np.X = np0.X; np.X <= np1.X; np.X++) {
+			MapNode n = vm.getNodeNoEx(np);
+			if(n.getContent() == CONTENT_IGNORE)
+				break;
+
+			node_amounts[n.getContent()]++;
+
+			if (!light_found) {
+				const ContentFeatures &f = ndef->get(n);
+				if (!f.name.empty() && f.param_type == CPT_LIGHT) {
+					light = n.param1;
+					light_found = true;
+				}
+			}
+		}
+
+		u16 max_id = CONTENT_IGNORE;
+		u16 max_amount = 0;
+		for (std::map<u16, u16>::const_iterator i = node_amounts.begin();
+				i != node_amounts.end(); i++) {
+			if (max_id == CONTENT_IGNORE || i->second > max_amount) {
+				max_id = i->first;
+				max_amount = i->second;
+				break;
+			}
+		}
+
+		content[i].id = max_id;
+		content[i].light = light;
+	}
+#endif
+
+#if 0
+	v3s16 fnp;
+	for (fnp.Z=content_area.MinEdge.Z; fnp.Z<=content_area.MaxEdge.Z; fnp.Z++)
+	for (fnp.Y=content_area.MinEdge.Y; fnp.Y<=content_area.MaxEdge.Y; fnp.Y++)
+	for (fnp.X=content_area.MinEdge.X; fnp.X<=content_area.MaxEdge.X; fnp.X++) {
+		size_t i = content_area.index(fnp);
+
+		std::map<u16, u16> node_amounts;
+		// (day | (night << 4))
+		u8 light = (15) | (0<<4);
+		bool light_found = false;
+
+		// Node at center of FarNode (horizontally)
+		v3s16 np0(
+			fnp.X * SERVER_FN_SIZE,
+			fnp.Y * SERVER_FN_SIZE,
+			fnp.Z * SERVER_FN_SIZE);
+		v3s16 np1(
+			fnp.X * SERVER_FN_SIZE + SERVER_FN_SIZE - 1,
+			fnp.Y * SERVER_FN_SIZE + SERVER_FN_SIZE - 1,
+			fnp.Z * SERVER_FN_SIZE + SERVER_FN_SIZE - 1);
+		v3s16 np;
+
+		for (np.Z = np0.Z; np.Z <= np1.Z; np.Z++)
+		for (np.X = np0.X; np.X <= np1.X; np.X++) {
+			// Find the topmost solid-ish node from this Y column and add it in
+			// node_amounts
+			for (np.Y = np1.Y; np.Y >= np0.Y; np.Y--) {
+				MapNode n = vm.getNodeNoEx(np);
+				if(n.getContent() == CONTENT_IGNORE)
+					break;
+				const ContentFeatures &f = ndef->get(n);
+				// Skip if definition doesn't exist
+				if (f.name.empty())
+					continue;
+				// Get a light level if available
+				if (!light_found) {
+					if (!f.name.empty() && f.param_type == CPT_LIGHT) {
+						light = n.param1;
+						light_found = true;
+					}
+				}
+				// Skip if drawtype isn't something that a relatively solid node
+				// would have
+				if (
+					f.drawtype != NDT_NORMAL &&
+					f.drawtype != NDT_AIRLIKE &&
+					f.drawtype != NDT_LIQUID &&
+					f.drawtype != NDT_FLOWINGLIQUID &&
+					f.drawtype != NDT_GLASSLIKE &&
+					f.drawtype != NDT_ALLFACES &&
+					f.drawtype != NDT_ALLFACES_OPTIONAL &&
+					f.drawtype != NDT_NODEBOX &&
+					f.drawtype != NDT_GLASSLIKE_FRAMED &&
+					f.drawtype != NDT_GLASSLIKE_FRAMED_OPTIONAL
+				) {
+					continue;
+				}
+				// We guess this is good then
+				node_amounts[n.getContent()]++;
+				// Next Y column
+				break;
+			}
+		}
+
+		u16 max_id = CONTENT_IGNORE;
+		u16 max_amount = 0;
+		for (std::map<u16, u16>::const_iterator i = node_amounts.begin();
+				i != node_amounts.end(); i++) {
+			if (max_id == CONTENT_IGNORE || i->second > max_amount) {
+				max_id = i->first;
+				max_amount = i->second;
+				break;
+			}
+		}
+
+		content[i].id = max_id;
+		content[i].light = light;
+	}
+#endif
+
+#if 1
+	/*
+		Just... don't touch this. This is insanely delicate. -celeron55
+	*/
+	v3s16 fnp;
+	for (fnp.Z=content_area.MinEdge.Z; fnp.Z<=content_area.MaxEdge.Z; fnp.Z++)
+	for (fnp.Y=content_area.MinEdge.Y; fnp.Y<=content_area.MaxEdge.Y; fnp.Y++)
+	for (fnp.X=content_area.MinEdge.X; fnp.X<=content_area.MaxEdge.X; fnp.X++) {
+		size_t i = content_area.index(fnp);
+
+		std::map<u16, u16> node_amounts;
+		// (day | (night << 4))
+		u8 light = (15) | (0<<4);
+		bool light_found = false;
+		u16 amount_air = 0;
+		u16 amount_non_air = 0;
+
+		// Half of whatever the loops below do
+		const u16 half_amount_limit =
+				SERVER_FN_SIZE * SERVER_FN_SIZE * SERVER_FN_SIZE / 2 / 2;
+
+		// Node at center of FarNode (horizontally)
+		v3s16 np0(
+			fnp.X * SERVER_FN_SIZE,
+			fnp.Y * SERVER_FN_SIZE,
+			fnp.Z * SERVER_FN_SIZE);
+		v3s16 np1(
+			fnp.X * SERVER_FN_SIZE + SERVER_FN_SIZE - 1,
+			fnp.Y * SERVER_FN_SIZE + SERVER_FN_SIZE - 1,
+			fnp.Z * SERVER_FN_SIZE + SERVER_FN_SIZE - 1);
+		v3s16 np;
+
+		// Divide only the other axis in half; that gives us enough speed for
+		// enough detail
+		for (np.Z = np0.Z; np.Z <= np1.Z; np.Z+=2)
+		for (np.X = np0.X; np.X <= np1.X; np.X++) {
+			// Find the topmost solid-ish node from this Y column and add it in
+			// node_amounts
+			// Start higher and go only halfway down because that looks better
+			for (np.Y = np1.Y; np.Y >= np0.Y; np.Y--) {
+				MapNode n = vm.getNodeNoEx(np);
+				if(n.getContent() == CONTENT_IGNORE)
+					continue;
+				const ContentFeatures &f = ndef->get(n);
+				// Skip if definition doesn't exist
+				if (f.name.empty())
+					continue;
+				// Get a light level if available
+				if (!light_found) {
+					if (f.param_type == CPT_LIGHT) {
+						light = n.param1;
+						light_found = true;
+					}
+				}
+				// Continue through air, but still collect them
+				if (f.drawtype == NDT_AIRLIKE) {
+					amount_air++;
+					if (amount_air >= half_amount_limit &&
+							amount_air >= amount_non_air * 3) {
+						// Fast path
+						content[i].id = n.getContent();
+						goto already_chosen;
+					}
+					continue;
+				}
+				// Skip if drawtype isn't something that a relatively solid node
+				// would have
+				if (
+					f.drawtype != NDT_NORMAL &&
+					f.drawtype != NDT_LIQUID &&
+					f.drawtype != NDT_FLOWINGLIQUID &&
+					f.drawtype != NDT_GLASSLIKE &&
+					f.drawtype != NDT_ALLFACES &&
+					f.drawtype != NDT_ALLFACES_OPTIONAL &&
+					f.drawtype != NDT_NODEBOX &&
+					f.drawtype != NDT_GLASSLIKE_FRAMED &&
+					f.drawtype != NDT_GLASSLIKE_FRAMED_OPTIONAL &&
+					f.drawtype != NDT_MESH
+				) {
+					continue;
+				}
+				// We guess this is good then
+				amount_non_air++;
+				u16 amount_now = ++node_amounts[n.getContent()];
+				// Check fast path
+				if (amount_now >= half_amount_limit) {
+					content[i].id = n.getContent();
+					goto already_chosen;
+				}
+				// Next Y column
+				break;
+			}
+		}
+
+		// We don't really want to show air because it generally reveals dirt or
+		// stone from underneath but if there's a huge amount of it, then just
+		// show air.
+		if (amount_air >= amount_non_air * 3) {
+			content[i].id = CONTENT_AIR;
+		} else {
+			u16 max_id = CONTENT_IGNORE;
+			u16 max_amount = 0;
+			for (std::map<u16, u16>::const_iterator i = node_amounts.begin();
+					i != node_amounts.end(); i++) {
+				if (max_id == CONTENT_IGNORE || i->second > max_amount) {
+					max_id = i->first;
+					max_amount = i->second;
+				}
+			}
+			content[i].id = max_id;
+		}
+already_chosen:
+
+		content[i].light = light;
+	}
+#endif
+
+	u32 t_us = tt.stop(true);
+	g_profiler->avg("Far: gen from MapBlock (avg us)", t_us);
+	g_profiler->add("Far: gen from MapBlock (total s)",
+			(float)t_us / 1000000.0f);
 }
 
 void ServerFarMapPiece::generateEmpty(const VoxelArea &area_nodes)
