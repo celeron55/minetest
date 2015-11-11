@@ -33,6 +33,13 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 class Client;
 class FarMap;
 
+enum FarMeshLevel {
+	FML_NONE,
+	FML_CRUDE,
+	FML_FINE,
+	FML_FINE_AND_SMALL
+};
+
 struct FarBlock
 {
 	// Position in FarBlocks
@@ -109,6 +116,9 @@ struct FarBlock
 	void unloadMapblockMeshes();
 
 	void resize(v3s16 new_divs_per_mb);
+
+	FarMeshLevel getCurrentMeshLevel();
+
 	void updateCameraOffset(v3s16 camera_offset);
 	void resetCameraOffset(v3s16 camera_offset = v3s16(0, 0, 0));
 
@@ -145,18 +155,12 @@ struct FarMapTask
 
 struct FarBlockMeshGenerateTask: public FarMapTask
 {
-	enum GenLevel {
-		GL_CRUDE,
-		GL_FINE,
-		GL_FINE_AND_SMALL
-	};
-
 	FarMap *far_map;
 	FarBlock block;
-	GenLevel level;
+	FarMeshLevel level;
 
 	FarBlockMeshGenerateTask(FarMap *far_map, const FarBlock &source_block,
-			GenLevel level);
+			FarMeshLevel level);
 	~FarBlockMeshGenerateTask();
 	void inThread();
 	void sync();
@@ -229,8 +233,7 @@ public:
 	void insertCulledBlock(v3s16 fbp);
 	void insertLoadInProgressBlock(v3s16 fbp);
 
-	void startGeneratingBlockMesh(FarBlock *b,
-			FarBlockMeshGenerateTask::GenLevel level);
+	void startGeneratingBlockMesh(FarBlock *b, FarMeshLevel level);
 	void insertGeneratedBlockMesh(
 			v3s16 p, scene::SMesh *crude_mesh, scene::SMesh *fine_mesh,
 			const std::vector<scene::SMesh*> &mapblock_meshes,
