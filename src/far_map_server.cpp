@@ -92,7 +92,7 @@ void ServerFarMapPiece::generateFrom(VoxelManipulator &vm, INodeDefManager *ndef
 	for (fnp.Z=content_area.MinEdge.Z; fnp.Z<=content_area.MaxEdge.Z; fnp.Z++) {
 		size_t i = content_area.index(fnp);
 
-		u16 node_id = 0;
+		u16 node_id = CONTENT_IGNORE;
 		u8 light = 0;
 
 		// Node at center of FarNode (horizontally)
@@ -107,7 +107,7 @@ void ServerFarMapPiece::generateFrom(VoxelManipulator &vm, INodeDefManager *ndef
 			const ContentFeatures &f = ndef->get(n);
 			if (!f.name.empty() && f.param_type == CPT_LIGHT) {
 				light = n.param1;
-				if(node_id == 0){
+				if(node_id == CONTENT_IGNORE){
 					node_id = n.getContent();
 				}
 				break;
@@ -123,6 +123,26 @@ void ServerFarMapPiece::generateFrom(VoxelManipulator &vm, INodeDefManager *ndef
 
 		content[i].id = node_id;
 		content[i].light = light;
+	}
+}
+
+void ServerFarMapPiece::generateEmpty(const VoxelArea &area_nodes)
+{
+	v3s16 fnp0 = getContainerPos(area_nodes.MinEdge, SERVER_FN_SIZE);
+	v3s16 fnp1 = getContainerPos(area_nodes.MaxEdge, SERVER_FN_SIZE);
+	content_area = VoxelArea(fnp0, fnp1);
+
+	size_t content_size_n = content_area.getVolume();
+
+	content.resize(content_size_n, CONTENT_IGNORE);
+
+	v3s16 fnp;
+	for (fnp.Y=content_area.MinEdge.Y; fnp.Y<=content_area.MaxEdge.Y; fnp.Y++)
+	for (fnp.X=content_area.MinEdge.X; fnp.X<=content_area.MaxEdge.X; fnp.X++)
+	for (fnp.Z=content_area.MinEdge.Z; fnp.Z<=content_area.MaxEdge.Z; fnp.Z++) {
+		size_t i = content_area.index(fnp);
+		content[i].id = CONTENT_IGNORE;
+		content[i].light = 0; // (day | (night << 4))
 	}
 }
 
@@ -197,8 +217,8 @@ void ServerFarMap::updateFrom(const ServerFarMapPiece &piece)
 
 		b->modification_counter++;
 
-		/*// Call this before starting line to keep lines mostly intact when
-		// multiple threads are printing
+		/*// Call analyze_far_block before starting the line to keep lines
+		// mostly intact when multiple threads are printing
 		std::string s = analyze_far_block(b);
 		dstream<<"ServerFarMap: Updated block: "<<s<<std::endl;*/
 	}

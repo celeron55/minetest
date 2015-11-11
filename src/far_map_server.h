@@ -57,6 +57,9 @@ struct ServerFarMapPiece
 
 	std::vector<FarNode> content;
 
+	// Fills piece with CONTENT_IGNORE
+	void generateEmpty(const VoxelArea &area_nodes);
+
 	void generateFrom(VoxelManipulator &vm, INodeDefManager *ndef);
 };
 

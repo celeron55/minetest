@@ -1049,21 +1049,15 @@ void FarMap::insertData(v3s16 fbp, v3s16 divs_per_mb,
 		b->content[dst_i].light = lights[source_i];
 	}
 
-	// TODO: Remove
-	/*if (!b->generating_mesh) {
-		startGeneratingBlockMesh(b,
-				FML_FINE_AND_SMALL);
-	}*/
-
-	// Call this before starting line to keep lines mostly intact when
-	// multiple threads are printing
+	/*// Call analyze_far_block before starting the line to keep lines
+	// mostly intact when multiple threads are printing
 	std::string s = analyze_far_block(b);
-	dstream<<"FarMap: Updated block: "<<s<<std::endl;
+	dstream<<"FarMap: Updated block: "<<s<<std::endl;*/
 }
 
 void FarMap::insertEmptyBlock(v3s16 fbp)
 {
-	//dstream<<PP(fbp)<<" reported empty"<<std::endl;
+	dstream<<PP(fbp)<<" reported empty"<<std::endl;
 	FarBlock *b = getOrCreateBlock(fbp);
 	b->is_culled_by_server = false;
 	b->load_in_progress_on_server = false;
@@ -1071,7 +1065,7 @@ void FarMap::insertEmptyBlock(v3s16 fbp)
 
 void FarMap::insertCulledBlock(v3s16 fbp)
 {
-	//dstream<<PP(fbp)<<" reported culled"<<std::endl;
+	dstream<<PP(fbp)<<" reported culled"<<std::endl;
 	FarBlock *b = getOrCreateBlock(fbp);
 	b->is_culled_by_server = true;
 	b->load_in_progress_on_server = false;
@@ -1079,7 +1073,7 @@ void FarMap::insertCulledBlock(v3s16 fbp)
 
 void FarMap::insertLoadInProgressBlock(v3s16 fbp)
 {
-	//dstream<<PP(fbp)<<" reported load-in-progress"<<std::endl;
+	dstream<<PP(fbp)<<" reported load-in-progress"<<std::endl;
 	FarBlock *b = getOrCreateBlock(fbp);
 	b->is_culled_by_server = false;
 	b->load_in_progress_on_server = true;

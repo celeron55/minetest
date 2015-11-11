@@ -648,12 +648,12 @@ void EmergeThread::updateFarMap(v3s16 bp, MapBlock *block,
 		// Create a dummy VoxelArea of the right size and feed it into
 		// ServerFarMap::updateFrom().
 		VoxelArea block_area_nodes(
-				bp * MAP_BLOCKSIZE,
-				(bp+1)*MAP_BLOCKSIZE - v3s16(1,1,1));
-		VoxelManipulator vm;
-		vm.addArea(block_area_nodes);
+				(bp+0) * MAP_BLOCKSIZE,
+				(bp+1) * MAP_BLOCKSIZE - v3s16(1,1,1));
 		ServerFarMapPiece piece;
-		piece.generateFrom(vm, m_server->m_nodedef);
+		piece.generateEmpty(block_area_nodes);
+		/*dstream<<"updateFarMap: ("<<bp.X<<","<<bp.Y<<","<<bp.Z<<") is NULL"
+				<<std::endl;*/
 
 		{
 			MutexAutoLock envlock(m_server->m_env_mutex);
@@ -670,12 +670,11 @@ void EmergeThread::updateFarMap(v3s16 bp, MapBlock *block,
 		// Get block data
 		{
 			MutexAutoLock envlock(m_server->m_env_mutex);
-			/*ServerMap *map = (ServerMap*)&m_server->m_env->getMap();
-			MapBlock *block = map->getBlockNoCreateNoEx(it->first);
-			if (!block)
-				continue;*/
+
 			MapBlock *block = it->second;
+
 			//dstream<<"updateFarMap: "<<analyze_block(block)<<std::endl;
+
 			VoxelArea block_area_nodes(
 					block->getPos() * MAP_BLOCKSIZE,
 					(block->getPos()+1)*MAP_BLOCKSIZE - v3s16(1,1,1));

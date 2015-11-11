@@ -35,6 +35,7 @@ std::string analyze_far_block(v3s16 p, const std::vector<FarNode> &content,
 	else
 		os<<", neither area contain each other (WARNING)";
 
+	s32 num_zero = 0;
 	s32 num_ignore = 0;
 	s32 num_air = 0;
 	s32 num_other = 0;
@@ -47,7 +48,9 @@ std::string analyze_far_block(v3s16 p, const std::vector<FarNode> &content,
 	for (fnp.Z=effective_area.MinEdge.Z; fnp.Z<=effective_area.MaxEdge.Z; fnp.Z++) {
 		size_t ci = content_area.index(fnp);
 		const FarNode &n = content[ci];
-		if (n.id == CONTENT_IGNORE)
+		if (n.id == 0)
+			num_zero++;
+		else if (n.id == CONTENT_IGNORE)
 			num_ignore++;
 		else if (n.id == CONTENT_AIR)
 			num_air++;
@@ -60,6 +63,7 @@ std::string analyze_far_block(v3s16 p, const std::vector<FarNode> &content,
 			num_max_daylight++;
 	}
 
+	os<<", "<<num_zero<<" zero";
 	os<<", "<<num_ignore<<" ignore";
 	os<<", "<<num_air<<" air";
 	os<<", "<<num_other<<" other";
