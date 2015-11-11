@@ -257,25 +257,10 @@ public:
 private:
 	RemoteClient *m_client;
 	AutosendCycle *m_cycle;
-
-	struct SearchContinueState {
-		s16 nearest_unsent_d;
-		float nothing_to_send_timer;
-		float nothing_to_send_pause_timer; // CPU usage optimization
-
-		SearchContinueState():
-			nearest_unsent_d(0),
-			nothing_to_send_timer(0.0f),
-			nothing_to_send_pause_timer(0.0f)
-		{}
-	};
-
 	s16 m_radius_map; // Updated by the client; 0 disables autosend.
 	s16 m_radius_far; // Updated by the client; 0 disables autosend.
 	float m_far_weight; // Updated by the client; 0 is invalid.
 	float m_fov; // Updated by the client; 0 disables FOV limit.
-	SearchContinueState m_mapblock;
-	SearchContinueState m_farblock;
 	v3s16 m_last_focus_point;
 	bool m_fov_limit_enabled; // Automatically turned off to transfer the rest
 	float m_nearest_unsent_reset_timer;

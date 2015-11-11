@@ -96,6 +96,7 @@ struct AutosendCycle
 	s16 fov_limit_activation_distance;
 
 	struct Search {
+		// All of these are reset by init()
 		s16 max_send_distance;
 		s16 d_start;
 		s16 d_max;
@@ -105,15 +106,28 @@ struct AutosendCycle
 		s32 nearest_emergefull_d;
 		s32 nearest_sendqueued_d;
 
-		void init(s16 nearest_unsent_d, s16 max_send_distance_);
+		// All of these are persistent
+		s16 nearest_unsent_d;
+		bool fov_limit_enabled; // Automatically turned off to transfer the rest
+		float nothing_to_send_timer;
+		float nothing_to_send_pause_timer; // CPU usage optimization
+
+		Search():
+			nearest_unsent_d(0),
+			fov_limit_enabled(true),
+			nothing_to_send_timer(0), // Counts up from 0
+			nothing_to_send_pause_timer(0) // Pause if >=0; decrements
+		{}
+
+		void runTimers(float dtime);
+
+		void init(s16 max_send_distance_);
 
 		struct CycleResult {
-			s32 nearest_unsent_d;
 			bool searched_full_range;
 			bool result_may_be_available_later_at_this_d;
 
 			CycleResult():
-				nearest_unsent_d(0),
 				searched_full_range(false),
 				result_may_be_available_later_at_this_d(false)
 			{}
@@ -157,7 +171,9 @@ void AutosendCycle::init(AutosendAlgorithm *alg_,
 		return;
 	}
 
-	if (alg->m_nothing_to_send_pause_timer >= 0) {
+	// Disable if MapBlock and FarBlock pauses are active
+	if (mapblock.nothing_to_send_pause_timer >= 0 &&
+			farblock.nothing_to_send_pause_timer >= 0) {
 		dstream<<"nothing to send pause"<<std::endl;
 		disabled = true;
 		return;
@@ -200,8 +216,8 @@ void AutosendCycle::init(AutosendAlgorithm *alg_,
 	// If focus point has changed to a different MapBlock, reset radius value
 	// for iterating from zero again
 	if (alg->m_last_focus_point != focus_point) {
-		alg->m_mapblock.nearest_unsent_d = 0;
-		alg->m_farblock.nearest_unsent_d = 0;
+		alg->m_cycle->mapblock.nearest_unsent_d = 0;
+		alg->m_cycle->farblock.nearest_unsent_d = 0;
 		alg->m_last_focus_point = focus_point;
 	}
 
@@ -224,8 +240,8 @@ void AutosendCycle::init(AutosendAlgorithm *alg_,
 	// reasons (this is somewhat guided by just heuristics, after all)
 	if (alg->m_nearest_unsent_reset_timer > 20.0) {
 		alg->m_nearest_unsent_reset_timer = 0;
-		alg->m_mapblock.nearest_unsent_d = 0;
-		alg->m_farblock.nearest_unsent_d = 0;
+		alg->m_cycle->mapblock.nearest_unsent_d = 0;
+		alg->m_cycle->farblock.nearest_unsent_d = 0;
 	}
 
 	// Out-of-FOV distance limit
@@ -234,10 +250,10 @@ void AutosendCycle::init(AutosendAlgorithm *alg_,
 			max_block_send_distance / 2 : max_block_send_distance;
 
 	// MapBlock search iteration
-	mapblock.init(alg->m_mapblock.nearest_unsent_d, max_block_send_distance);
+	mapblock.init(max_block_send_distance);
 
 	// FarBlock search iteration
-	farblock.init(alg->m_farblock.nearest_unsent_d, alg->m_radius_far);
+	farblock.init(alg->m_radius_far);
 }
 
 WMSSuggestion AutosendCycle::suggestNextMapBlock(EmergeManager *emerge)
@@ -609,20 +625,25 @@ WMSSuggestion AutosendCycle::getNextBlock(
 	if (wmss.wms.type == WMST_MAPBLOCK) {
 		if(mapblock.nearest_sendqueued_d == INT32_MAX)
 			mapblock.nearest_sendqueued_d = mapblock.d;
-		alg->m_mapblock.nothing_to_send_timer = 0.0f;
+		mapblock.nothing_to_send_timer = 0.0f;
 	}
 
 	if (wmss.wms.type == WMST_FARBLOCK) {
 		if(farblock.nearest_sendqueued_d == INT32_MAX)
 			farblock.nearest_sendqueued_d = farblock.d;
-		alg->m_farblock.nothing_to_send_timer = 0.0f;
+		farblock.nothing_to_send_timer = 0.0f;
 	}
 
 	return wmss;
 }
 
-void AutosendCycle::Search::init(
-		s16 nearest_unsent_d, s16 max_send_distance_)
+void AutosendCycle::Search::runTimers(float dtime)
+{
+	nothing_to_send_timer += dtime;
+	nothing_to_send_pause_timer -= dtime;
+}
+
+void AutosendCycle::Search::init(s16 max_send_distance_)
 {
 	max_send_distance = max_send_distance_; // Needed by finish()
 	i = 0;
@@ -682,7 +703,7 @@ AutosendCycle::Search::CycleResult
 	if (closest_required_re_check != INT32_MAX) {
 		// We did something that requires a result to be checked later. Continue
 		// from that on the next time.
-		r.nearest_unsent_d = closest_required_re_check;
+		nearest_unsent_d = closest_required_re_check;
 		// If nothing has been sent in a moment, indicating that the emerge
 		// thread is not finding anything on disk anymore, caller should start a
 		// fresh pass without the FOV limit.
@@ -690,7 +711,7 @@ AutosendCycle::Search::CycleResult
 	} else if (d > max_send_distance) {
 		// We iterated all the way through to the end of the send radius, if you
 		// can believe that.
-		r.nearest_unsent_d = 0;
+		nearest_unsent_d = 0;
 		// Caller should do a second pass with FOV limiting disabled or start
 		// from the beginning after a short idle delay. (with FOV limiting
 		// enabled because nobody knows what the future holds.)
@@ -698,7 +719,7 @@ AutosendCycle::Search::CycleResult
 	} else {
 		// Absolutely nothing interesting happened. Next time we will continue
 		// iterating from the next radius.
-		r.nearest_unsent_d = d;
+		nearest_unsent_d = d;
 	}
 
 	return r;
@@ -717,18 +738,15 @@ void AutosendCycle::finish()
 	{
 		Search::CycleResult r = mapblock.finish();
 
-		// Default to continuing iterating from the next radius next time.
-		alg->m_mapblock.nearest_unsent_d = r.nearest_unsent_d;
-
 		// Trigger FOV limit removal in certain situations
 		if (r.result_may_be_available_later_at_this_d) {
 			dstream<<"AutosendCycle: Result may be available later at "
-					<<alg->m_mapblock.nearest_unsent_d<<std::endl;
+					<<mapblock.nearest_unsent_d<<std::endl;
 			// If nothing has been sent in a moment, indicating that the emerge
 			// thread is not finding anything on disk anymore, start a fresh
 			// pass without the FOV limit.
 			if (alg->m_fov_limit_enabled &&
-					alg->m_mapblock.nothing_to_send_timer >= 3.0f &&
+					mapblock.nothing_to_send_timer >= 3.0f &&
 					alg->m_fov != 0.0f && alg->m_fov_limit_enabled) {
 				dstream<<"AutosendCycle: Nothing to send"
 						<<"; Disabling FOV limit"<<std::endl;
