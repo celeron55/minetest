@@ -358,6 +358,21 @@ static void add_face(MeshCollector *collector,
 	collector->append(t, vertices, 4, indices, 6);
 }
 
+static int get_solidness(const ContentFeatures &f)
+{
+	if (f.solidness != 0)
+		return f.solidness;
+	if (f.drawtype == NDT_NODEBOX)
+		return 1;
+	if (f.drawtype == NDT_MESH)
+		return 1;
+	if (f.drawtype == NDT_LIQUID)
+		return 1;
+	if (f.drawtype == NDT_FLOWINGLIQUID)
+		return 1;
+	return f.visual_solidness;
+}
+
 static void extract_faces(MeshCollector *collector,
 		const std::vector<FarNode> &data,
 		const VoxelArea &data_area, const VoxelArea &gen_area,
@@ -392,16 +407,10 @@ static void extract_faces(MeshCollector *collector,
 		const ContentFeatures &f001 = ndef->get(n001.id);
 		const ContentFeatures &f010 = ndef->get(n010.id);
 		const ContentFeatures &f100 = ndef->get(n100.id);
-		int s000 = f000.solidness ?: f000.visual_solidness;
-		int s001 = f001.solidness ?: f001.visual_solidness;
-		int s010 = f010.solidness ?: f010.visual_solidness;
-		int s100 = f100.solidness ?: f100.visual_solidness;
-
-		// TODO: Somehow handle non-cubic things maybe
-		// NOTE: Don't call 'continue' though; it would break this
-		//       cube-collecting algorithm.
-		/*if(f000.drawtype == NDT_){
-		}*/
+		int s000 = get_solidness(f000);
+		int s001 = get_solidness(f001);
+		int s010 = get_solidness(f010);
+		int s100 = get_solidness(f100);
 
 		if(s000 > s001){
 			add_face(collector, n000, p000,  0,0,1, data,
@@ -1239,6 +1248,8 @@ void FarMap::createAtlas()
 				bottom = top;
 			if(side.empty())
 				side = top;
+			infostream<<"* top="<<top<<", bottom="<<bottom
+					<<", side="<<side<<std::endl;
 			atlas.addNode(id, top, bottom, side);
 		}
 
