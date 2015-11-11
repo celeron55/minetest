@@ -37,6 +37,23 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define PP(x) "("<<(x).X<<","<<(x).Y<<","<<(x).Z<<")"
 
+struct WMSSPriority: WMSPriority
+{
+	WMSSPriority(v3s16 player_p, float far_weight):
+		WMSPriority(player_p, far_weight)
+	{}
+
+	// Lower is more important
+	float getPriority(const WMSSuggestion &wmss) {
+		return WMSPriority::getPriority(wmss.wms);
+	}
+
+	// Sorts WMSSuggestions in descending order of priority
+	bool operator() (const WMSSuggestion& wms1, const WMSSuggestion& wms2) {
+		return (getPriority(wms1) < getPriority(wms2));
+	}
+};
+
 /*
 	AutosendAlgorithm
 */
@@ -119,8 +136,8 @@ struct AutosendCycle
 	void finish();
 
 private:
-	WMSSuggestion suggestNextMapBlock();
-	WMSSuggestion suggestNextFarBlock(ServerFarMap *far_map);
+	WMSSuggestion suggestNextMapBlock(EmergeManager *emerge);
+	WMSSuggestion suggestNextFarBlock(EmergeManager *emerge, ServerFarMap *far_map);
 };
 
 void AutosendCycle::init(AutosendAlgorithm *alg_,
@@ -224,7 +241,7 @@ void AutosendCycle::init(AutosendAlgorithm *alg_,
 	farblock.init(alg->m_farblock.nearest_unsent_d, alg->m_radius_far);
 }
 
-WMSSuggestion AutosendCycle::suggestNextMapBlock()
+WMSSuggestion AutosendCycle::suggestNextMapBlock(EmergeManager *emerge)
 {
 	for (; mapblock.d <= mapblock.d_max; mapblock.d++) {
 		dstream<<"AutosendMap: mapblock.d="<<mapblock.d<<std::endl;
@@ -362,14 +379,26 @@ WMSSuggestion AutosendCycle::suggestNextMapBlock()
 				continue;
 			}
 
-			if(block == NULL || surely_not_found_on_disk || emerge_required)
+			if(!block || surely_not_found_on_disk || emerge_required)
 			{
-				// Suggest this block (has to be emerged)
-				return WMSSuggestion(wms, true, allow_generate);
-			} else {
-				// Suggest this block (is already loaded)
-				return WMSSuggestion(wms, false, allow_generate);
+				// Queue the block for loading or generating
+				bool queue_full = !emerge->enqueueBlockEmerge(
+						client->peer_id, p, allow_generate);
+				if (!queue_full) {
+					if (mapblock.nearest_emergequeued_d == INT32_MAX)
+						mapblock.nearest_emergequeued_d = mapblock.d;
+					// Queue is not full; continue searching
+					continue;
+				} else {
+					if (mapblock.nearest_emergefull_d == INT32_MAX)
+						mapblock.nearest_emergefull_d = mapblock.d;
+					// Queue is full; don't bother searching futher
+					return WMSSuggestion();
+				}
 			}
+
+			// Suggest this block (is already loaded)
+			return WMSSuggestion(wms);
 		}
 
 		// Now reset i as we go to next d
@@ -380,7 +409,8 @@ WMSSuggestion AutosendCycle::suggestNextMapBlock()
 	return WMSSuggestion();
 }
 
-WMSSuggestion AutosendCycle::suggestNextFarBlock(ServerFarMap *far_map)
+WMSSuggestion AutosendCycle::suggestNextFarBlock(
+		EmergeManager *emerge, ServerFarMap *far_map)
 {
 	v3s16 focus_point_fb = getContainerPos(focus_point, FMP_SCALE);
 
@@ -428,28 +458,75 @@ WMSSuggestion AutosendCycle::suggestNextFarBlock(ServerFarMap *far_map)
 			// the world database way too much.
 			// TODO: Figure out how to do this in a good way
 			bool allow_generate = wms.p.Y >= -1 && wms.p.Y <= 1;
+			bool allow_load = wms.p.Y >= -1 && wms.p.Y <= 1;
 
 			if (!g_settings->getBool("far_map_allow_generate"))
 				allow_generate = false;
 
 			ServerFarBlock *fb = far_map->getBlock(wms.p);
 
-			if (!fb) {
-				// No MapBlocks inside this FarBlock has been loaded
-				// Suggest this block (has to be emerged)
-				return WMSSuggestion(wms, true, allow_generate);
+			size_t num_loaded = 0;
+			bool none_loaded = true;
+			bool fully_loaded = false;
+
+			if (fb) {
+				num_loaded = fb->loaded_mapblocks.count(true);
+				fully_loaded = (num_loaded == fb->loaded_mapblocks.size());
+				none_loaded = (num_loaded == 0);
 			}
 
-			if (fb->loaded_mapblocks.count(true) < fb->loaded_mapblocks.size()) {
-				// Some MapBlocks inside this FarBlock have been loaded
-				// Suggest this block (and emerge more)
-				return WMSSuggestion(wms, true, allow_generate);
+			// This potentially skips a lot of FarBlocks that don't contain
+			// anything interesting
+			if (none_loaded && !allow_load) {
+				continue;
 			}
 
-			// All MapBlocks inside this FarBlock have been loaded
+			// FarBlock area in divisions (FarNodes)
+			static const v3s16 divs_per_mb(
+					SERVER_FB_MB_DIV, SERVER_FB_MB_DIV, SERVER_FB_MB_DIV);
+
+			v3s16 area_offset_mb(
+				FMP_SCALE * wms.p.X,
+				FMP_SCALE * wms.p.Y,
+				FMP_SCALE * wms.p.Z
+			);
+
+			v3s16 area_size_mb(FMP_SCALE, FMP_SCALE, FMP_SCALE);
+
+			size_t num_added_to_queue = 0;
+
+			// Queue emergement of missing MapBlocks
+			v3s16 bp;
+			bool emerge_queue_full = false;
+			for (bp.Z=area_offset_mb.Z; bp.Z<area_offset_mb.Z+area_size_mb.Z; bp.Z++)
+			for (bp.Y=area_offset_mb.Y; bp.Y<area_offset_mb.Y+area_size_mb.Y; bp.Y++)
+			for (bp.X=area_offset_mb.X; bp.X<area_offset_mb.X+area_size_mb.X; bp.X++)
+			{
+				if (fb && fb->loaded_mapblocks.get(bp)) {
+					// This MapBlock is already loaded
+					continue;
+				}
+				// This MapBlock is not loaded yet
+				if (emerge->enqueueBlockEmerge(client->peer_id, bp, allow_generate)) {
+					num_added_to_queue++;
+				} else {
+					// EmergeThread's queue is full
+					emerge_queue_full = true;
+					goto full_break;
+				}
+			}
+full_break:
+
+			if (none_loaded) {
+				// No MapBlocks inside this FarBlock have been loaded.
+				// Many of them are being queued, so just wait for them and
+				// don't go poking other FarBlocks.
+				return WMSSuggestion();
+			}
 
 			// Don't send blocks that have already been sent and have not been
-			// updated
+			// updated. Check this after the emerge queuing so that they have a
+			// chance of being loaded so that they can pass this check later.
 			std::map<WantedMapSend, time_t>::const_iterator
 					blocks_sent_i = client->m_blocks_sent.find(wms);
 			if (blocks_sent_i != client->m_blocks_sent.end()){
@@ -468,8 +545,10 @@ WMSSuggestion AutosendCycle::suggestNextFarBlock(ServerFarMap *far_map)
 						<<": Already sent but updated; allowing"<<std::endl;
 			}
 
-			// Suggest this block (is already loaded)
-			return WMSSuggestion(wms, false, allow_generate);
+			// Suggest this block
+			WMSSuggestion wmss(wms);
+			wmss.is_fully_loaded = fully_loaded;
+			return wmss;
 		}
 
 		// Now reset i as we go to next d
@@ -492,8 +571,8 @@ WMSSuggestion AutosendCycle::getNextBlock(
 
 	// Get MapBlock and FarBlock suggestions
 
-	WMSSuggestion suggested_mb = suggestNextMapBlock();
-	WMSSuggestion suggested_fb = suggestNextFarBlock(far_map);
+	WMSSuggestion suggested_mb = suggestNextMapBlock(emerge);
+	WMSSuggestion suggested_fb = suggestNextFarBlock(emerge, far_map);
 
 	dstream<<"suggested_mb = "<<suggested_mb.describe()<<std::endl;
 	dstream<<"suggested_fb = "<<suggested_fb.describe()<<std::endl;
@@ -515,7 +594,7 @@ WMSSuggestion AutosendCycle::getNextBlock(
 	if (suggestions.size() > 1) {
 		v3s16 camera_np = floatToInt(camera_p, BS);
 		std::sort(suggestions.begin(), suggestions.end(),
-				WMSPriority(camera_np, alg->m_far_weight));
+				WMSSPriority(camera_np, alg->m_far_weight));
 	}
 
 	// Take the most important one
@@ -523,44 +602,21 @@ WMSSuggestion AutosendCycle::getNextBlock(
 
 	dstream<<"wmss = "<<wmss.describe()<<std::endl;
 
-	// We will prepare wms to be sent.
+	// Keep track of the distance of the closest block being sent (separetely
+	// for MapBlocks and FarBlocks)
 
 	if (wmss.wms.type == WMST_MAPBLOCK) {
-		v3s16 p = wmss.wms.p;
-
-		// TODO
-		bool allow_generate = false;
-
-		if (wmss.emerge_required) {
-			if (emerge->enqueueBlockEmerge(
-					client->peer_id, p, allow_generate)) {
-				if (mapblock.nearest_emergequeued_d == INT32_MAX)
-					mapblock.nearest_emergequeued_d = mapblock.d;
-			} else {
-				if (mapblock.nearest_emergefull_d == INT32_MAX)
-					mapblock.nearest_emergefull_d = mapblock.d;
-				// TODO: Skip to MapBlock instead in this case
-				return WMSSuggestion();
-			}
-		}
-
 		if(mapblock.nearest_sendqueued_d == INT32_MAX)
 			mapblock.nearest_sendqueued_d = mapblock.d;
 	}
 
 	if (wmss.wms.type == WMST_FARBLOCK) {
-		v3s16 p = wmss.wms.p;
-
-		if (suggested_mb_needs_emerge) {
-			// TODO: Emerge
-		}
-
 		if(farblock.nearest_sendqueued_d == INT32_MAX)
 			farblock.nearest_sendqueued_d = farblock.d;
 	}
-	
+
 	alg->m_nothing_sent_timer = 0.0f;
-	return wms;
+	return wmss;
 }
 
 void AutosendCycle::Search::init(
@@ -801,7 +857,8 @@ WMSSuggestion RemoteClient::getNextBlock(
 		transfers. If the client wants to get custom stuff quickly, it has to
 		disable autosend.
 	*/
-	WantedMapSend wms = m_autosend.getNextBlock(emerge, far_map);
+	WMSSuggestion wmss = m_autosend.getNextBlock(emerge, far_map);
+	WantedMapSend wms = wmss.wms;
 	if (wms.type != WMST_INVALID)
 		return wms;
 

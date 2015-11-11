@@ -2217,7 +2217,8 @@ void Server::SendBlocks(float dtime)
 		if(!client)
 			continue;
 
-		WantedMapSend wms = client->getNextBlock(m_emerge, m_far_map);
+		WMSSuggestion wmss = client->getNextBlock(m_emerge, m_far_map);
+		WantedMapSend wms = wmss.wms;
 
 		/*dstream << "Client " << peer_id << ": "
 				<< "wms.type=" << wms.type
@@ -2233,8 +2234,11 @@ void Server::SendBlocks(float dtime)
 					<< std::endl;*/
 
 			MapBlock *block = m_env->getMap().getBlockNoCreateNoEx(wms.p);
-			if (!block)
+			if (!block) {
+				warningstream<<"client->getNextBlock() returned inexisting "
+						"MapBlock"<<std::endl;
 				continue;
+			}
 
 			SendBlockNoLock(peer_id, block, client->serialization_version,
 					client->net_proto_version);
@@ -2246,73 +2250,28 @@ void Server::SendBlocks(float dtime)
 					<<wms.p.X<<","<<wms.p.Y<<","<<wms.p.Z<<")"
 					<< std::endl;*/
 
-			// FarBlock area in divisions (FarNodes)
-			static const v3s16 divs_per_mb(
-					SERVER_FB_MB_DIV, SERVER_FB_MB_DIV, SERVER_FB_MB_DIV);
-
-			v3s16 area_offset_mb(
-				FMP_SCALE * wms.p.X,
-				FMP_SCALE * wms.p.Y,
-				FMP_SCALE * wms.p.Z
-			);
-
-			v3s16 area_size_mb(FMP_SCALE, FMP_SCALE, FMP_SCALE);
-
-			// We really can't generate everything; it would bloat up
-			// the world database way too much.
-			// TODO: Figure out how to do this in a good way
-			bool allow_generate = wms.p.Y >= -1 && wms.p.Y <= 1;
-
-			if (!g_settings->getBool("far_map_allow_generate"))
-				allow_generate = false;
-
-			s32 num_parts_found = 0;
-
-			// TODO: Is this loop really what we should be doing here?
-			v3s16 bp;
-			for (bp.Z=area_offset_mb.Z; bp.Z<area_offset_mb.Z+area_size_mb.Z; bp.Z++)
-			for (bp.Y=area_offset_mb.Y; bp.Y<area_offset_mb.Y+area_size_mb.Y; bp.Y++)
-			for (bp.X=area_offset_mb.X; bp.X<area_offset_mb.X+area_size_mb.X; bp.X++)
-			{
-				MapBlock *b = m_env->getMap().getBlockNoCreateNoEx(bp);
-				if (b) {
-					num_parts_found++;
-				} else {
-					// NOTE: This might be a bit haphazard; we are talking about
-					// generating 8x8x8 MapBlocks here at a time, repeating by
-					// hundreds of times...
-					if (!m_emerge->enqueueBlockEmerge(peer_id, bp, allow_generate)) {
-						// EmergeThread's queue is full; maybe it's not full on the
-						// next time this is called.
-					}
-				}
-			}
-
 			ServerFarBlock *fb = m_far_map->getBlock(wms.p);
 
 			FarBlocksResultStatus status;
 
-			if (num_parts_found == area_size_mb.X * area_size_mb.Y * area_size_mb.Z) {
-				dstream<<"ServerFarBlock "<<PP(wms.p)<<" fully loaded"
-						<<std::endl;
-				status = FBRS_FULLY_LOADED;
-			} else {
-				if (allow_generate) {
-					dstream<<"ServerFarBlock "<<PP(wms.p)<<" waiting for generate"
+			if (fb) {
+				if (wmss.is_fully_loaded) {
+					dstream<<"ServerFarBlock "<<PP(wms.p)<<" fully loaded"
 							<<std::endl;
-					// Wait until it is fully generated
-					continue;
-				}
-				if (!fb) {
-					dstream<<"ServerFarBlock "<<PP(wms.p)<<" not found"
-							<<std::endl;
-					status = FBRS_LOAD_IN_PROGRESS;
+					status = FBRS_FULLY_LOADED;
 				} else {
-					dstream<<"ServerFarBlock "<<PP(wms.p)<<" partly found ("
-							<<num_parts_found<<" parts)"<<std::endl;
+					dstream<<"ServerFarBlock "<<PP(wms.p)<<" partly loaded"
+							<<std::endl;
 					status = FBRS_PARTLY_LOADED;
 				}
+			} else {
+				dstream<<"ServerFarBlock "<<PP(wms.p)<<" not found"
+						<<std::endl;
+				status = FBRS_LOAD_IN_PROGRESS;
 			}
+
+			static const v3s16 divs_per_mb(
+					SERVER_FB_MB_DIV, SERVER_FB_MB_DIV, SERVER_FB_MB_DIV);
 
 			NetworkPacket pkt(TOCLIENT_FAR_BLOCKS_RESULT, 0, peer_id);
 			/*

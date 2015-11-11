@@ -205,28 +205,23 @@ class ServerFarMap;
 
 struct WMSSuggestion {
 	WantedMapSend wms;
-	// The base algorithm has to already figure this out in order to select
-	// blocks wisely, but it's way too early for it to actually emerge
-	// something because other clients might be completely prioritized over
-	// whatever it suggests. Thus, this is passed all the way to the final send
-	// algorithm.
-	bool emerge_required;
-	bool allow_generate;
+	bool is_fully_loaded; // Can be false for FarBlocks
+	//bool is_fully_generated; // TODO
 
 	WMSSuggestion():
-		emerge_required(false),
-		allow_generate(false)
+		is_fully_loaded(true)
 	{}
-	WMSSuggestion(WantedMapSend wms,
-			bool emerge_required, bool allow_generate):
+	WMSSuggestion(WantedMapSend wms):
 		wms(wms),
-		emerge_required(emerge_required),
-		allow_generate(allow_generate)
+		is_fully_loaded(true)
 	{}
 	std::string describe() const {
-		return wms.describe() +
-				": emerge_required=" + (emerge_required?"1":"0") +
-				", allow_generate=" + (allow_generate?"1":"0");
+		if (wms.type == WMST_FARBLOCK) {
+			return wms.describe()+
+					": is_fully_loaded="+(is_fully_loaded?"1":"0");
+		} else {
+			return wms.describe();
+		}
 	}
 };
 
@@ -242,7 +237,7 @@ public:
 
 	// Finds a block that should be sent next to the client.
 	// Environment should be locked when this is called.
-	WMSSuggestion getNextBlock(EmergeManager *emerge);
+	WMSSuggestion getNextBlock(EmergeManager *emerge, ServerFarMap *far_map);
 
 	void setParameters(s16 radius_map, s16 radius_far, float far_weight,
 			float fov) {
