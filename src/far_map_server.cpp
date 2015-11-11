@@ -51,6 +51,9 @@ ServerFarBlock::ServerFarBlock(v3s16 p):
 	size_t content_size_n = content_area.getVolume();
 
 	content.resize(content_size_n, CONTENT_IGNORE);
+
+	VoxelArea blocks_area(p * FMP_SCALE, (p+1) * FMP_SCALE - v3s16(1,1,1));
+	loaded_mapblocks.reset(blocks_area);
 }
 
 ServerFarBlock::~ServerFarBlock()
@@ -64,6 +67,13 @@ std::string analyze_far_block(ServerFarBlock *b)
 	std::string s = "["+analyze_far_block(
 			b->p, b->content, b->content_area, b->content_area);
 	s += ", modification_counter="+itos(b->modification_counter);
+	size_t num_loaded_mbs = 0;
+	for (size_t i=0; i<b->loaded_mapblocks.blocks.size(); i++) {
+		if (b->loaded_mapblocks.blocks[i])
+			num_loaded_mbs++;
+	}
+	s += ", loaded_mapblocks="+itos(num_loaded_mbs)+"/"+
+			itos(b->loaded_mapblocks.blocks.size());
 	return s+"]";
 }
 
@@ -185,6 +195,9 @@ void ServerFarMap::updateFrom(const ServerFarMapPiece &piece)
 			size_t source_i = piece.content_area.index(fp1);
 			size_t dst_i = b->content_area.index(fp1);
 			b->content[dst_i] = piece.content[source_i];
+
+			v3s16 mbp = getContainerPos(fp1, SERVER_FB_MB_DIV);
+			b->loaded_mapblocks.set(mbp, true);
 		}
 
 		b->modification_counter++;

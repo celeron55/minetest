@@ -42,7 +42,8 @@ struct ServerFarBlock
 
 	u32 modification_counter;
 
-	// TODO: Keep track of which MapBlocks have been loaded into this?
+	// TODO: Differentiate loaded and loaded-but-ungenerated blocks
+	BlockAreaBitmap<bool> loaded_mapblocks;
 
 	ServerFarBlock(v3s16 p);
 	~ServerFarBlock();
@@ -68,6 +69,7 @@ public:
 	ServerFarBlock* getBlock(v3s16 p);
 	ServerFarBlock* getOrCreateBlock(v3s16 p);
 
+	// Piece must consist of full MapBlocks
 	void updateFrom(const ServerFarMapPiece &piece);
 
 private:

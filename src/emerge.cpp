@@ -96,7 +96,8 @@ private:
 		v3s16 pos, bool allow_gen, MapBlock **block, BlockMakeData *data);
 	MapBlock *finishGen(v3s16 pos, BlockMakeData *bmdata,
 		std::map<v3s16, MapBlock *> *modified_blocks);
-	void updateFarMap(const std::map<v3s16, MapBlock*> &modified_blocks);
+	void updateFarMap(v3s16 bp, MapBlock *block,
+			const std::map<v3s16, MapBlock*> &modified_blocks);
 
 	friend class EmergeManager;
 };
@@ -632,9 +633,34 @@ MapBlock *EmergeThread::finishGen(v3s16 pos, BlockMakeData *bmdata,
 	return block;
 }
 
-void EmergeThread::updateFarMap(
+// Should be called for every loaded and generated block, so that even if
+// nothing in the whole FarBlock area has succeeded to load, every piece has
+// still been reported to FarMap.
+void EmergeThread::updateFarMap(v3s16 bp, MapBlock *block,
 		const std::map<v3s16, MapBlock*> &modified_blocks)
 {
+	if (block == NULL) {
+		// This happens if the MapBlockc couldn't be loaded and generating was
+		// disabled. In this case the block will not be found in modified_blocks
+		// and has to be reported separately in addition to everything in
+		// modified_blocks.
+
+		// Create a dummy VoxelArea of the right size and feed it into
+		// ServerFarMap::updateFrom().
+		VoxelArea block_area_nodes(
+				bp * MAP_BLOCKSIZE,
+				(bp+1)*MAP_BLOCKSIZE - v3s16(1,1,1));
+		VoxelManipulator vm;
+		vm.addArea(block_area_nodes);
+		ServerFarMapPiece piece;
+		piece.generateFrom(vm, m_server->m_nodedef);
+
+		{
+			MutexAutoLock envlock(m_server->m_env_mutex);
+			m_server->m_far_map->updateFrom(piece);
+		}
+	}
+
 	for (std::map<v3s16, MapBlock*>::const_iterator
 			it = modified_blocks.begin();
 			it != modified_blocks.end(); ++it)
@@ -721,9 +747,7 @@ void *EmergeThread::run()
 		if (block)
 			modified_blocks[pos] = block;
 
-		if (action == EMERGE_FROM_DISK || action == EMERGE_GENERATED) {
-			updateFarMap(modified_blocks);
-		}
+		updateFarMap(pos, block, modified_blocks);
 
 		if (modified_blocks.size() > 0)
 			m_server->SetMapBlocksUpdated(modified_blocks);
