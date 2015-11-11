@@ -310,13 +310,10 @@
 # enable_3d_clouds = true
 
 #    Enable low level-of-detail rendering at large distances
-#enable_far_map = true
+# enable_far_map = true
 
 #    Far map rendering range in nodes
-#far_map_range = 500
-
-#    Far map rendering range in nodes
-#far_map_minimize_memory_usage = false
+# far_map_range = 500
 
 #### Filtering
 
@@ -1045,6 +1042,9 @@
 #    Flags starting with "no" are used to explicitly disable them.
 #    type: flags possible values: caves, dungeons, light, decorations, nocaves, nodungeons, nolight, nodecorations
 # mg_flags = caves,dungeons,light,decorations
+
+#    Allow far map to use the map generator
+# far_map_allow_generate = false
 
 ### Advanced
 

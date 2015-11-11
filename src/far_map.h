@@ -266,7 +266,6 @@ public:
 	bool config_bilinear_filter;
 	bool config_anisotropic_filter;
 	s16 config_far_map_range;
-	bool config_far_map_minimize_memory_usage;
 
 	u32 farblock_shader_id;
 	BlockAreaBitmap<bool> normally_rendered_blocks;

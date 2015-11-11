@@ -924,7 +924,6 @@ FarMap::FarMap(
 	config_bilinear_filter(false),
 	config_anisotropic_filter(false),
 	config_far_map_range(800),
-	config_far_map_minimize_memory_usage(false),
 	farblock_shader_id(0),
 	m_farblocks_exist_up_to_d(0),
 	m_farblocks_exist_up_to_d_reset_counter(0)
@@ -1343,8 +1342,6 @@ void FarMap::updateSettings()
 	config_bilinear_filter = g_settings->getBool("bilinear_filter");
 	config_anisotropic_filter = g_settings->getBool("anisotropic_filter");
 	config_far_map_range = g_settings->getS16("far_map_range");
-	config_far_map_minimize_memory_usage =
-		g_settings->getBool("far_map_minimize_memory_usage");
 
 	// Sanitize these a bit
 	if (config_far_map_range < 100)

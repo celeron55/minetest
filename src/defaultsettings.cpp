@@ -188,7 +188,6 @@ void set_default_settings(Settings *settings)
 
 	settings->setDefault("enable_far_map", "true");
 	settings->setDefault("far_map_range", "500");
-	settings->setDefault("far_map_minimize_memory_usage", "false");
 	settings->setDefault("far_map_allow_generate", "false");
 
 	settings->setDefault("curl_timeout", "5000");

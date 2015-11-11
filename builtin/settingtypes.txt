@@ -293,9 +293,6 @@ enable_far_map (Far map) bool true
 #    Far map rendering range in nodes
 far_map_range (Far map range) int 500
 
-#    Far map rendering range in nodes
-far_map_minimize_memory_usage (Minimize far map RAM usage) bool false
-
 [***Filtering]
 
 #    Use mip mapping to scale textures. May slightly increase performance.
@@ -851,6 +848,9 @@ map_generation_limit (Map generation limit) int 31000 0 31000
 #    Flags that are not specified in the flag string are not modified from the default.
 #    Flags starting with "no" are used to explicitly disable them.
 mg_flags (Mapgen flags) flags caves,dungeons,light,decorations caves,dungeons,light,decorations,nocaves,nodungeons,nolight,nodecorations
+
+#    Allow far map to use the map generator
+far_map_allow_generate (Allow far map to use mapgen) bool false
 
 [**Advanced]
 
