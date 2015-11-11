@@ -67,13 +67,8 @@ std::string analyze_far_block(ServerFarBlock *b)
 	std::string s = "["+analyze_far_block(
 			b->p, b->content, b->content_area, b->content_area);
 	s += ", modification_counter="+itos(b->modification_counter);
-	size_t num_loaded_mbs = 0;
-	for (size_t i=0; i<b->loaded_mapblocks.blocks.size(); i++) {
-		if (b->loaded_mapblocks.blocks[i])
-			num_loaded_mbs++;
-	}
-	s += ", loaded_mapblocks="+itos(num_loaded_mbs)+"/"+
-			itos(b->loaded_mapblocks.blocks.size());
+	s += ", loaded_mapblocks="+itos(b->loaded_mapblocks.count(true))+"/"+
+			itos(b->loaded_mapblocks.size());
 	return s+"]";
 }
 
