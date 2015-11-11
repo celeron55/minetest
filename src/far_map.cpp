@@ -1343,7 +1343,13 @@ s16 FarMap::suggestAutosendFarblocksRadius()
 
 float FarMap::suggestFogDistance()
 {
-	return config_far_map_range * BS;
+	if (config_far_map_range < 150) {
+		// We are clearly trying to squeeze as much range from a poorly
+		// performing machine as possible, so try to help with that
+		return (config_far_map_range - MAP_BLOCKSIZE * FMP_SCALE / 4) * BS;
+	} else {
+		return (config_far_map_range - MAP_BLOCKSIZE * FMP_SCALE / 2) * BS;
+	}
 }
 
 void FarMap::updateSettings()
