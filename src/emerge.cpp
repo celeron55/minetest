@@ -430,6 +430,8 @@ bool EmergeManager::popBlockEmergeData(
 	std::map<v3s16, BlockEmergeData>::iterator it;
 	std::map<u16, u16>::iterator it2;
 
+	g_profiler->avg("Emerge: Queue size", m_blocks_enqueued.size());
+
 	it = m_blocks_enqueued.find(pos);
 	if (it == m_blocks_enqueued.end())
 		return false;
@@ -568,6 +570,7 @@ EmergeAction EmergeThread::getBlockOrStartGen(
 		return EMERGE_FROM_MEMORY;
 
 	// 2). Attempt to load block from disk
+	g_profiler->add("Emerge: Attempted MapBlock loads", 1);
 	*block = m_map->loadBlock(pos);
 	if (*block && (*block)->isGenerated())
 		return EMERGE_FROM_DISK;
@@ -624,6 +627,8 @@ MapBlock *EmergeThread::finishGen(v3s16 pos, BlockMakeData *bmdata,
 	}
 
 	EMERGE_DBG_OUT("ended up with: " << analyze_block(block));
+
+	g_profiler->add("Emerge: Chunks generated", 1);
 
 	/*
 		Activate the block
@@ -745,6 +750,9 @@ void *EmergeThread::run()
 
 		if (block)
 			modified_blocks[pos] = block;
+
+		// This is kind of a vague number but it still tells something
+		g_profiler->add("Emerge: Blocks modified", modified_blocks.size());
 
 		updateFarMap(pos, block, modified_blocks);
 
