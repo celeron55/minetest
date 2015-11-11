@@ -262,7 +262,6 @@ private:
 	float m_far_weight; // Updated by the client; 0 is invalid.
 	float m_fov; // Updated by the client; 0 disables FOV limit.
 	v3s16 m_last_focus_point;
-	bool m_fov_limit_enabled; // Automatically turned off to transfer the rest
 	float m_nearest_unsent_reset_timer;
 
 	friend struct AutosendCycle;
