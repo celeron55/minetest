@@ -244,7 +244,8 @@ void AutosendCycle::init(AutosendAlgorithm *alg_,
 WMSSuggestion AutosendCycle::suggestNextMapBlock(EmergeManager *emerge)
 {
 	for (; mapblock.d <= mapblock.d_max; mapblock.d++) {
-		dstream<<"AutosendMap: mapblock.d="<<mapblock.d<<std::endl;
+		//dstream<<"AutosendMap: mapblock.d="<<mapblock.d<<std::endl;
+
 		// Get the border/face dot coordinates of a mapblock.d-"radiused" box
 		std::vector<v3s16> face_ps = FacePositionCache::getFacePositions(mapblock.d);
 		// Continue from the last mapblock.i unless it was reset by something
@@ -278,23 +279,23 @@ WMSSuggestion AutosendCycle::suggestNextMapBlock(EmergeManager *emerge)
 
 			// Don't select too many blocks for sending
 			if (client->SendingCount() >= max_simultaneous_block_sends) {
-				dstream<<"AutosendMap: "<<wms.describe()
-						<<": return: num_selected"<<std::endl;
+				/*dstream<<"AutosendMap: "<<wms.describe()
+						<<": return: num_selected"<<std::endl;*/
 				// Nothing to suggest
 				return WMSSuggestion();
 			}
 
 			// Don't send blocks that are currently being transferred
 			if (client->m_blocks_sending.count(wms)) {
-				dstream<<"AutosendMap: "<<wms.describe()
-						<<": continue: num sending"<<std::endl;
+				/*dstream<<"AutosendMap: "<<wms.describe()
+						<<": continue: num sending"<<std::endl;*/
 				continue;
 			}
 
 			// Don't go over hard map limits
 			if (blockpos_over_limit(p)) {
-				dstream<<"AutosendMap: "<<wms.describe()
-						<<": continue: over limit"<<std::endl;
+				/*dstream<<"AutosendMap: "<<wms.describe()
+						<<": continue: over limit"<<std::endl;*/
 				continue;
 			}
 
@@ -332,8 +333,8 @@ WMSSuggestion AutosendCycle::suggestNextMapBlock(EmergeManager *emerge)
 				}
 				// NOTE: Don't do rate limiting for MapBlocks
 				//time_t sent_time = blocks_sent_i->second;
-				dstream<<"AutosendMap: "<<wms.describe()
-						<<": Already sent but updated"<<std::endl;
+				/*dstream<<"AutosendMap: "<<wms.describe()
+						<<": Already sent but updated"<<std::endl;*/
 			}
 
 			/*
@@ -415,7 +416,8 @@ WMSSuggestion AutosendCycle::suggestNextFarBlock(
 	v3s16 focus_point_fb = getContainerPos(focus_point, FMP_SCALE);
 
 	for (; farblock.d <= farblock.d_max; farblock.d++) {
-		dstream<<"AutosendFar: farblock.d="<<farblock.d<<std::endl;
+		//dstream<<"AutosendFar: farblock.d="<<farblock.d<<std::endl;
+
 		// Get the border/face dot coordinates of a farblock.d-"radiused" box
 		std::vector<v3s16> face_ps = FacePositionCache::getFacePositions(farblock.d);
 		// Continue from the last farblock.i unless it was reset by something
@@ -434,23 +436,23 @@ WMSSuggestion AutosendCycle::suggestNextFarBlock(
 
 			// Don't select too many blocks for sending
 			if (client->SendingCount() >= max_simultaneous_block_sends) {
-				dstream<<"AutosendFar: "<<wms.describe()
-						<<": return: num_selected"<<std::endl;
+				/*dstream<<"AutosendFar: "<<wms.describe()
+						<<": return: num_selected"<<std::endl;*/
 				// Nothing to suggest
 				return WMSSuggestion();
 			}
 
 			// Don't send blocks that are currently being transferred
 			if (client->m_blocks_sending.count(wms)) {
-				dstream<<"AutosendFar: "<<wms.describe()
-						<<": continue: num sending"<<std::endl;
+				/*dstream<<"AutosendFar: "<<wms.describe()
+						<<": continue: num sending"<<std::endl;*/
 				continue;
 			}
 
 			// Don't go over hard map limits
 			if (blockpos_over_limit(p * FMP_SCALE)) {
-				dstream<<"AutosendFar: "<<wms.describe()
-						<<": continue: over limit"<<std::endl;
+				/*dstream<<"AutosendFar: "<<wms.describe()
+						<<": continue: over limit"<<std::endl;*/
 				continue;
 			}
 
@@ -541,8 +543,8 @@ full_break:
 							<<": Already sent; rate-limiting"<<std::endl;*/
 					continue;
 				}
-				dstream<<"AutosendFar: "<<wms.describe()
-						<<": Already sent but updated; allowing"<<std::endl;
+				/*dstream<<"AutosendFar: "<<wms.describe()
+						<<": Already sent but updated; allowing"<<std::endl;*/
 			}
 
 			// Suggest this block
@@ -564,7 +566,7 @@ WMSSuggestion AutosendCycle::getNextBlock(
 {
 	DSTACK(FUNCTION_NAME);
 
-	dstream<<"AutosendCycle::getNextBlock()"<<std::endl;
+	//dstream<<"AutosendCycle::getNextBlock()"<<std::endl;
 
 	if (disabled)
 		return WMSSuggestion();
@@ -574,8 +576,8 @@ WMSSuggestion AutosendCycle::getNextBlock(
 	WMSSuggestion suggested_mb = suggestNextMapBlock(emerge);
 	WMSSuggestion suggested_fb = suggestNextFarBlock(emerge, far_map);
 
-	dstream<<"suggested_mb = "<<suggested_mb.describe()<<std::endl;
-	dstream<<"suggested_fb = "<<suggested_fb.describe()<<std::endl;
+	//dstream<<"suggested_mb = "<<suggested_mb.describe()<<std::endl;
+	//dstream<<"suggested_fb = "<<suggested_fb.describe()<<std::endl;
 
 	// Prioritize suggestions
 
