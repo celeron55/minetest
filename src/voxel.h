@@ -644,10 +644,21 @@ struct BlockAreaBitmap
 			return;
 		blocks[blocks_area.index(bp)] = v;
 	}
-	bool get(v3s16 bp) {
+	T get(v3s16 bp) const {
 		if(!blocks_area.contains(bp))
 			return false;
 		return blocks[blocks_area.index(bp)];
+	}
+	size_t size() const {
+		return blocks.size();
+	}
+	size_t count(T v) const {
+		size_t n = 0;
+		for (size_t i=0; i<blocks.size(); i++) {
+			if (blocks[i])
+				n++;
+		}
+		return n;
 	}
 };
 
