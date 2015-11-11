@@ -724,10 +724,9 @@ void FarBlockMeshGenerateTask::inThread()
 			if (num_faces_added > 0) {
 				block.mapblock2_meshes[mi] = create_farblock_mesh(
 						block.mapblock2_meshes[mi], far_map, &collector);
-				// This gives Irrlicht permission to store this mesh on the GPU
-				block.mapblock2_meshes[mi]->setHardwareMappingHint(scene::EHM_STATIC);
-				// TODO: Check whether these get correctly deleted from the GPU
-				//       when block.mapblock2_meshes are dropped
+				// NOTE: Do not set this to be a VBO because it will hit some
+				//       kind of number-of-VBOs limit really fast and make
+				//       rendering choppy
 			}
 		}
 	}
