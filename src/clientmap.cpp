@@ -187,9 +187,9 @@ void ClientMap::updateDrawList(video::IVideoDriver* driver)
 			p_nodes_max.Y / MAP_BLOCKSIZE + 1,
 			p_nodes_max.Z / MAP_BLOCKSIZE + 1);
 
-	// Set up a BlockAreaBitmap for reporting to Map
+	// Set up a BlockAreaBitmap<bool> for reporting to Map
 	VoxelArea nrb_area(p_blocks_min, p_blocks_max);
-	BlockAreaBitmap normally_rendered_blocks;
+	BlockAreaBitmap<bool> normally_rendered_blocks;
 	normally_rendered_blocks.reset(nrb_area);
 
 	// Number of blocks in rendering range

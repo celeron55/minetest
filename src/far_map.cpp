@@ -833,31 +833,6 @@ void FarMapWorkerThread::doUpdate()
 }
 
 /*
-	BlockAreaBitmap
-*/
-
-void BlockAreaBitmap::reset(const VoxelArea &new_blocks_area)
-{
-	blocks_area = new_blocks_area;
-	blocks.clear();
-	blocks.resize(new_blocks_area.getVolume());
-}
-
-void BlockAreaBitmap::set(v3s16 bp, bool v)
-{
-	if(!blocks_area.contains(bp))
-		return;
-	blocks[blocks_area.index(bp)] = v;
-}
-
-bool BlockAreaBitmap::get(v3s16 bp)
-{
-	if(!blocks_area.contains(bp))
-		return false;
-	return blocks[blocks_area.index(bp)];
-}
-
-/*
 	FarAtlas
 */
 
@@ -1231,7 +1206,7 @@ void FarMap::updateCameraOffset(v3s16 camera_offset)
 	}
 }
 
-void FarMap::reportNormallyRenderedBlocks(const BlockAreaBitmap &nrb)
+void FarMap::reportNormallyRenderedBlocks(const BlockAreaBitmap<bool> &nrb)
 {
 	normally_rendered_blocks = nrb;
 

@@ -184,18 +184,6 @@ private:
 	Atomic<s32> m_queue_in_length; // For profiling
 };
 
-// ClientMap uses this to report what it's rendering so that FarMap can avoid
-// rendering over it
-struct BlockAreaBitmap
-{
-	VoxelArea blocks_area;
-	std::vector<bool> blocks;
-
-	void reset(const VoxelArea &new_blocks_area);
-	void set(v3s16 bp, bool v);
-	bool get(v3s16 bp);
-};
-
 struct FarAtlas
 {
 	struct NodeSegRefs {
@@ -251,7 +239,9 @@ public:
 	void update();
 	void updateCameraOffset(v3s16 camera_offset);
 
-	void reportNormallyRenderedBlocks(const BlockAreaBitmap &nrb);
+	// ClientMap uses this to report what it's rendering so that FarMap can avoid
+	// rendering over it
+	void reportNormallyRenderedBlocks(const BlockAreaBitmap<bool> &nrb);
 
 	// Shall be called after the client receives all node definitions
 	void createAtlas();
@@ -276,7 +266,7 @@ public:
 	bool config_far_map_minimize_memory_usage;
 
 	u32 farblock_shader_id;
-	BlockAreaBitmap normally_rendered_blocks;
+	BlockAreaBitmap<bool> normally_rendered_blocks;
 
 	v3s16 current_camera_offset;
 

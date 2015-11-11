@@ -628,5 +628,28 @@ public:
 private:
 };
 
+template<typename T>
+struct BlockAreaBitmap
+{
+	VoxelArea blocks_area;
+	std::vector<T> blocks;
+
+	void reset(const VoxelArea &new_blocks_area) {
+		blocks_area = new_blocks_area;
+		blocks.clear();
+		blocks.resize(new_blocks_area.getVolume());
+	}
+	void set(v3s16 bp, T v) {
+		if(!blocks_area.contains(bp))
+			return;
+		blocks[blocks_area.index(bp)] = v;
+	}
+	bool get(v3s16 bp) {
+		if(!blocks_area.contains(bp))
+			return false;
+		return blocks[blocks_area.index(bp)];
+	}
+};
+
 #endif
 
