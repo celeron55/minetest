@@ -309,11 +309,19 @@
 #    type: bool
 # enable_3d_clouds = true
 
+#### Far Map
+
 #    Enable low level-of-detail rendering at large distances
 # enable_far_map = true
 
 #    Far map rendering range in nodes
 # far_map_range = 500
+
+#    Far map far/near priorization factor
+#    A priorization factor for far map transfers is created by dividing distance
+#    of FarBlocks by this and then comparing it to distance to regular
+#    MapBlocks. The one having the smaller value is sent first.
+# far_map_far_weight = 8.0
 
 #### Filtering
 

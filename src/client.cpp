@@ -683,7 +683,7 @@ void Client::step(float dtime)
 		infostream<<"Client: Requesting far blocks"<<std::endl;
 
 		ClientMap *map = &m_env.getClientMap();
-		static const float far_weight = 8.0f; // TODO: Configurable
+		static const float far_weight = g_settings->getFloat("far_map_far_weight");
 
 		std::vector<WantedMapSend> wanted_map_send_queue;
 
