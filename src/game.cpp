@@ -1580,7 +1580,7 @@ bool Game::startup(bool *kill,
 
 	memset(&runData, 0, sizeof(runData));
 	runData.time_from_last_punch = 10.0;
-	runData.profiler_max_page = 3;
+	runData.profiler_max_page = 4;
 	runData.update_wielded_item_trigger = true;
 
 	memset(&flags, 0, sizeof(flags));
