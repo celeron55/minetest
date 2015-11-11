@@ -197,10 +197,10 @@ void ServerFarMap::updateFrom(const ServerFarMapPiece &piece)
 
 		b->modification_counter++;
 
-		// Call this before starting line to keep lines mostly intact when
+		/*// Call this before starting line to keep lines mostly intact when
 		// multiple threads are printing
 		std::string s = analyze_far_block(b);
-		dstream<<"ServerFarMap: Updated block: "<<s<<std::endl;
+		dstream<<"ServerFarMap: Updated block: "<<s<<std::endl;*/
 	}
 }
 
