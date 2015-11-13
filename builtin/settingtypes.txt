@@ -301,6 +301,13 @@ far_map_range (Far map range) int 500
 #    MapBlocks. The one having the smaller value is sent first.
 far_map_far_weight (Far/near priorization factor) float 4.0
 
+#    Resolution of nodes in far map's texture atlas
+#    If you have a gigabyte of RAM to spare or play a game with less than a
+#    thousand nodes, setting this to 16 doesn't hurt.
+#    Otherwise 8 looks reasonable and doesn't take a lot of resources.
+#    You can get unique styles by setting this to low values like 1 or 2.
+far_map_atlas_node_resolution (Far map atlas: node resolution) int 8
+
 [***Filtering]
 
 #    Use mip mapping to scale textures. May slightly increase performance.

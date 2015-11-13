@@ -323,6 +323,13 @@
 #    MapBlocks. The one having the smaller value is sent first.
 # far_map_far_weight = 4.0
 
+#    Resolution of nodes in far map's texture atlas
+#    If you have a gigabyte of RAM to spare or play a game with less than a
+#    thousand nodes, setting this to 16 doesn't hurt.
+#    Otherwise 8 looks reasonable and doesn't take a lot of resources.
+#    Setting this down to 1 is supported.
+# far_map_atlas_node_resolution = 8
+
 #### Filtering
 
 #    Use mip mapping to scale textures. May slightly increase performance.

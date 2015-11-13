@@ -44,6 +44,7 @@ struct CAtlasRegistry: public AtlasRegistry
 	IGameDef *m_gamedef;
 	std::vector<AtlasDefinition> m_defs;
 	std::vector<AtlasCache> m_cache;
+	v2u32 m_max_texture_resolution;
 
 	CAtlasRegistry(const std::string &name, video::IVideoDriver *driver,
 			IGameDef *gamedef):
@@ -52,6 +53,24 @@ struct CAtlasRegistry: public AtlasRegistry
 		m_gamedef(gamedef)
 	{
 		m_defs.resize(1); // id=0 is ATLAS_UNDEFINED
+		m_max_texture_resolution = driver->getMaxTextureSize();
+		infostream<<"AtlasRegistry: Maximum texture resolution: "
+				<<m_max_texture_resolution.X<<"x"
+				<<m_max_texture_resolution.Y<<std::endl;
+	}
+
+	void prepare_for_segments(size_t num_segments, v2s32 segment_size)
+	{
+		// Lessen the maximum texture size if we don't need such a large one
+		size_t size_needed = npot2(ceilf(sqrt(
+				segment_size.X * segment_size.Y * num_segments)));
+		if (m_max_texture_resolution.X > size_needed)
+			m_max_texture_resolution.X = size_needed;
+		if (m_max_texture_resolution.Y > size_needed)
+			m_max_texture_resolution.Y = size_needed;
+		infostream<<"AtlasRegistry: Optimized texture resolution: "
+				<<m_max_texture_resolution.X<<"x"
+				<<m_max_texture_resolution.Y<<std::endl;
 	}
 
 	video::IImage* textureToImage(video::ITexture* texture)
@@ -82,8 +101,10 @@ struct CAtlasRegistry: public AtlasRegistry
 
 		// Get resolution of texture
 		v2s32 seg_img_size(seg_img->getDimension().Width, seg_img->getDimension().Height);
-		if (segment_def.lod_simulation >= 2) {
-			seg_img_size *= segment_def.lod_simulation;
+		if (segment_def.target_size != v2s32(0, 0)) {
+			// Override target size as requested
+			seg_img_size = segment_def.target_size;
+		} else if (segment_def.lod_simulation >= 2) {
 			// Force the same size for everything in order to optimize number of
 			// texture atlases
 			seg_img_size.X = 64;
@@ -128,10 +149,9 @@ struct CAtlasRegistry: public AtlasRegistry
 			);
 			atlas_def->segment_resolution = seg_res;
 			// Calculate total segments based on segment resolution
-			const int max_res = 2048;
 			atlas_def->total_segments = v2s32(
-					max_res / seg_res.X / 2,
-					max_res / seg_res.Y / 2
+					m_max_texture_resolution.X / seg_res.X / 2,
+					m_max_texture_resolution.Y / seg_res.Y / 2
 			);
 			v2s32 atlas_resolution(
 					atlas_def->total_segments.X * seg_res.X * 2,
@@ -528,10 +548,6 @@ struct CAtlasRegistry: public AtlasRegistry
 		}
 		const AtlasSegmentCache &seg_cache = cache->segments[ref.segment_id];
 		return &seg_cache;
-	}
-
-	void update()
-	{
 	}
 };
 

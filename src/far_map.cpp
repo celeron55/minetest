@@ -902,12 +902,26 @@ FarAtlas::FarAtlas(FarMap *far_map)
 {
 	video::IVideoDriver* driver =
 			far_map->client->getSceneManager()->getVideoDriver();
+
 	atlas = atlas::createAtlasRegistry("FarMap", driver, far_map->client);
+
+	mapnode_resolution = g_settings->getS32("far_map_atlas_node_resolution");
+	if (mapnode_resolution < 1)
+		mapnode_resolution = 1;
 }
 
 FarAtlas::~FarAtlas()
 {
 	delete atlas;
+}
+
+void FarAtlas::prepareForNodes(size_t num_nodes)
+{
+	v2s32 segment_size(mapnode_resolution * 4, mapnode_resolution * 4);
+	size_t segments_per_node = 2 * 3;
+	infostream<<"FarAtlas: Optimizing for "<<num_nodes<<" nodes of size "
+			<<segment_size.X<<"x"<<segment_size.Y<<std::endl;
+	atlas->prepare_for_segments(num_nodes * segments_per_node, segment_size);
 }
 
 atlas::AtlasSegmentReference FarAtlas::addTexture(const std::string &name,
@@ -917,7 +931,10 @@ atlas::AtlasSegmentReference FarAtlas::addTexture(const std::string &name,
 	def.image_name = name;
 	def.total_segments = v2s32(1, 1);
 	def.select_segment = v2s32(0, 0);
-	def.lod_simulation = crude ? 16 : 4;
+	int lod = crude ? 16 : 4;
+	def.lod_simulation = lod;
+	// This is independent of LOD
+	def.target_size = v2s32(mapnode_resolution * 4, mapnode_resolution * 4);
 	if (is_top)
 		def.lod_simulation |= atlas::ATLAS_LOD_TOP_FACE;
 	def.lod_simulation |= atlas::ATLAS_LOD_BAKE_SHADOWS;
@@ -951,11 +968,6 @@ const atlas::AtlasSegmentCache* FarAtlas::getNode(
 	} else {
 		return atlas->get_texture(node_segrefs[id].refs[face]);
 	}
-}
-
-void FarAtlas::update()
-{
-	atlas->update();
 }
 
 /*
@@ -1238,8 +1250,6 @@ void FarMap::update()
 				<<std::endl;
 	}
 
-	atlas.update();
-
 	m_worker_thread.sync();
 }
 
@@ -1275,11 +1285,23 @@ void FarMap::createAtlas()
 {
 	INodeDefManager *ndef = client->getNodeDefManager();
 
-	// Umm... let's just start from zero and see how far we get?
-	for(content_t id=0; ; id++){
+	u32 num_nodes = 0;
+	for(u32 id=0; ; id++){
 		const ContentFeatures &f = ndef->get(id);
 		if ((f.name.empty() || f.name == "unknown") && id != CONTENT_UNKNOWN)
 			break;
+
+		num_nodes++;
+
+		if(id == 65535)
+			break;
+	}
+
+	atlas.prepareForNodes(num_nodes);
+
+	// Umm... let's just start from zero and see how far we get?
+	for(u32 id=0; id<num_nodes; id++){
+		const ContentFeatures &f = ndef->get(id);
 
 		infostream<<"FarMap: Adding node "<<id<<" = \""<<f.name<<"\""<<std::endl;
 
@@ -1295,9 +1317,6 @@ void FarMap::createAtlas()
 					<<", side="<<side<<std::endl;
 			atlas.addNode(id, top, bottom, side);
 		}
-
-		if(id == 65535)
-			break;
 	}
 
 	infostream<<"FarMap: Refreshing atlas textures"<<std::endl;
@@ -1305,7 +1324,7 @@ void FarMap::createAtlas()
 	atlas.atlas->refresh_textures();
 
 	infostream<<"FarMap: Created atlas out of "<<atlas.node_segrefs.size()
-			<<" nodes";
+			<<" nodes"<<std::endl;
 }
 
 std::vector<v3s16> FarMap::suggestFarBlocksToFetch(v3s16 camera_p)

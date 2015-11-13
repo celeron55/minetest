@@ -190,6 +190,7 @@ void set_default_settings(Settings *settings)
 	settings->setDefault("far_map_range", "500");
 	settings->setDefault("far_map_allow_generate", "false");
 	settings->setDefault("far_map_far_weight", "4.0");
+	settings->setDefault("far_map_atlas_node_resolution", "8");
 
 	settings->setDefault("curl_timeout", "5000");
 	settings->setDefault("curl_parallel_limit", "8");

@@ -197,16 +197,17 @@ struct FarAtlas
 
 	atlas::AtlasRegistry *atlas;
 	std::vector<NodeSegRefs> node_segrefs;
+	s32 mapnode_resolution;
 
 	FarAtlas(FarMap *far_map);
 	~FarAtlas();
+	void prepareForNodes(size_t num_nodes);
 	atlas::AtlasSegmentReference addTexture(const std::string &name,
 			bool is_top, bool crude);
 	void addNode(content_t id, const std::string &top,
 			const std::string &bottom, const std::string &side);
 	const atlas::AtlasSegmentCache* getNode(
 			content_t id, u8 face, bool crude) const;
-	void update();
 };
 
 class FarMap: public scene::ISceneNode

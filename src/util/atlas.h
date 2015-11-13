@@ -57,6 +57,7 @@ namespace atlas
 		std::string image_name; // If "", segment won't be added
 		v2s32 total_segments;
 		v2s32 select_segment;
+		v2s32 target_size;
 		// Mask 0x00ff: LOD level, mask 0xff00: flags
 		uint16_t lod_simulation;
 		// TODO: Rotation
@@ -128,6 +129,10 @@ namespace atlas
 	{
 		virtual ~AtlasRegistry(){}
 
+		// Allows the atlas to optimize itself for upcoming segmnets
+		virtual void prepare_for_segments(
+				size_t num_segments, v2s32 segment_size) = 0;
+
 		// These two may only be called from Urho3D main thread
 		virtual const AtlasSegmentReference add_segment(
 				const AtlasSegmentDefinition &segment_def) = 0;
@@ -145,8 +150,6 @@ namespace atlas
 
 		virtual const AtlasSegmentCache* get_texture(
 				const AtlasSegmentReference &ref) = 0;
-
-		virtual void update() = 0;
 	};
 
 	AtlasRegistry* createAtlasRegistry(const std::string &name,
