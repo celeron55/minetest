@@ -942,15 +942,16 @@ atlas::AtlasSegmentReference FarAtlas::addTexture(const std::string &name,
 }
 
 void FarAtlas::addNode(content_t id, const std::string &top,
-		const std::string &bottom, const std::string &side)
+		const std::string &bottom, const std::string &side,
+		bool disable_shadows)
 {
 	NodeSegRefs nsr;
 	nsr.refs[0] = addTexture(top, true, false);
-	nsr.refs[1] = addTexture(bottom, false, false);
-	nsr.refs[2] = addTexture(side, false, false);
+	nsr.refs[1] = addTexture(bottom, false || disable_shadows, false);
+	nsr.refs[2] = addTexture(side, false || disable_shadows, false);
 	nsr.crude_refs[0] = addTexture(top, true, true);
-	nsr.crude_refs[1] = addTexture(bottom, false, true);
-	nsr.crude_refs[2] = addTexture(side, false, true);
+	nsr.crude_refs[1] = addTexture(bottom, false || disable_shadows, true);
+	nsr.crude_refs[2] = addTexture(side, false || disable_shadows, true);
 
 	if((content_t)node_segrefs.size() < id + 1)
 		node_segrefs.resize(id + 1);
@@ -1315,7 +1316,10 @@ void FarMap::createAtlas()
 				side = top;
 			infostream<<"* top="<<top<<", bottom="<<bottom
 					<<", side="<<side<<std::endl;
-			atlas.addNode(id, top, bottom, side);
+			bool disable_shadows =
+					f.drawtype == NDT_LIQUID ||
+					f.drawtype == NDT_FLOWINGLIQUID;
+			atlas.addNode(id, top, bottom, side, disable_shadows);
 		}
 	}
 

@@ -205,7 +205,8 @@ struct FarAtlas
 	atlas::AtlasSegmentReference addTexture(const std::string &name,
 			bool is_top, bool crude);
 	void addNode(content_t id, const std::string &top,
-			const std::string &bottom, const std::string &side);
+			const std::string &bottom, const std::string &side,
+			bool disable_shadows);
 	const atlas::AtlasSegmentCache* getNode(
 			content_t id, u8 face, bool crude) const;
 };
