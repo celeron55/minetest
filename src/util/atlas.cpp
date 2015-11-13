@@ -62,7 +62,9 @@ struct CAtlasRegistry: public AtlasRegistry
 	void prepare_for_segments(size_t num_segments, v2s32 segment_size)
 	{
 		// Lessen the maximum texture size if we don't need such a large one
-		size_t size_needed = npot2(ceilf(sqrt(
+		// The size needed is 2x2 the segment size due to padding that is used
+		// for avoiding texture bleeding
+		size_t size_needed = 2 * npot2(ceilf(sqrt(
 				segment_size.X * segment_size.Y * num_segments)));
 		if (m_max_texture_resolution.X > size_needed)
 			m_max_texture_resolution.X = size_needed;
