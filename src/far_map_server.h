@@ -42,8 +42,22 @@ struct ServerFarBlock
 
 	u32 modification_counter;
 
-	// TODO: Differentiate loaded and loaded-but-ungenerated blocks
-	BlockAreaBitmap<bool> loaded_mapblocks;
+	enum LoadState {
+		// State is not known; could be anything until checked
+		LS_UNKNOWN,
+		// Known to not having been checked from disk. Can be gotten to
+		// LS_NOT_GENERATED or LS_GENERATED state by emerging it with generation
+		// unallowed, or to LS_GENERATED state by emerging with generation
+		// allowed.
+		LS_NOT_LOADED,
+		// Checked from disk, and found to be not generated. Can be gotten to
+		// LS_GENERATED state by emerging with generation allowed.
+		LS_NOT_GENERATED,
+		// Checked from disk and found to be generated (or generated and written
+		// to disk).
+		LS_GENERATED,
+	};
+	BlockAreaBitmap<LoadState> loaded_mapblocks;
 
 	ServerFarBlock(v3s16 p);
 	~ServerFarBlock();
@@ -73,7 +87,8 @@ public:
 	ServerFarBlock* getOrCreateBlock(v3s16 p);
 
 	// Piece must consist of full MapBlocks
-	void updateFrom(const ServerFarMapPiece &piece);
+	void updateFrom(const ServerFarMapPiece &piece,
+			ServerFarBlock::LoadState load_state);
 
 private:
 	std::map<v3s16, ServerFarBlock*> m_blocks;

@@ -207,6 +207,7 @@ struct WMSSuggestion {
 	WantedMapSend wms;
 	bool is_fully_loaded; // Can be false for FarBlocks
 	//bool is_fully_generated; // TODO
+	// TODO: Using enum ServerFarBlock::LoadState would be more suitable
 
 	WMSSuggestion():
 		is_fully_loaded(true)

@@ -645,10 +645,11 @@ void EmergeThread::updateFarMap(v3s16 bp, MapBlock *block,
 		const std::map<v3s16, MapBlock*> &modified_blocks)
 {
 	if (block == NULL) {
-		// This happens if the MapBlockc couldn't be loaded and generating was
+		// This happens if the MapBlock couldn't be loaded and generating was
 		// disabled. In this case the block will not be found in modified_blocks
 		// and has to be reported separately in addition to everything in
 		// modified_blocks.
+		// TODO: Or is that when this happens?
 
 		// Create a dummy VoxelArea of the right size and feed it into
 		// ServerFarMap::updateFrom().
@@ -660,9 +661,11 @@ void EmergeThread::updateFarMap(v3s16 bp, MapBlock *block,
 		/*dstream<<"updateFarMap: ("<<bp.X<<","<<bp.Y<<","<<bp.Z<<") is NULL"
 				<<std::endl;*/
 
+		ServerFarBlock::LoadState load_state = ServerFarBlock::LS_NOT_GENERATED;
+
 		{
 			MutexAutoLock envlock(m_server->m_env_mutex);
-			m_server->m_far_map->updateFrom(piece);
+			m_server->m_far_map->updateFrom(piece, load_state);
 		}
 	}
 
@@ -671,6 +674,7 @@ void EmergeThread::updateFarMap(v3s16 bp, MapBlock *block,
 			it != modified_blocks.end(); ++it)
 	{
 		VoxelManipulator vm;
+		ServerFarBlock::LoadState load_state = ServerFarBlock::LS_UNKNOWN;
 
 		// Get block data
 		{
@@ -679,6 +683,11 @@ void EmergeThread::updateFarMap(v3s16 bp, MapBlock *block,
 			MapBlock *block = it->second;
 
 			//dstream<<"updateFarMap: "<<analyze_block(block)<<std::endl;
+
+			if (block->isGenerated())
+				load_state = ServerFarBlock::LS_GENERATED;
+			else
+				load_state = ServerFarBlock::LS_NOT_GENERATED;
 
 			VoxelArea block_area_nodes(
 					block->getPos() * MAP_BLOCKSIZE,
@@ -694,7 +703,7 @@ void EmergeThread::updateFarMap(v3s16 bp, MapBlock *block,
 		// Insert FarMap data into ServerFarMap
 		{
 			MutexAutoLock envlock(m_server->m_env_mutex);
-			m_server->m_far_map->updateFrom(piece);
+			m_server->m_far_map->updateFrom(piece, load_state);
 		}
 	}
 }

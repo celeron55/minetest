@@ -424,6 +424,9 @@ WMSSuggestion AutosendCycle::suggestNextFarBlock(
 	const float fb_size_bs = FMP_SCALE * MAP_BLOCKSIZE * BS;
 	const float max_distance_f = fb_size_bs * farblock.max_send_distance;
 
+	const size_t max_blind_generate_requests = 1;
+	size_t num_blind_generate_requests = 0;
+
 	for (; farblock.d <= farblock.d_max; farblock.d++) {
 		//dstream<<"AutosendFar: farblock.d="<<farblock.d<<std::endl;
 
@@ -491,19 +494,29 @@ WMSSuggestion AutosendCycle::suggestNextFarBlock(
 
 			ServerFarBlock *fb = far_map->getBlock(wms.p);
 
-			size_t num_loaded = 0;
-			bool none_loaded = true;
-			bool fully_loaded = false;
-
+			// Check load states of MapBlocks
+			const size_t mbs_total = FMP_SCALE * FMP_SCALE * FMP_SCALE;
+			size_t mbs_unknown = mbs_total;
+			size_t mbs_not_loaded = 0;
+			size_t mbs_not_generated = 0;
+			size_t mbs_generated = 0;
 			if (fb) {
-				num_loaded = fb->loaded_mapblocks.count(true);
-				fully_loaded = (num_loaded == fb->loaded_mapblocks.size());
-				none_loaded = (num_loaded == 0);
+				const BlockAreaBitmap<ServerFarBlock::LoadState> &lm =
+						fb->loaded_mapblocks;
+				mbs_unknown = lm.count(ServerFarBlock::LS_UNKNOWN);
+				mbs_not_loaded = lm.count(ServerFarBlock::LS_NOT_LOADED);
+				mbs_not_generated = lm.count(ServerFarBlock::LS_NOT_GENERATED);
+				mbs_generated = lm.count(ServerFarBlock::LS_GENERATED);
 			}
+			bool fully_loaded = allow_generate ? (mbs_generated == mbs_total) :
+					(mbs_unknown + mbs_not_loaded == 0);
 
-			// This potentially skips a lot of FarBlocks that don't contain
-			// anything interesting
-			if (none_loaded && !allow_load) {
+			// If none of this FarBlock is loaded (it may be if a player has
+			// been very close to it) and we are generally not allowing loading
+			// of this area for FarBlock purposes, completely skip this
+			// FarBlock. This allows much faster loading of relevant FarBlocks
+			// as we neither try to load nor send these FarBlocks at all.
+			if (mbs_unknown + mbs_not_loaded == mbs_total && !allow_load) {
 				/*dstream<<"AutosendFar: "<<wms.describe()
 						<<": continue: not loaded and load disabled"<<std::endl;*/
 				continue;
@@ -521,8 +534,6 @@ WMSSuggestion AutosendCycle::suggestNextFarBlock(
 
 			v3s16 area_size_mb(FMP_SCALE, FMP_SCALE, FMP_SCALE);
 
-			size_t num_added_to_queue = 0;
-
 			// Queue emergement of missing MapBlocks
 			v3s16 bp;
 			bool emerge_queue_full = false;
@@ -530,28 +541,61 @@ WMSSuggestion AutosendCycle::suggestNextFarBlock(
 			for (bp.Y=area_offset_mb.Y; bp.Y<area_offset_mb.Y+area_size_mb.Y; bp.Y++)
 			for (bp.X=area_offset_mb.X; bp.X<area_offset_mb.X+area_size_mb.X; bp.X++)
 			{
-				if (fb && fb->loaded_mapblocks.get(bp)) {
-					// This MapBlock is already loaded
+				ServerFarBlock::LoadState load_state = fb ?
+						fb->loaded_mapblocks.get(bp) : ServerFarBlock::LS_UNKNOWN;
+
+				// There's nothing we can or need to do to generated ones
+				if (load_state == ServerFarBlock::LS_GENERATED) {
 					continue;
 				}
-				// This MapBlock is not loaded yet
-				if (emerge->enqueueBlockEmerge(client->peer_id, bp, allow_generate)) {
-					num_added_to_queue++;
-				} else {
-					// EmergeThread's queue is full
-					emerge_queue_full = true;
-					goto full_break;
+
+				// Limit blind geneartions; i.e. generation-allowing emerge
+				// requests of unloaded MapBlocks
+				bool would_be_blind_generate =
+						load_state < ServerFarBlock::LS_NOT_GENERATED;
+				bool allow_generate_now = allow_generate;
+				if (would_be_blind_generate &&
+						num_blind_generate_requests >= max_blind_generate_requests)
+					allow_generate_now = false;
+
+				// If it's already loaded and we don't want to generate it, skip
+				// it
+				if (!allow_generate_now &&
+						load_state == ServerFarBlock::LS_NOT_GENERATED) {
+					continue;
+				}
+
+				// Load or generate it
+				emerge_queue_full = !emerge->enqueueBlockEmerge(
+						client->peer_id, bp, allow_generate_now);
+
+				if (emerge_queue_full) {
+					if (farblock.nearest_emergefull_d == INT32_MAX)
+						farblock.nearest_emergefull_d = farblock.d;
+					// Emerge queue is full; don't bother attempting to add more
+					// stuff to it from this FarBlock and don't increment our
+					// counters
+					goto farblock_mapblocks_iterate_break;
+				}
+
+				if (farblock.nearest_emergequeued_d == INT32_MAX)
+					farblock.nearest_emergequeued_d = farblock.d;
+
+				if (allow_generate_now) {
+					if (would_be_blind_generate) {
+						num_blind_generate_requests++;
+					}
 				}
 			}
-full_break:
+farblock_mapblocks_iterate_break:
 
-			if (none_loaded) {
+			if (mbs_unknown + mbs_not_loaded == mbs_total) {
 				/*dstream<<"AutosendFar: "<<wms.describe()
 						<<": continue: not loaded"<<std::endl;*/
 
-				// No MapBlocks inside this FarBlock have been loaded.
-				// Many of them are being queued, so just wait for them and
-				// don't go poking other FarBlocks.
+				// None MapBlocks inside this FarBlock have not been loaded.
+				// Many of them are being queued for emerging, so just wait for
+				// them and don't go poking other FarBlocks.
 				return WMSSuggestion();
 			}
 
@@ -567,7 +611,7 @@ full_break:
 					continue;
 				}
 				time_t sent_time = blocks_sent_i->second;
-				if (sent_time + 5 > time(NULL)) {
+				if (sent_time + 2 > time(NULL)) {
 					/*dstream<<"AutosendFar: "<<wms.describe()
 							<<": Already sent; rate-limiting"<<std::endl;*/
 					continue;

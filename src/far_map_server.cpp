@@ -54,7 +54,7 @@ ServerFarBlock::ServerFarBlock(v3s16 p):
 	content.resize(content_size_n, CONTENT_IGNORE);
 
 	VoxelArea blocks_area(p * FMP_SCALE, (p+1) * FMP_SCALE - v3s16(1,1,1));
-	loaded_mapblocks.reset(blocks_area);
+	loaded_mapblocks.reset(blocks_area, ServerFarBlock::LS_UNKNOWN);
 }
 
 ServerFarBlock::~ServerFarBlock()
@@ -68,8 +68,12 @@ std::string analyze_far_block(ServerFarBlock *b)
 	std::string s = "["+analyze_far_block(
 			b->p, b->content, b->content_area, b->content_area);
 	s += ", modification_counter="+itos(b->modification_counter);
-	s += ", loaded_mapblocks="+itos(b->loaded_mapblocks.count(true))+"/"+
-			itos(b->loaded_mapblocks.size());
+	s += ", loaded_mapblocks=";
+	s += itos(b->loaded_mapblocks.count(ServerFarBlock::LS_UNKNOWN))+"U+";
+	s += itos(b->loaded_mapblocks.count(ServerFarBlock::LS_NOT_LOADED))+"N+";
+	s += itos(b->loaded_mapblocks.count(ServerFarBlock::LS_NOT_GENERATED))+"L+";
+	s += itos(b->loaded_mapblocks.count(ServerFarBlock::LS_GENERATED))+"G";
+	s += "/"+itos(b->loaded_mapblocks.size());
 	return s+"]";
 }
 
@@ -445,10 +449,14 @@ ServerFarBlock* ServerFarMap::getOrCreateBlock(v3s16 p)
 	return b;
 }
 
-void ServerFarMap::updateFrom(const ServerFarMapPiece &piece)
+void ServerFarMap::updateFrom(const ServerFarMapPiece &piece,
+		ServerFarBlock::LoadState load_state)
 {
 	v3s16 fnp000 = piece.content_area.MinEdge;
 	v3s16 fnp001 = piece.content_area.MaxEdge;
+
+	// TODO: Assert that this is the area of a single MapBlock because otherwise
+	//       load states are not handled properly
 
 	// Convert to ServerFarBlock positions (this can cover extra area)
 	VoxelArea fb_area(
@@ -477,7 +485,7 @@ void ServerFarMap::updateFrom(const ServerFarMapPiece &piece)
 			b->content[dst_i] = piece.content[source_i];
 
 			v3s16 mbp = getContainerPos(fp1, SERVER_FB_MB_DIV);
-			b->loaded_mapblocks.set(mbp, true);
+			b->loaded_mapblocks.set(mbp, load_state);
 		}
 
 		b->modification_counter++;
