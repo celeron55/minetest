@@ -634,10 +634,11 @@ struct BlockAreaBitmap
 	VoxelArea blocks_area;
 	std::vector<T> blocks;
 
-	void reset(const VoxelArea &new_blocks_area) {
+	void reset(const VoxelArea &new_blocks_area,
+			T initial_value=T()) {
 		blocks_area = new_blocks_area;
 		blocks.clear();
-		blocks.resize(new_blocks_area.getVolume());
+		blocks.resize(new_blocks_area.getVolume(), initial_value);
 	}
 	void set(v3s16 bp, T v) {
 		if(!blocks_area.contains(bp))
@@ -646,7 +647,7 @@ struct BlockAreaBitmap
 	}
 	T get(v3s16 bp) const {
 		if(!blocks_area.contains(bp))
-			return false;
+			return T();
 		return blocks[blocks_area.index(bp)];
 	}
 	size_t size() const {
@@ -655,7 +656,7 @@ struct BlockAreaBitmap
 	size_t count(T v) const {
 		size_t n = 0;
 		for (size_t i=0; i<blocks.size(); i++) {
-			if (blocks[i])
+			if (blocks[i] == v)
 				n++;
 		}
 		return n;
