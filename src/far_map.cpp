@@ -579,16 +579,18 @@ void FarBlockMeshGenerateTask::inThread()
 				p.X <= content_buf_area.MaxEdge.X; p.X++)
 		{
 			// Get topmost visible node
-			FarNode n;
-			v3s16 source_p(
-				p.X * block.divs_per_mb.X + block.divs_per_mb.X / 2,
-				p.Y * block.divs_per_mb.Y + block.divs_per_mb.Y - 1,
-				p.Z * block.divs_per_mb.Z + block.divs_per_mb.Z / 2
-			);
-			for (; source_p.Y >= p.Y * block.divs_per_mb.Y; source_p.Y--) {
-				FarNode n = block.content[block.content_area.index(source_p)];
-				if (n.id != CONTENT_IGNORE && n.id != CONTENT_AIR) {
-					break;
+			FarNode n(CONTENT_IGNORE)
+			if (block.content_area.contains(p)) {
+				v3s16 source_p(
+					p.X * block.divs_per_mb.X + block.divs_per_mb.X / 2,
+					p.Y * block.divs_per_mb.Y + block.divs_per_mb.Y - 1,
+					p.Z * block.divs_per_mb.Z + block.divs_per_mb.Z / 2
+				);
+				for (; source_p.Y >= p.Y * block.divs_per_mb.Y; source_p.Y--) {
+					FarNode n = block.content[block.content_area.index(source_p)];
+					if (n.id != CONTENT_IGNORE && n.id != CONTENT_AIR) {
+						break;
+					}
 				}
 			}
 			if (gen_area.contains(p)) {
