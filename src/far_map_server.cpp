@@ -283,9 +283,9 @@ void ServerFarMapPiece::generateFrom(VoxelManipulator &vm, INodeDefManager *ndef
 	for (fnp.X=content_area.MinEdge.X; fnp.X<=content_area.MaxEdge.X; fnp.X++) {
 		size_t content_i = content_area.index(fnp);
 
-		u8 light_day_sum = 0;
-		u8 light_night_sum = 0;
-		u8 light_count = 0;
+		u32 light_day_sum = 0;
+		u32 light_night_sum = 0;
+		u16 light_count = 0;
 
 		std::map<u16, u16> node_amounts;
 
@@ -387,20 +387,34 @@ void ServerFarMapPiece::generateFrom(VoxelManipulator &vm, INodeDefManager *ndef
 		}
 already_chosen:
 
-		if (light_count == 0) {
-			// Set a default value if we can't figure out anything later either
-			static const u8 light_day = 8; // A good general guess
-			static const u8 light_night = 0;
-			// (day | (night << 4))
-			content[content_i].light = (light_day) | (light_night<<4);
-			missing_light_fnps.push_back(fnp);
-		} else {
+		if (light_count > 0) {
 			u8 light_day = light_day_sum / light_count;
 			u8 light_night = light_night_sum / light_count;
 			// (day | (night << 4))
 			content[content_i].light = (light_day) | (light_night<<4);
+			//content[content_i].light = (2) | (0<<4); // TODO: Remove
+		} else {
+			// Guess something that isn't too striking in neither when showing
+			// up inside a brightly lit surface or a completely black surface.
+			// Well, it's going to look kind of bad, but let's hope for the
+			// best.
+			static const u8 light_day = 8;
+			static const u8 light_night = 0;
+			// (day | (night << 4))
+			content[content_i].light = (light_day) | (light_night<<4);
+			//content[content_i].light = (11) | (0<<4); // TODO: Remove
+
+			// Try to figure a proper light value for this by special methods
+			missing_light_fnps.push_back(fnp);
 		}
 	}
+	// This loop is entered mainly for FarNodes that are buried completely
+	// underground, but not entirely due to inaccuracy of heuristic-based
+	// optimizations.
+	// The lighting this generates is used in special occasions like at FarBlock
+	// edges, as the nearby FarBlock may not be available for lighting
+	// information and the FarNode internal value of solid ground is used
+	// instead.
 	for (size_t fnp_i=0; fnp_i<missing_light_fnps.size(); fnp_i++) {
 		const v3s16 &fnp = missing_light_fnps[fnp_i];
 		size_t content_i = content_area.index(fnp);
@@ -415,9 +429,9 @@ already_chosen:
 			fnp.Y * SERVER_FN_SIZE + SERVER_FN_SIZE - 1,
 			fnp.Z * SERVER_FN_SIZE + SERVER_FN_SIZE - 1);
 
-		u8 light_day_sum = 0;
-		u8 light_night_sum = 0;
-		u8 light_count = 0;
+		u32 light_day_sum = 0;
+		u32 light_night_sum = 0;
+		u16 light_count = 0;
 
 		static const v3s16 dps_to_try[] = {
 			// Middle of FarNode
@@ -441,8 +455,6 @@ already_chosen:
 				light_day_sum += (n.param1 & 0x0f);
 				light_night_sum += (n.param1 & 0xf0) >> 4;
 				light_count++;
-				// (day | (night << 4))
-				content[content_i].light = n.param1;
 			}
 		}
 		if (light_count > 0) {
@@ -450,6 +462,7 @@ already_chosen:
 			u8 light_night = light_night_sum / light_count;
 			// (day | (night << 4))
 			content[content_i].light = (light_day) | (light_night<<4);
+			//content[content_i].light = (15) | (0<<4); // TODO: Remove
 			// Figure out next missing light
 			continue;
 		}

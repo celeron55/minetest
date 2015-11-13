@@ -116,10 +116,9 @@ void FarBlock::resize(v3s16 new_divs_per_mb)
 
 	content_area = VoxelArea(dp0, dp1);
 
-	size_t content_size_n = content_area.getVolume();
-
 	content.clear();
-	content.resize(content_size_n, CONTENT_IGNORE);
+	content.resize(content_area.getVolume(),
+			FarNode(CONTENT_IGNORE, (15)|(15<<4)));
 }
 
 FarMeshLevel FarBlock::getCurrentMeshLevel()
@@ -249,7 +248,8 @@ FarBlockMeshGenerateTask::~FarBlockMeshGenerateTask()
 }
 
 static void add_face(MeshCollector *collector,
-		const FarNode &n, const v3s16 &p, s16 dir_x, s16 dir_y, s16 dir_z,
+		const FarNode &n, const v3s16 &p,
+		const FarNode &n2, s16 dir_x, s16 dir_y, s16 dir_z,
 		const std::vector<FarNode> &data,
 		const VoxelArea &data_area,
 		const v3s16 &divs_per_mb,
@@ -296,8 +296,9 @@ static void add_face(MeshCollector *collector,
 
 	u8 alpha = 255;
 
-	u8 light_day_4 = n.light % 0x0f;
-	u8 light_night_4 = (n.light & 0xf0) >> 4;
+	u8 selected_light = n2.id != CONTENT_IGNORE ? n2.light : n.light;
+	u8 light_day_4 = selected_light & 0x0f;
+	u8 light_night_4 = (selected_light & 0xf0) >> 4;
 	u8 light_day_8 = decode_light(light_day_4);
 	u8 light_night_8 = decode_light(light_night_4);
 	// Both lightbanks as 16-bit values from decode_light() as produced by
@@ -412,35 +413,35 @@ static void extract_faces(MeshCollector *collector,
 		int s100 = get_solidness(f100);
 
 		if(s000 > s001){
-			add_face(collector, n000, p000,  0,0,1, data,
+			add_face(collector, n000, p000, n001,  0,0,1, data,
 					data_area, divs_per_mb, far_map);
 			(*num_faces_added)++;
 		}
 		else if(s000 < s001){
 			v3s16 p001 = p000 + v3s16(0,0,1);
-			add_face(collector, n001, p001, 0,0,-1, data,
+			add_face(collector, n001, p001, n000,  0,0,-1, data,
 					data_area, divs_per_mb, far_map);
 			(*num_faces_added)++;
 		}
 		if(s000 > s010){
-			add_face(collector, n000, p000,  0,1,0, data,
+			add_face(collector, n000, p000, n010,  0,1,0, data,
 					data_area, divs_per_mb, far_map);
 			(*num_faces_added)++;
 		}
 		else if(s000 < s010){
 			v3s16 p010 = p000 + v3s16(0,1,0);
-			add_face(collector, n010, p010, 0,-1,0, data,
+			add_face(collector, n010, p010, n000,  0,-1,0, data,
 					data_area, divs_per_mb, far_map);
 			(*num_faces_added)++;
 		}
 		if(s000 > s100){
-			add_face(collector, n000, p000,  1,0,0, data,
+			add_face(collector, n000, p000, n100,  1,0,0, data,
 					data_area, divs_per_mb, far_map);
 			(*num_faces_added)++;
 		}
 		else if(s000 < s100){
 			v3s16 p100 = p000 + v3s16(1,0,0);
-			add_face(collector, n100, p100, -1,0,0, data,
+			add_face(collector, n100, p100, n000, -1,0,0, data,
 					data_area, divs_per_mb, far_map);
 			(*num_faces_added)++;
 		}
@@ -566,25 +567,38 @@ void FarBlockMeshGenerateTask::inThread()
 		);
 
 		std::vector<FarNode> content_buf;
-		content_buf.resize(content_buf_area.getVolume(), CONTENT_AIR);
+		content_buf.resize(content_buf_area.getVolume(), CONTENT_IGNORE);
 
-		// Fill in everything but the edges
 		v3s16 p;
-		for (p.Y=gen_area.MinEdge.Y; p.Y<=gen_area.MaxEdge.Y; p.Y++)
-		for (p.X=gen_area.MinEdge.X; p.X<=gen_area.MaxEdge.X; p.X++)
-		for (p.Z=gen_area.MinEdge.Z; p.Z<=gen_area.MaxEdge.Z; p.Z++) {
+		// Fill in everything but leave edges at air with light or ignore
+		for (p.Z = content_buf_area.MinEdge.Z;
+				p.Z <= content_buf_area.MaxEdge.Z; p.Z++)
+		for (p.Y = content_buf_area.MinEdge.Y;
+				p.Y <= content_buf_area.MaxEdge.Y; p.Y++)
+		for (p.X = content_buf_area.MinEdge.X;
+				p.X <= content_buf_area.MaxEdge.X; p.X++)
+		{
+			// Get topmost visible node
+			FarNode n;
 			v3s16 source_p(
 				p.X * block.divs_per_mb.X + block.divs_per_mb.X / 2,
 				p.Y * block.divs_per_mb.Y + block.divs_per_mb.Y - 1,
 				p.Z * block.divs_per_mb.Z + block.divs_per_mb.Z / 2
 			);
-			// Get topmost visible node
 			for (; source_p.Y >= p.Y * block.divs_per_mb.Y; source_p.Y--) {
 				FarNode n = block.content[block.content_area.index(source_p)];
 				if (n.id != CONTENT_IGNORE && n.id != CONTENT_AIR) {
-					content_buf[content_buf_area.index(p)] = n;
 					break;
 				}
+			}
+			if (gen_area.contains(p)) {
+				content_buf[content_buf_area.index(p)] = n;
+			} else if(n.id != CONTENT_IGNORE) {
+				// Only copy light into air
+				content_buf[content_buf_area.index(p)] =
+						FarNode(CONTENT_AIR, n.light);
+			} else {
+				content_buf[content_buf_area.index(p)] = FarNode(CONTENT_IGNORE);
 			}
 		}
 
@@ -662,14 +676,28 @@ void FarBlockMeshGenerateTask::inThread()
 				gen_area.MaxEdge + v3s16(1,1,1)
 			);
 			content_buf.clear();
-			content_buf.resize(content_buf_area.getVolume(), CONTENT_AIR);
+			content_buf.resize(content_buf_area.getVolume(), CONTENT_IGNORE);
 			v3s16 p;
-			// Fill in everything but the edges
-			for (p.Y=gen_area.MinEdge.Y; p.Y<=gen_area.MaxEdge.Y; p.Y++)
-			for (p.X=gen_area.MinEdge.X; p.X<=gen_area.MaxEdge.X; p.X++)
-			for (p.Z=gen_area.MinEdge.Z; p.Z<=gen_area.MaxEdge.Z; p.Z++) {
-				content_buf[content_buf_area.index(p)] =
-						block.content[block.content_area.index(p)];
+			// Fill in everything but leave edges at air with light or ignore
+			for (p.Z = content_buf_area.MinEdge.Z;
+					p.Z <= content_buf_area.MaxEdge.Z; p.Z++)
+			for (p.Y = content_buf_area.MinEdge.Y;
+					p.Y <= content_buf_area.MaxEdge.Y; p.Y++)
+			for (p.X = content_buf_area.MinEdge.X;
+					p.X <= content_buf_area.MaxEdge.X; p.X++)
+			{
+				if (gen_area.contains(p)) {
+					content_buf[content_buf_area.index(p)] =
+							block.content[block.content_area.index(p)];
+				} else if(block.content_area.contains(p)) {
+					// Only copy light into air
+					u8 light = block.content[block.content_area.index(p)].light;
+					content_buf[content_buf_area.index(p)] =
+							FarNode(CONTENT_AIR, light);
+				} else {
+					content_buf[content_buf_area.index(p)] =
+							FarNode(CONTENT_IGNORE);
+				}
 			}
 
 			size_t num_faces_added = 0;
@@ -721,14 +749,28 @@ void FarBlockMeshGenerateTask::inThread()
 				gen_area.MaxEdge + v3s16(1,1,1)
 			);
 			content_buf.clear();
-			content_buf.resize(content_buf_area.getVolume(), CONTENT_AIR);
+			content_buf.resize(content_buf_area.getVolume(), CONTENT_IGNORE);
 			v3s16 p;
-			// Fill in everything but the edges
-			for (p.Y=gen_area.MinEdge.Y; p.Y<=gen_area.MaxEdge.Y; p.Y++)
-			for (p.X=gen_area.MinEdge.X; p.X<=gen_area.MaxEdge.X; p.X++)
-			for (p.Z=gen_area.MinEdge.Z; p.Z<=gen_area.MaxEdge.Z; p.Z++) {
-				content_buf[content_buf_area.index(p)] =
-						block.content[block.content_area.index(p)];
+			// Fill in everything but leave edges at air with light or ignore
+			for (p.Z = content_buf_area.MinEdge.Z;
+					p.Z <= content_buf_area.MaxEdge.Z; p.Z++)
+			for (p.Y = content_buf_area.MinEdge.Y;
+					p.Y <= content_buf_area.MaxEdge.Y; p.Y++)
+			for (p.X = content_buf_area.MinEdge.X;
+					p.X <= content_buf_area.MaxEdge.X; p.X++)
+			{
+				if (gen_area.contains(p)) {
+					content_buf[content_buf_area.index(p)] =
+							block.content[block.content_area.index(p)];
+				} else if(block.content_area.contains(p)) {
+					// Only copy light into air
+					u8 light = block.content[block.content_area.index(p)].light;
+					content_buf[content_buf_area.index(p)] =
+							FarNode(CONTENT_AIR, light);
+				} else {
+					content_buf[content_buf_area.index(p)] =
+							FarNode(CONTENT_IGNORE);
+				}
 			}
 
 			size_t num_faces_added = 0;
