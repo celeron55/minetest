@@ -661,6 +661,7 @@ void EmergeThread::updateFarMap(v3s16 bp, MapBlock *block,
 		/*dstream<<"updateFarMap: ("<<bp.X<<","<<bp.Y<<","<<bp.Z<<") is NULL"
 				<<std::endl;*/
 
+		// TODO: Is this the correct state?
 		ServerFarBlock::LoadState load_state = ServerFarBlock::LS_NOT_GENERATED;
 
 		{
@@ -680,8 +681,19 @@ void EmergeThread::updateFarMap(v3s16 bp, MapBlock *block,
 		{
 			MutexAutoLock envlock(m_server->m_env_mutex);
 
-			// TODO: Should this block be re-checked from the Map?
-			MapBlock *block = it->second;
+			// We can't trust this block to still exist. Re-fetch it from Map.
+			MapBlock *block = m_map->getBlockNoCreateNoEx(it->first);
+			if (!block) {
+				// Briefly tell to FarMap about the inexisting block and
+				// continue to the next one
+				ServerFarMapPiece piece;
+				piece.generateEmpty(VoxelArea(
+						(bp+0) * MAP_BLOCKSIZE,
+						(bp+1) * MAP_BLOCKSIZE - v3s16(1,1,1)));
+				m_server->m_far_map->updateFrom(
+						piece, ServerFarBlock::LS_NOT_LOADED);
+				continue;
+			}
 
 			//dstream<<"updateFarMap: "<<analyze_block(block)<<std::endl;
 
