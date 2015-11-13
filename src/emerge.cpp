@@ -680,6 +680,7 @@ void EmergeThread::updateFarMap(v3s16 bp, MapBlock *block,
 		{
 			MutexAutoLock envlock(m_server->m_env_mutex);
 
+			// TODO: Should this block be re-checked from the Map?
 			MapBlock *block = it->second;
 
 			//dstream<<"updateFarMap: "<<analyze_block(block)<<std::endl;
