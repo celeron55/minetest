@@ -562,10 +562,16 @@ WMSSuggestion AutosendCycle::suggestNextFarBlock(
 				// it
 				if (!allow_generate_now &&
 						load_state == ServerFarBlock::LS_NOT_GENERATED) {
+					/*dstream<<"AutosendFar: "<<wms.describe()
+							<<": Not generating "<<PP(bp)<<std::endl;*/
 					continue;
 				}
 
 				// Load or generate it
+				/*dstream<<"AutosendFar: "<<wms.describe()
+						<<": Adding "<<PP(bp)<<" to emerge queue"
+						<<" (allow_generate_now="<<allow_generate_now<<")"
+						<<std::endl;*/
 				emerge_queue_full = !emerge->enqueueBlockEmerge(
 						client->peer_id, bp, allow_generate_now);
 
