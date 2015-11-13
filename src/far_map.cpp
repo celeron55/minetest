@@ -579,7 +579,7 @@ void FarBlockMeshGenerateTask::inThread()
 				p.X <= content_buf_area.MaxEdge.X; p.X++)
 		{
 			// Get topmost visible node
-			FarNode n(CONTENT_IGNORE)
+			FarNode n(CONTENT_IGNORE);
 			if (block.content_area.contains(p)) {
 				v3s16 source_p(
 					p.X * block.divs_per_mb.X + block.divs_per_mb.X / 2,
