@@ -296,15 +296,14 @@ static void add_face(MeshCollector *collector,
 
 	u8 alpha = 255;
 
-	/*u8 light_day_4 = n.light % 0x0f;
+	u8 light_day_4 = n.light % 0x0f;
 	u8 light_night_4 = (n.light & 0xf0) >> 4;
 	u8 light_day_8 = decode_light(light_day_4);
-	u8 light_night_8 = decode_light(light_night_4);*/
+	u8 light_night_8 = decode_light(light_night_4);
 	// Both lightbanks as 16-bit values from decode_light() as produced by
 	// getFaceLight (day | (night << 8))
-	// TODO
-	//u16 light_encoded_16 = (light_day_8) | (light_night_8<<8);
-	u16 light_encoded_16 = (255) | (255<<8);
+	u16 light_encoded_16 = (light_day_8) | (light_night_8<<8);
+	//u16 light_encoded_16 = (255) | (255<<8);
 	// Light produced by the node itself
 	u8 light_source = 0;
 

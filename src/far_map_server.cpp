@@ -276,16 +276,19 @@ void ServerFarMapPiece::generateFrom(VoxelManipulator &vm, INodeDefManager *ndef
 	/*
 		Just... don't touch this. This is insanely delicate. -celeron55
 	*/
+	std::vector<v3s16> missing_light_fnps;
 	v3s16 fnp;
 	for (fnp.Z=content_area.MinEdge.Z; fnp.Z<=content_area.MaxEdge.Z; fnp.Z++)
 	for (fnp.Y=content_area.MinEdge.Y; fnp.Y<=content_area.MaxEdge.Y; fnp.Y++)
 	for (fnp.X=content_area.MinEdge.X; fnp.X<=content_area.MaxEdge.X; fnp.X++) {
-		size_t i = content_area.index(fnp);
+		size_t content_i = content_area.index(fnp);
+
+		u8 light_day_sum = 0;
+		u8 light_night_sum = 0;
+		u8 light_count = 0;
 
 		std::map<u16, u16> node_amounts;
-		// (day | (night << 4))
-		u8 light = (15) | (0<<4);
-		bool light_found = false;
+
 		u16 amount_air = 0;
 		u16 amount_non_air = 0;
 
@@ -293,7 +296,7 @@ void ServerFarMapPiece::generateFrom(VoxelManipulator &vm, INodeDefManager *ndef
 		const u16 half_amount_limit =
 				SERVER_FN_SIZE * SERVER_FN_SIZE * SERVER_FN_SIZE / 2 / 2;
 
-		// Node at center of FarNode (horizontally)
+		// FarNode corners in MapNodes
 		v3s16 np0(
 			fnp.X * SERVER_FN_SIZE,
 			fnp.Y * SERVER_FN_SIZE,
@@ -320,11 +323,10 @@ void ServerFarMapPiece::generateFrom(VoxelManipulator &vm, INodeDefManager *ndef
 				if (f.name.empty())
 					continue;
 				// Get a light level if available
-				if (!light_found) {
-					if (f.param_type == CPT_LIGHT) {
-						light = n.param1;
-						light_found = true;
-					}
+				if (f.param_type == CPT_LIGHT) {
+					light_day_sum += (n.param1 & 0x0f);
+					light_night_sum += (n.param1 & 0xf0) >> 4;
+					light_count++;
 				}
 				// Continue through air, but still collect them
 				if (f.drawtype == NDT_AIRLIKE) {
@@ -332,7 +334,7 @@ void ServerFarMapPiece::generateFrom(VoxelManipulator &vm, INodeDefManager *ndef
 					if (amount_air >= half_amount_limit &&
 							amount_air >= amount_non_air * 3) {
 						// Fast path
-						content[i].id = n.getContent();
+						content[content_i].id = n.getContent();
 						goto already_chosen;
 					}
 					continue;
@@ -358,7 +360,7 @@ void ServerFarMapPiece::generateFrom(VoxelManipulator &vm, INodeDefManager *ndef
 				u16 amount_now = ++node_amounts[n.getContent()];
 				// Check fast path
 				if (amount_now >= half_amount_limit) {
-					content[i].id = n.getContent();
+					content[content_i].id = n.getContent();
 					goto already_chosen;
 				}
 				// Next Y column
@@ -370,7 +372,7 @@ void ServerFarMapPiece::generateFrom(VoxelManipulator &vm, INodeDefManager *ndef
 		// stone from underneath but if there's a huge amount of it, then just
 		// show air.
 		if (amount_air >= amount_non_air * 3) {
-			content[i].id = CONTENT_AIR;
+			content[content_i].id = CONTENT_AIR;
 		} else {
 			u16 max_id = CONTENT_IGNORE;
 			u16 max_amount = 0;
@@ -381,11 +383,76 @@ void ServerFarMapPiece::generateFrom(VoxelManipulator &vm, INodeDefManager *ndef
 					max_amount = i->second;
 				}
 			}
-			content[i].id = max_id;
+			content[content_i].id = max_id;
 		}
 already_chosen:
 
-		content[i].light = light;
+		if (light_count == 0) {
+			// Set a default value if we can't figure out anything later either
+			static const u8 light_day = 8; // A good general guess
+			static const u8 light_night = 0;
+			// (day | (night << 4))
+			content[content_i].light = (light_day) | (light_night<<4);
+			missing_light_fnps.push_back(fnp);
+		} else {
+			u8 light_day = light_day_sum / light_count;
+			u8 light_night = light_night_sum / light_count;
+			// (day | (night << 4))
+			content[content_i].light = (light_day) | (light_night<<4);
+		}
+	}
+	for (size_t fnp_i=0; fnp_i<missing_light_fnps.size(); fnp_i++) {
+		const v3s16 &fnp = missing_light_fnps[fnp_i];
+		size_t content_i = content_area.index(fnp);
+
+		// FarNode corners in MapNodes
+		v3s16 np0(
+			fnp.X * SERVER_FN_SIZE,
+			fnp.Y * SERVER_FN_SIZE,
+			fnp.Z * SERVER_FN_SIZE);
+		v3s16 np1(
+			fnp.X * SERVER_FN_SIZE + SERVER_FN_SIZE - 1,
+			fnp.Y * SERVER_FN_SIZE + SERVER_FN_SIZE - 1,
+			fnp.Z * SERVER_FN_SIZE + SERVER_FN_SIZE - 1);
+
+		u8 light_day_sum = 0;
+		u8 light_night_sum = 0;
+		u8 light_count = 0;
+
+		static const v3s16 dps_to_try[] = {
+			// Middle of FarNode
+			v3s16(SERVER_FN_SIZE/2, SERVER_FN_SIZE/2, SERVER_FN_SIZE/2),
+			// Every inside corner of the FarNode
+			v3s16(0               , 0               , 0),
+			v3s16(SERVER_FN_SIZE-1, 0               , 0),
+			v3s16(0               , SERVER_FN_SIZE-1, 0),
+			v3s16(SERVER_FN_SIZE-1, SERVER_FN_SIZE-1, 0),
+			v3s16(0               , 0               , SERVER_FN_SIZE-1),
+			v3s16(SERVER_FN_SIZE-1, 0               , SERVER_FN_SIZE-1),
+			v3s16(0               , SERVER_FN_SIZE-1, SERVER_FN_SIZE-1),
+			v3s16(SERVER_FN_SIZE-1, SERVER_FN_SIZE-1, SERVER_FN_SIZE-1),
+		};
+		for (size_t i=0; i<ARRLEN(dps_to_try); i++) {
+			MapNode n = vm.getNodeNoEx(np0 + dps_to_try[i]);
+			if(n.getContent() == CONTENT_IGNORE)
+				continue;
+			const ContentFeatures &f = ndef->get(n);
+			if (f.param_type == CPT_LIGHT) {
+				light_day_sum += (n.param1 & 0x0f);
+				light_night_sum += (n.param1 & 0xf0) >> 4;
+				light_count++;
+				// (day | (night << 4))
+				content[content_i].light = n.param1;
+			}
+		}
+		if (light_count > 0) {
+			u8 light_day = light_day_sum / light_count;
+			u8 light_night = light_night_sum / light_count;
+			// (day | (night << 4))
+			content[content_i].light = (light_day) | (light_night<<4);
+			// Figure out next missing light
+			continue;
+		}
 	}
 #endif
 
