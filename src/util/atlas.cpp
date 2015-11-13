@@ -400,9 +400,9 @@ struct CAtlasRegistry: public AtlasRegistry
 									// This value has been calibrated
 									c.set(
 										c.getAlpha(),
-										c.getRed() * 0.97f * 0.8f,
-										c.getGreen() * 0.97f * 0.8f,
-										c.getBlue() * 1.0f * 0.8f
+										c.getRed() * 0.97f * 0.9f,
+										c.getGreen() * 0.97f * 0.9f,
+										c.getBlue() * 1.0f * 0.9f
 									);
 								}
 							} else {
@@ -424,9 +424,9 @@ struct CAtlasRegistry: public AtlasRegistry
 									// This value has been calibrated
 									c.set(
 										c.getAlpha(),
-										c.getRed() * 0.61f * 0.9f,
-										c.getGreen() * 0.61f * 0.9f,
-										c.getBlue() * 0.67f * 0.9f
+										c.getRed() * 0.61f * 1.0f,
+										c.getGreen() * 0.61f * 1.0f,
+										c.getBlue() * 0.67f * 1.0f
 									);
 								}
 							}
