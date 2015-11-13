@@ -925,7 +925,7 @@ void FarAtlas::prepareForNodes(size_t num_nodes)
 }
 
 atlas::AtlasSegmentReference FarAtlas::addTexture(const std::string &name,
-		bool is_top, bool crude)
+		bool is_top, bool crude, bool is_liquid)
 {
 	atlas::AtlasSegmentDefinition def;
 	def.image_name = name;
@@ -935,23 +935,30 @@ atlas::AtlasSegmentReference FarAtlas::addTexture(const std::string &name,
 	def.lod_simulation = lod;
 	// This is independent of LOD
 	def.target_size = v2s32(mapnode_resolution * 4, mapnode_resolution * 4);
-	if (is_top)
+	if (is_liquid) {
+		// Do this always
 		def.lod_simulation |= atlas::ATLAS_LOD_TOP_FACE;
+
+		def.lod_simulation |= atlas::ATLAS_LOD_DARKEN_LIKE_LIQUID;
+	} else {
+		if (is_top)
+			def.lod_simulation |= atlas::ATLAS_LOD_TOP_FACE;
+	}
 	def.lod_simulation |= atlas::ATLAS_LOD_BAKE_SHADOWS;
 	return atlas->find_or_add_segment(def);
 }
 
 void FarAtlas::addNode(content_t id, const std::string &top,
 		const std::string &bottom, const std::string &side,
-		bool disable_shadows)
+		bool is_liquid)
 {
 	NodeSegRefs nsr;
-	nsr.refs[0] = addTexture(top, true, false);
-	nsr.refs[1] = addTexture(bottom, false || disable_shadows, false);
-	nsr.refs[2] = addTexture(side, false || disable_shadows, false);
-	nsr.crude_refs[0] = addTexture(top, true, true);
-	nsr.crude_refs[1] = addTexture(bottom, false || disable_shadows, true);
-	nsr.crude_refs[2] = addTexture(side, false || disable_shadows, true);
+	nsr.refs[0] = addTexture(top, true, false, is_liquid);
+	nsr.refs[1] = addTexture(bottom, false, false, is_liquid);
+	nsr.refs[2] = addTexture(side, false, false, is_liquid);
+	nsr.crude_refs[0] = addTexture(top, true, true, is_liquid);
+	nsr.crude_refs[1] = addTexture(bottom, false, true, is_liquid);
+	nsr.crude_refs[2] = addTexture(side, false, true, is_liquid);
 
 	if((content_t)node_segrefs.size() < id + 1)
 		node_segrefs.resize(id + 1);
@@ -1316,10 +1323,10 @@ void FarMap::createAtlas()
 				side = top;
 			infostream<<"* top="<<top<<", bottom="<<bottom
 					<<", side="<<side<<std::endl;
-			bool disable_shadows =
+			bool is_liquid =
 					f.drawtype == NDT_LIQUID ||
 					f.drawtype == NDT_FLOWINGLIQUID;
-			atlas.addNode(id, top, bottom, side, disable_shadows);
+			atlas.addNode(id, top, bottom, side, is_liquid);
 		}
 	}
 

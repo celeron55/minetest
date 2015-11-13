@@ -203,10 +203,10 @@ struct FarAtlas
 	~FarAtlas();
 	void prepareForNodes(size_t num_nodes);
 	atlas::AtlasSegmentReference addTexture(const std::string &name,
-			bool is_top, bool crude);
+			bool is_top, bool crude, bool is_liquid);
 	void addNode(content_t id, const std::string &top,
 			const std::string &bottom, const std::string &side,
-			bool disable_shadows);
+			bool is_liquid);
 	const atlas::AtlasSegmentCache* getNode(
 			content_t id, u8 face, bool crude) const;
 };

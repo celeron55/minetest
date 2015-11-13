@@ -389,7 +389,6 @@ struct CAtlasRegistry: public AtlasRegistry
 								c.getBlue() * 1.0f
 							);
 						}
-						acache.image->setPixel(dst_p.X, dst_p.Y, c);
 					} else {
 						// Simulate sides
 						// Leave horizontal edges look like they are bright
@@ -487,8 +486,19 @@ struct CAtlasRegistry: public AtlasRegistry
 								}
 							}
 						}
-						acache.image->setPixel(dst_p.X, dst_p.Y, c);
 					}
+
+					if(flags & ATLAS_LOD_DARKEN_LIKE_LIQUID){
+						// This value has been calibrated
+						c.set(
+							c.getAlpha(),
+							c.getRed() * 0.5,
+							c.getGreen() * 0.5,
+							c.getBlue() * 0.5
+						);
+					}
+
+					acache.image->setPixel(dst_p.X, dst_p.Y, c);
 				}
 			}
 		}

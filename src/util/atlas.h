@@ -51,6 +51,7 @@ namespace atlas
 	const uint16_t ATLAS_LOD_SEMIBRIGHT1_FACE = 0x200;
 	const uint16_t ATLAS_LOD_SEMIBRIGHT2_FACE = 0x400;
 	const uint16_t ATLAS_LOD_BAKE_SHADOWS = 0x800;
+	const uint16_t ATLAS_LOD_DARKEN_LIKE_LIQUID = 0x1600;
 
 	struct AtlasSegmentDefinition
 	{

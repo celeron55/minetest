@@ -275,6 +275,7 @@ void ClientMap::updateDrawList(video::IVideoDriver* driver)
 
 				if(block->mesh == NULL){
 					blocks_in_range_without_mesh++;
+					normally_rendered_blocks.set(block->getPos(), true);
 					continue;
 				}
 			}
