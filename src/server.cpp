@@ -2285,9 +2285,8 @@ void Server::SendBlocks(float dtime)
 				v3s16 divs_per_mb (amount of divisions per mapblock)
 				u32 data_len
 				Zlib-compressed:
-					for each division (for(Y) for(X) for(Z)):
+					for each FarNode (indexed by VoxelArea):
 						u16 node_id
-					for each division (for(Y) for(X) for(Z)):
 						u8 light (both lightbanks; raw value)
 			*/
 
@@ -2298,10 +2297,10 @@ void Server::SendBlocks(float dtime)
 			pkt << divs_per_mb;
 			if (status == FBRS_FULLY_LOADED || status == FBRS_PARTLY_LOADED) {
 				std::ostringstream os(std::ios::binary);
-				for(size_t i=0; i<fb->content.size(); i++)
+				for (size_t i=0; i<fb->content.size(); i++) {
 					writeU16(os, fb->content[i].id);
-				for(size_t i=0; i<fb->content.size(); i++)
 					writeU8(os, fb->content[i].light);
+				}
 				std::ostringstream os2(std::ios::binary);
 				compressZlib(os.str(), os2);
 				pkt.putLongString(os2.str());

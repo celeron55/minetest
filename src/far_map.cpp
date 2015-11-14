@@ -25,18 +25,58 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "util/numeric.h" // getContainerPos
 #include "client.h" // For use of Client's IGameDef interface
 #include "profiler.h"
+#include "serialization.h" // decompressZlib
 #include "util/atlas.h"
+#include "util/serialize.h"
 #include "irrlichttypes_extrabloated.h"
 #include <IMaterialRenderer.h>
 
 #define PP(x) "("<<(x).X<<","<<(x).Y<<","<<(x).Z<<")"
 
 /*
+	FarBlockBasicParameters
+*/
+
+FarBlockBasicParameters::FarBlockBasicParameters(v3s16 p, v3s16 divs_per_mb):
+	p(p),
+	divs_per_mb(divs_per_mb)
+{
+	// Block's effective origin in FarNodes based on divs_per_mb
+	dp00 = v3s16(
+		p.X * FMP_SCALE * divs_per_mb.X,
+		p.Y * FMP_SCALE * divs_per_mb.Y,
+		p.Z * FMP_SCALE * divs_per_mb.Z
+	);
+
+	// Effective size of content in FarNodes based on divs_per_mb in global
+	// coordinates
+	effective_size = v3s16(
+			FMP_SCALE * divs_per_mb.X,
+			FMP_SCALE * divs_per_mb.Y,
+			FMP_SCALE * divs_per_mb.Z);
+
+	v3s16 edp0 = dp00;
+	v3s16 edp1 = edp0 + effective_size - v3s16(1,1,1); // Inclusive
+
+	effective_area = VoxelArea(edp0, edp1);
+
+	// One extra FarNode layer per edge as required by mesh generation
+	content_size = effective_size + v3s16(2,2,2);
+
+	// Min and max edge of content (one extra FarNode layer per edge as
+	// required by mesh generation)
+	v3s16 dp0 = dp00 - v3s16(1,1,1);
+	v3s16 dp1 = dp0 + content_size - v3s16(1,1,1); // Inclusive
+
+	content_area = VoxelArea(dp0, dp1);
+}
+
+/*
 	FarBlock
 */
 
-FarBlock::FarBlock(v3s16 p):
-	p(p),
+FarBlock::FarBlock(v3s16 p, v3s16 divs_per_mb):
+	FarBlockBasicParameters(p, divs_per_mb),
 	is_culled_by_server(false),
 	load_in_progress_on_server(false),
 	refresh_from_server_counter(0),
@@ -81,44 +121,6 @@ void FarBlock::unloadMapblockMeshes()
 	}
 	mapblock_meshes.clear();
 	mapblock2_meshes.clear();
-}
-
-void FarBlock::resize(v3s16 new_divs_per_mb)
-{
-	divs_per_mb = new_divs_per_mb;
-
-	// Block's effective origin in FarNodes based on divs_per_mb
-	dp00 = v3s16(
-		p.X * FMP_SCALE * divs_per_mb.X,
-		p.Y * FMP_SCALE * divs_per_mb.Y,
-		p.Z * FMP_SCALE * divs_per_mb.Z
-	);
-
-	// Effective size of content in FarNodes based on divs_per_mb in global
-	// coordinates
-	effective_size = v3s16(
-			FMP_SCALE * divs_per_mb.X,
-			FMP_SCALE * divs_per_mb.Y,
-			FMP_SCALE * divs_per_mb.Z);
-
-	v3s16 edp0 = dp00;
-	v3s16 edp1 = edp0 + effective_size - v3s16(1,1,1); // Inclusive
-
-	effective_area = VoxelArea(edp0, edp1);
-
-	// One extra FarNode layer per edge as required by mesh generation
-	content_size = effective_size + v3s16(2,2,2);
-
-	// Min and max edge of content (one extra FarNode layer per edge as
-	// required by mesh generation)
-	v3s16 dp0 = dp00 - v3s16(1,1,1);
-	v3s16 dp1 = dp0 + content_size - v3s16(1,1,1); // Inclusive
-
-	content_area = VoxelArea(dp0, dp1);
-
-	content.clear();
-	content.resize(content_area.getVolume(),
-			FarNode(CONTENT_IGNORE, (15)|(15<<4)));
 }
 
 FarMeshLevel FarBlock::getCurrentMeshLevel()
@@ -208,13 +210,13 @@ FarBlock* FarSector::getBlock(s16 y)
 	return NULL;
 }
 
-FarBlock* FarSector::getOrCreateBlock(s16 y)
+FarBlock* FarSector::getOrCreateBlock(s16 y, v3s16 divs_per_mb)
 {
 	std::map<s16, FarBlock*>::iterator i = blocks.find(y);
 	if(i != blocks.end())
 		return i->second;
 	v3s16 p3d(p.X, y, p.Y);
-	FarBlock *b = new FarBlock(p3d);
+	FarBlock *b = new FarBlock(p3d, divs_per_mb);
 	blocks[y] = b;
 	return b;
 }
@@ -823,6 +825,68 @@ void FarBlockMeshGenerateTask::sync()
 }
 
 /*
+	FarBlockInsertTask
+*/
+
+FarBlockInsertTask::FarBlockInsertTask(
+		FarMap *far_map, const CompressedFarBlock &source):
+	far_map(far_map),
+	source(source)
+{
+}
+
+FarBlockInsertTask::~FarBlockInsertTask()
+{
+}
+
+void FarBlockInsertTask::inThread()
+{
+	result_params = FarBlockBasicParameters(source.fbp, source.divs_per_mb);
+
+	if (source.status == FBRS_FULLY_LOADED || source.status == FBRS_PARTLY_LOADED) {
+		std::istringstream is1(source.compressed_data, std::ios::binary);
+		std::ostringstream os2(std::ios::binary);
+		{
+			ScopeProfiler sp(g_profiler, "Zlib: decompress farblock", SPT_ADD);
+			decompressZlib(is1, os2);
+		}
+		std::istringstream is2(os2.str(), std::ios::binary);
+
+		result_content.resize(result_params.content_area.getVolume(),
+				FarNode(CONTENT_IGNORE, (15)|(15<<4)));
+
+		v3s16 dp_in_fb;
+		for (dp_in_fb.Z=0; dp_in_fb.Z<result_params.effective_size.Z; dp_in_fb.Z++)
+		for (dp_in_fb.Y=0; dp_in_fb.Y<result_params.effective_size.Y; dp_in_fb.Y++)
+		for (dp_in_fb.X=0; dp_in_fb.X<result_params.effective_size.X; dp_in_fb.X++) {
+			// Position has to be translated from raw data index to
+			// padded-for-mesh-generation content index
+			v3s16 dp1 = result_params.dp00 + dp_in_fb;
+			size_t i = result_params.content_area.index(dp1);
+			result_content[i].id = readU16(is2);
+			result_content[i].light = readU8(is2);
+		}
+	}
+}
+
+void FarBlockInsertTask::sync()
+{
+	if (source.status == FBRS_FULLY_LOADED || source.status == FBRS_PARTLY_LOADED) {
+		bool partly_loaded = (source.status == FBRS_PARTLY_LOADED);
+		far_map->insertFarBlock(result_params.p, result_params.divs_per_mb,
+				result_content, partly_loaded);
+	} else if(source.status == FBRS_EMPTY) {
+		far_map->insertEmptyBlock(source.fbp);
+	} else if(source.status == FBRS_CULLED) {
+		far_map->insertCulledBlock(source.fbp);
+	} else if(source.status == FBRS_LOAD_IN_PROGRESS) {
+		far_map->insertLoadInProgressBlock(source.fbp);
+	} else {
+		// ?
+	}
+}
+
+/*
 	FarMapWorkerThread
 */
 
@@ -1045,80 +1109,32 @@ FarSector* FarMap::getOrCreateSector(v2s16 p)
 	return s;
 }
 
-FarBlock* FarMap::getOrCreateBlock(v3s16 p)
+FarBlock* FarMap::getOrCreateBlock(v3s16 p, v3s16 divs_per_mb)
 {
 	v2s16 p2d(p.X, p.Z);
 	FarSector *s = getOrCreateSector(p2d);
-	return s->getOrCreateBlock(p.Y);
+	return s->getOrCreateBlock(p.Y, divs_per_mb);
 }
 
-void FarMap::insertData(v3s16 fbp, v3s16 divs_per_mb,
-		const std::vector<u16> &node_ids, const std::vector<u8> &lights,
-		bool is_partly_loaded)
+void FarMap::insertCompressedFarBlock(const CompressedFarBlock &source_block)
 {
-	/*dstream<<"FarMap::insertData: fbp: "<<PP(fbp)
-			<<", divs_per_mb: "<<PP(divs_per_mb)
-			<<", node_ids.size(): "<<node_ids.size()
-			<<", lights.size(): "<<lights.size()
-			<<", is_partly_loaded: "<<is_partly_loaded
-			<<std::endl;*/
+	FarBlockInsertTask *t = new FarBlockInsertTask(this, source_block);
 
-	v3s16 area_offset_mb(
-			FMP_SCALE * fbp.X,
-			FMP_SCALE * fbp.Y,
-			FMP_SCALE * fbp.Z);
+	m_worker_thread.addTask(t);
+}
 
-	v3s16 area_size_mb(FMP_SCALE, FMP_SCALE, FMP_SCALE);
+void FarMap::insertFarBlock(v3s16 fbp, v3s16 divs_per_mb,
+		std::vector<FarNode> &content, bool is_partly_loaded)
+{
+	//dstream<<"FarMap::insertFarBlock: FarBlock "<<PP(fbp)<<std::endl;
 
-	// Convert to divisions (which will match FarNodes)
-	v3s16 source_fnp0(
-		area_offset_mb.X * divs_per_mb.X,
-		area_offset_mb.Y * divs_per_mb.Y,
-		area_offset_mb.Z * divs_per_mb.Z
-	);
-	v3s16 source_fnp1 = source_fnp0 + v3s16(
-		area_size_mb.X * divs_per_mb.X - 1,
-		area_size_mb.Y * divs_per_mb.Y - 1,
-		area_size_mb.Z * divs_per_mb.Z - 1
-	);
-	// This can be used for indexing node_ids and lights
-	VoxelArea source_area(source_fnp0, source_fnp1);
-
-	if (node_ids.size() != (size_t)source_area.getVolume() ||
-			lights.size() != (size_t)source_area.getVolume()) {
-		warningstream<<"FarMap::insertData: fbp: "<<PP(fbp)
-				<<", divs_per_mb: "<<PP(divs_per_mb)
-				<<", node_ids.size(): "<<node_ids.size()
-				<<", lights.size(): "<<lights.size()
-				<<": Invalid data sizes"<<std::endl;
-		return;
-	}
-
-	//dstream<<"FarMap::insertData: FarBlock "<<PP(fbp)<<std::endl;
-
-	FarBlock *b = getOrCreateBlock(fbp);
+	FarBlock *b = getOrCreateBlock(fbp, divs_per_mb);
 	b->is_culled_by_server = false;
 	b->load_in_progress_on_server = is_partly_loaded;
 	b->mesh_is_empty = false;
 	b->mesh_is_outdated = true;
-	b->resize(divs_per_mb);
-
-	v3s16 dp_in_fb;
-	for (dp_in_fb.Y=0; dp_in_fb.Y<b->effective_size.Y; dp_in_fb.Y++)
-	for (dp_in_fb.X=0; dp_in_fb.X<b->effective_size.X; dp_in_fb.X++)
-	for (dp_in_fb.Z=0; dp_in_fb.Z<b->effective_size.Z; dp_in_fb.Z++) {
-		v3s16 dp1 = b->dp00 + dp_in_fb;
-		// The source area does not necessarily contain all positions that
-		// the matching blocks contain
-		if(!source_area.contains(dp1))
-			continue;
-		size_t source_i = source_area.index(dp1);
-		size_t dst_i = b->index(dp1);
-		b->content[dst_i].id = node_ids[source_i];
-		/*b->content[dst_i].id = ((dp1.X + dp1.Y + dp1.Z) % 3 == 0) ?
-				5 : CONTENT_AIR;*/
-		b->content[dst_i].light = lights[source_i];
-	}
+	assert(content.size() == (size_t)b->content_area.getVolume());
+	b->content.swap(content);
 
 	/*// Call analyze_far_block before starting the line to keep lines
 	// mostly intact when multiple threads are printing
@@ -1129,7 +1145,7 @@ void FarMap::insertData(v3s16 fbp, v3s16 divs_per_mb,
 void FarMap::insertEmptyBlock(v3s16 fbp)
 {
 	dstream<<PP(fbp)<<" reported empty"<<std::endl;
-	FarBlock *b = getOrCreateBlock(fbp);
+	FarBlock *b = getOrCreateBlock(fbp, v3s16(0,0,0));
 	b->is_culled_by_server = false;
 	b->load_in_progress_on_server = false;
 }
@@ -1137,7 +1153,7 @@ void FarMap::insertEmptyBlock(v3s16 fbp)
 void FarMap::insertCulledBlock(v3s16 fbp)
 {
 	dstream<<PP(fbp)<<" reported culled"<<std::endl;
-	FarBlock *b = getOrCreateBlock(fbp);
+	FarBlock *b = getOrCreateBlock(fbp, v3s16(0,0,0));
 	b->is_culled_by_server = true;
 	b->load_in_progress_on_server = false;
 }
@@ -1145,7 +1161,7 @@ void FarMap::insertCulledBlock(v3s16 fbp)
 void FarMap::insertLoadInProgressBlock(v3s16 fbp)
 {
 	dstream<<PP(fbp)<<" reported load-in-progress"<<std::endl;
-	FarBlock *b = getOrCreateBlock(fbp);
+	FarBlock *b = getOrCreateBlock(fbp, v3s16(0,0,0));
 	b->is_culled_by_server = false;
 	b->load_in_progress_on_server = true;
 }
@@ -1179,7 +1195,9 @@ void FarMap::insertGeneratedBlockMesh(
 			<<", mb2_meshes="<<!mapblock2_meshes.empty()
 			<<std::endl;*/
 
-	FarBlock *b = getOrCreateBlock(p);
+	FarBlock *b = getBlock(p);
+	if (!b)
+		return;
 
 	b->generating_mesh = false;
 

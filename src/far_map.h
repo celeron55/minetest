@@ -40,7 +40,7 @@ enum FarMeshLevel {
 	FML_FINE_AND_SMALL
 };
 
-struct FarBlock
+struct FarBlockBasicParameters
 {
 	// Position in FarBlocks
 	v3s16 p;
@@ -61,6 +61,12 @@ struct FarBlock
 	// coordinates
 	VoxelArea content_area;
 
+	FarBlockBasicParameters(){}
+	FarBlockBasicParameters(v3s16 p, v3s16 divs_per_mb);
+};
+
+struct FarBlock: public FarBlockBasicParameters
+{
 	// Can be empty if server reports the FarBlock to be completely empty
 	std::vector<FarNode> content;
 
@@ -109,13 +115,11 @@ struct FarBlock
 	// Used by the faraway rendering error minimizing system
 	v3s16 current_camera_offset;
 
-	FarBlock(v3s16 p);
+	FarBlock(v3s16 p, v3s16 divs_per_mb);
 	~FarBlock();
 
 	void unloadFineMesh();
 	void unloadMapblockMeshes();
-
-	void resize(v3s16 new_divs_per_mb);
 
 	FarMeshLevel getCurrentMeshLevel();
 
@@ -143,7 +147,7 @@ struct FarSector
 	~FarSector();
 
 	FarBlock* getBlock(s16 p);
-	FarBlock* getOrCreateBlock(s16 p);
+	FarBlock* getOrCreateBlock(s16 p, v3s16 divs_per_mb);
 };
 
 struct FarMapTask
@@ -162,6 +166,28 @@ struct FarBlockMeshGenerateTask: public FarMapTask
 	FarBlockMeshGenerateTask(FarMap *far_map, const FarBlock &source_block,
 			FarMeshLevel level);
 	~FarBlockMeshGenerateTask();
+	void inThread();
+	void sync();
+};
+
+struct CompressedFarBlock
+{
+	v3s16 fbp;
+	u8 status;
+	u8 flags;
+	v3s16 divs_per_mb;
+	std::string compressed_data;
+};
+
+struct FarBlockInsertTask: public FarMapTask
+{
+	FarMap *far_map;
+	CompressedFarBlock source;
+	FarBlockBasicParameters result_params;
+	std::vector<FarNode> result_content;
+
+	FarBlockInsertTask(FarMap *far_map, const CompressedFarBlock &source);
+	~FarBlockInsertTask();
 	void inThread();
 	void sync();
 };
@@ -225,12 +251,13 @@ public:
 	FarSector* getSector(v2s16 p);
 	FarBlock* getBlock(v3s16 p);
 	FarSector* getOrCreateSector(v2s16 p);
-	FarBlock* getOrCreateBlock(v3s16 p);
+	FarBlock* getOrCreateBlock(v3s16 p, v3s16 divs_per_mb);
 
 	// Parameter dimensions are in MapBlocks
-	void insertData(v3s16 fbp, v3s16 divs_per_mb,
-			const std::vector<u16> &node_ids, const std::vector<u8> &lights,
-			bool is_partly_loaded);
+	void insertCompressedFarBlock(const CompressedFarBlock &source_block);
+	// Swaps content into the FarBlock for efficiency
+	void insertFarBlock(v3s16 fbp, v3s16 divs_per_mb,
+			std::vector<FarNode> &content, bool is_partly_loaded);
 	void insertEmptyBlock(v3s16 fbp);
 	void insertCulledBlock(v3s16 fbp);
 	void insertLoadInProgressBlock(v3s16 fbp);

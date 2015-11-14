@@ -592,9 +592,8 @@ enum ToClientCommand
 		v3s16 divs_per_mb (amount of divisions (FarNodes) per mapblock)
 		u32 data_len
 		Zlib-compressed:
-			for each division (indexed by VoxelArea):
+			for each FarNode (indexed by VoxelArea):
 				u16 node_id
-			for each division (indexed by VoxelArea):
 				u8 light (both lightbanks; raw value)
 	*/
 
