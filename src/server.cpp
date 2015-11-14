@@ -2204,117 +2204,129 @@ void Server::SendBlocks(float dtime)
 		client->cycleAutosendAlgorithm(dtime);
 	}
 
-	// TODO: Go multiple times through the clients table until
-	//       total_sending >= max_simultaneous_block_sends_server_total
-
 	// Second pass through clients
 	// - Ask RemoteClients what they want to have sent
 	// - Send the things possibly if they are available
-	for (size_t i=0; i<clients.size(); i++) {
-		u16 peer_id = clients[i];
-
+	// - Go multiple times through the clients table until total_sending >=
+	//   max_simultaneous_block_sends_server_total or there is nothing to send
+	//   anymore
+	for (;;) {
 		if (total_sending >= max_simultaneous_block_sends_server_total)
 			break;
 
-		RemoteClient *client = m_clients.lockedGetClientNoEx(peer_id, CS_Active);
-		if(!client)
-			continue;
+		bool sent_something = false;
 
-		WMSSuggestion wmss = client->getNextBlock(m_emerge, m_far_map);
-		WantedMapSend wms = wmss.wms;
+		for (size_t i=0; i<clients.size(); i++) {
+			u16 peer_id = clients[i];
 
-		/*dstream << "Client " << peer_id << ": "
-				<< "wms.type=" << wms.type
-				<< std::endl;*/
+			if (total_sending >= max_simultaneous_block_sends_server_total)
+				break;
 
-		if (wms.type == WMST_INVALID) {
-			continue;
-		}
+			RemoteClient *client = m_clients.lockedGetClientNoEx(peer_id, CS_Active);
+			if(!client)
+				continue;
 
-		if (wms.type == WMST_MAPBLOCK) {
-			/*dstream << "Server: Sending to "<<peer_id<<": "
-					<<wmss.describe()<<std::endl;*/
+			WMSSuggestion wmss = client->getNextBlock(m_emerge, m_far_map);
+			WantedMapSend wms = wmss.wms;
 
-			MapBlock *block = m_env->getMap().getBlockNoCreateNoEx(wms.p);
-			if (!block) {
-				// client->getNextBlock() is technically allowed to reuturn an
-				// inexisting MapBlock, but it shouldn't generally happen. Warn
-				// about it so we can see where it happens.
-				warningstream<<"client->getNextBlock() returned inexisting "
-						"MapBlock"<<std::endl;
+			/*dstream << "Client " << peer_id << ": "
+					<< "wms.type=" << wms.type
+					<< std::endl;*/
+
+			if (wms.type == WMST_INVALID) {
 				continue;
 			}
 
-			SendBlockNoLock(peer_id, block, client->serialization_version,
-					client->net_proto_version);
-			client->SendingBlock(wms);
-			total_sending++;
-		}
-		if (wms.type == WMST_FARBLOCK) {
-			/*dstream << "Server: Sending to "<<peer_id<<": "
-					<<wmss.describe()<<std::endl;*/
+			if (wms.type == WMST_MAPBLOCK) {
+				/*dstream << "Server: Sending to "<<peer_id<<": "
+						<<wmss.describe()<<std::endl;*/
 
-			ServerFarBlock *fb = m_far_map->getBlock(wms.p);
+				MapBlock *block = m_env->getMap().getBlockNoCreateNoEx(wms.p);
+				if (!block) {
+					// client->getNextBlock() is technically allowed to reuturn an
+					// inexisting MapBlock, but it shouldn't generally happen. Warn
+					// about it so we can see where it happens.
+					warningstream<<"client->getNextBlock() returned inexisting "
+							"MapBlock"<<std::endl;
+					continue;
+				}
 
-			FarBlocksResultStatus status;
+				SendBlockNoLock(peer_id, block, client->serialization_version,
+						client->net_proto_version);
+				client->SendingBlock(wms);
+				total_sending++;
+				sent_something = true;
+			}
+			if (wms.type == WMST_FARBLOCK) {
+				/*dstream << "Server: Sending to "<<peer_id<<": "
+						<<wmss.describe()<<std::endl;*/
 
-			if (fb) {
-				if (wmss.is_fully_loaded) {
-					/*dstream<<"ServerFarBlock "<<PP(wms.p)<<" fully loaded"
-							<<std::endl;*/
-					status = FBRS_FULLY_LOADED;
+				ServerFarBlock *fb = m_far_map->getBlock(wms.p);
+
+				FarBlocksResultStatus status;
+
+				if (fb) {
+					if (wmss.is_fully_loaded) {
+						/*dstream<<"ServerFarBlock "<<PP(wms.p)<<" fully loaded"
+								<<std::endl;*/
+						status = FBRS_FULLY_LOADED;
+					} else {
+						/*dstream<<"ServerFarBlock "<<PP(wms.p)<<" partly loaded"
+								<<std::endl;*/
+						status = FBRS_PARTLY_LOADED;
+					}
 				} else {
-					/*dstream<<"ServerFarBlock "<<PP(wms.p)<<" partly loaded"
+					/*dstream<<"ServerFarBlock "<<PP(wms.p)<<" not found"
 							<<std::endl;*/
-					status = FBRS_PARTLY_LOADED;
+					status = FBRS_LOAD_IN_PROGRESS;
 				}
-			} else {
-				/*dstream<<"ServerFarBlock "<<PP(wms.p)<<" not found"
-						<<std::endl;*/
-				status = FBRS_LOAD_IN_PROGRESS;
-			}
 
-			static const v3s16 divs_per_mb(
-					SERVER_FB_MB_DIV, SERVER_FB_MB_DIV, SERVER_FB_MB_DIV);
+				static const v3s16 divs_per_mb(
+						SERVER_FB_MB_DIV, SERVER_FB_MB_DIV, SERVER_FB_MB_DIV);
 
-			NetworkPacket pkt(TOCLIENT_FAR_BLOCKS_RESULT, 0, peer_id);
-			/*
-				v3s16 p (position in farblocks)
-				u8 status
-				u8 flags
-				v3s16 divs_per_mb (amount of divisions per mapblock)
-				u32 data_len
-				Zlib-compressed:
-					for each FarNode (indexed by VoxelArea):
-						u16 node_id
-						u8 light (both lightbanks; raw value)
-			*/
+				NetworkPacket pkt(TOCLIENT_FAR_BLOCKS_RESULT, 0, peer_id);
+				/*
+					v3s16 p (position in farblocks)
+					u8 status
+					u8 flags
+					v3s16 divs_per_mb (amount of divisions per mapblock)
+					u32 data_len
+					Zlib-compressed:
+						for each FarNode (indexed by VoxelArea):
+							u16 node_id
+							u8 light (both lightbanks; raw value)
+				*/
 
-			pkt << wms.p;
+				pkt << wms.p;
 
-			pkt << (u8) status;
-			pkt << (u8) 0; // flags
-			pkt << divs_per_mb;
-			if (status == FBRS_FULLY_LOADED || status == FBRS_PARTLY_LOADED) {
-				std::ostringstream os(std::ios::binary);
-				for (size_t i=0; i<fb->content.size(); i++) {
-					writeU16(os, fb->content[i].id);
-					writeU8(os, fb->content[i].light);
+				pkt << (u8) status;
+				pkt << (u8) 0; // flags
+				pkt << divs_per_mb;
+				if (status == FBRS_FULLY_LOADED || status == FBRS_PARTLY_LOADED) {
+					std::ostringstream os(std::ios::binary);
+					for (size_t i=0; i<fb->content.size(); i++) {
+						writeU16(os, fb->content[i].id);
+						writeU8(os, fb->content[i].light);
+					}
+					std::ostringstream os2(std::ios::binary);
+					compressZlib(os.str(), os2);
+					pkt.putLongString(os2.str());
+				} else {
+					pkt << (u32) 0;
 				}
-				std::ostringstream os2(std::ios::binary);
-				compressZlib(os.str(), os2);
-				pkt.putLongString(os2.str());
-			} else {
-				pkt << (u32) 0;
+
+				infostream << "FAR_BLOCKS_RESULT packet size: " << pkt.getSize()
+						<< std::endl;
+
+				Send(&pkt);
+				client->SendingBlock(wms);
+				total_sending++;
+				sent_something = true;
 			}
-
-			infostream << "FAR_BLOCKS_RESULT packet size: " << pkt.getSize()
-					<< std::endl;
-
-			Send(&pkt);
-			client->SendingBlock(wms);
-			total_sending++;
 		}
+
+		if (!sent_something)
+			break;
 	}
 
 	m_clients.unlock();
