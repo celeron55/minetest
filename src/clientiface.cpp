@@ -538,7 +538,8 @@ WMSSuggestion AutosendCycle::suggestNextFarBlock(
 			v3s16 bp;
 			bool emerge_queue_full = false;
 			for (bp.Z=area_offset_mb.Z; bp.Z<area_offset_mb.Z+area_size_mb.Z; bp.Z++)
-			for (bp.Y=area_offset_mb.Y; bp.Y<area_offset_mb.Y+area_size_mb.Y; bp.Y++)
+			// From top towards bottom; loading looks better this way
+			for (bp.Y=area_offset_mb.Y+area_size_mb.Y-1; bp.Y>=area_offset_mb.Y; bp.Y--)
 			for (bp.X=area_offset_mb.X; bp.X<area_offset_mb.X+area_size_mb.X; bp.X++)
 			{
 				ServerFarBlock::LoadState load_state = fb ?
