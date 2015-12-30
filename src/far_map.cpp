@@ -1644,7 +1644,7 @@ big_break:;
 	} else {
 		// Decide when to draw a normal mesh or a crude mesh
 		// TODO: Configurable
-		bool fine_mesh_wanted = (d < BS * 500);
+		bool fine_mesh_wanted = (d < BS * 1000);
 
 		if (fine_mesh_wanted && b->fine_mesh) {
 			scene::SMesh *mesh = b->fine_mesh;
