@@ -693,7 +693,9 @@ void FarBlockMeshGenerateTask::inThread()
 				if (gen_area.contains(p)) {
 					content_buf[content_buf_area.index(p)] =
 							block.content[block.content_area.index(p)];
-				} else if(block.content_area.contains(p)) {
+				} else if(block.content_area.contains(p) &&
+						block.content[block.content_area.index(p)].id
+								!= CONTENT_IGNORE) {
 					// Only copy light into air
 					u8 light = block.content[block.content_area.index(p)].light;
 					content_buf[content_buf_area.index(p)] =
@@ -766,7 +768,9 @@ void FarBlockMeshGenerateTask::inThread()
 				if (gen_area.contains(p)) {
 					content_buf[content_buf_area.index(p)] =
 							block.content[block.content_area.index(p)];
-				} else if(block.content_area.contains(p)) {
+				} else if(block.content_area.contains(p) &&
+						block.content[block.content_area.index(p)].id
+								!= CONTENT_IGNORE) {
 					// Only copy light into air
 					u8 light = block.content[block.content_area.index(p)].light;
 					content_buf[content_buf_area.index(p)] =
