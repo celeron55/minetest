@@ -393,25 +393,27 @@ bool ScriptApiSecurity::checkPath(lua_State *L, const char *path)
 	lua_pop(L, 1);
 	const Server *server = script->getServer();
 
-	if (!server) return false;
-
 	// Get mod name
+	std::string mod_name;
 	lua_rawgeti(L, LUA_REGISTRYINDEX, CUSTOM_RIDX_CURRENT_MOD_NAME);
 	if (lua_isstring(L, -1)) {
-		std::string mod_name = lua_tostring(L, -1);
+		mod_name = lua_tostring(L, -1);
+		infostream<<"Current mod name: "<<mod_name<<std::endl;
+	}
 
-		// Builtin can access anything
-		if (mod_name == BUILTIN_MOD_NAME) {
+	// Builtin can access anything
+	if (mod_name == BUILTIN_MOD_NAME) {
+		return true;
+	}
+
+	if (!server) return false;
+
+	// Allow paths in mod path
+	const ModSpec *mod = server->getModSpec(mod_name);
+	if (mod) {
+		str = fs::AbsolutePath(mod->path);
+		if (!str.empty() && fs::PathStartsWith(abs_path, str)) {
 			return true;
-		}
-
-		// Allow paths in mod path
-		const ModSpec *mod = server->getModSpec(mod_name);
-		if (mod) {
-			str = fs::AbsolutePath(mod->path);
-			if (!str.empty() && fs::PathStartsWith(abs_path, str)) {
-				return true;
-			}
 		}
 	}
 	lua_pop(L, 1);  // Pop mod name
