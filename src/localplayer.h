@@ -23,16 +23,18 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "player.h"
 #include <list>
 
+class Client;
 class Environment;
 class GenericCAO;
 class ClientActiveObject;
+class PlayerPhysicsScripting;
 
 enum LocalPlayerAnimations {NO_ANIM, WALK_ANIM, DIG_ANIM, WD_ANIM};  // no local animation, walking, digging, both
 
 class LocalPlayer : public Player
 {
 public:
-	LocalPlayer(IGameDef *gamedef, const char *name);
+	LocalPlayer(Client *client, const char *name);
 	virtual ~LocalPlayer();
 
 	bool isLocal() const
@@ -80,6 +82,8 @@ public:
 		m_cao = toset;
 	}
 
+	void setPhysicsScript(const std::string &script_content);
+
 private:
 	void accelerateHorizontal(const v3f &target_speed, const f32 max_increase);
 	void accelerateVertical(const v3f &target_speed, const f32 max_increase);
@@ -99,7 +103,9 @@ private:
 	std::string m_old_node_below_type;
 	bool m_can_jump;
 
-	GenericCAO* m_cao;
+	GenericCAO *m_cao;
+	Client *m_client;
+	PlayerPhysicsScripting *m_physics_script;
 };
 
 #endif

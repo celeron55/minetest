@@ -43,6 +43,9 @@ public:
 	static bool isSecure(lua_State *L);
 	// Loads a file as Lua code safely (doesn't allow bytecode).
 	static bool safeLoadFile(lua_State *L, const char *path);
+	// Loads a file as Lua code safely (doesn't allow bytecode).
+	static bool safeLoadContent(lua_State *L, const char *chunk_name,
+			const std::string &script_content);
 	// Checks if mods are allowed to read and write to the path
 	static bool checkPath(lua_State *L, const char *path);
 

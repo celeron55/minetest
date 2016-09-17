@@ -57,6 +57,7 @@ extern "C" {
 class Server;
 class Environment;
 class GUIEngine;
+class Client;
 class ServerActiveObject;
 
 class ScriptApiBase {
@@ -106,6 +107,9 @@ protected:
 	GUIEngine* getGuiEngine() { return m_guiengine; }
 	void setGuiEngine(GUIEngine* guiengine) { m_guiengine = guiengine; }
 
+	Client* getClient() { return m_client; }
+	void setClient(Client* client) { m_client = client; }
+
 	void objectrefGetOrCreate(lua_State *L, ServerActiveObject *cobj);
 	void objectrefGet(lua_State *L, u16 id);
 
@@ -123,6 +127,7 @@ private:
 	Server*         m_server;
 	Environment*    m_environment;
 	GUIEngine*      m_guiengine;
+	Client*         m_client;
 };
 
 #endif /* S_BASE_H_ */

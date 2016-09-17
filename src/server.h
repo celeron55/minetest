@@ -380,6 +380,7 @@ public:
 	void SendPlayerBreath(u16 peer_id);
 	void SendInventory(PlayerSAO* playerSAO);
 	void SendMovePlayer(u16 peer_id);
+	void SendPhysicsScript(u16 peer_id, const std::string &script_content);
 
 	// Bind address
 	Address m_bind_addr;

@@ -27,13 +27,15 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "environment.h"
 #include "map.h"
 #include "util/numeric.h"
+#include "script/scripting_player_physics.h"
+#include "client.h"
 
 /*
 	LocalPlayer
 */
 
-LocalPlayer::LocalPlayer(IGameDef *gamedef, const char *name):
-	Player(gamedef, name),
+LocalPlayer::LocalPlayer(Client *client, const char *name):
+	Player(client /*=IGameDef*/, name),
 	parent(0),
 	isAttached(false),
 	overridePosition(v3f(0,0,0)),
@@ -54,7 +56,9 @@ LocalPlayer::LocalPlayer(IGameDef *gamedef, const char *name):
 	m_old_node_below(32767,32767,32767),
 	m_old_node_below_type("air"),
 	m_can_jump(false),
-	m_cao(NULL)
+	m_cao(NULL),
+	m_client(client),
+	m_physics_script(NULL)
 {
 	// Initialize hp to 0, so that no hearts will be shown if server
 	// doesn't support health points
@@ -65,6 +69,7 @@ LocalPlayer::LocalPlayer(IGameDef *gamedef, const char *name):
 
 LocalPlayer::~LocalPlayer()
 {
+	delete m_physics_script;
 }
 
 void LocalPlayer::move(f32 dtime, Environment *env, f32 pos_max_d,
@@ -629,6 +634,17 @@ v3s16 LocalPlayer::getStandingNodePos()
 	if(m_sneak_node_exists)
 		return m_sneak_node;
 	return floatToInt(getPosition() - v3f(0, BS, 0), BS);
+}
+
+void LocalPlayer::setPhysicsScript(const std::string &script_content)
+{
+	delete m_physics_script;
+	m_physics_script = NULL;
+	if (script_content != "") {
+		m_physics_script = new PlayerPhysicsScripting(m_client);
+		// TODO: This can throw ModError; how should it be handled?
+		m_physics_script->loadScript(script_content);
+	}
 }
 
 // Horizontal acceleration (X and Z), Y direction is ignored

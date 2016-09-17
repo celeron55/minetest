@@ -457,6 +457,21 @@ int ObjectRef::l_get_physics_override(lua_State *L)
 	return 1;
 }
 
+// set_physics_script(self, std::string script_content)
+int ObjectRef::l_set_physics_script(lua_State *L)
+{
+	NO_MAP_LOCK_REQUIRED;
+	ObjectRef *ref = checkobject(L, 1);
+	PlayerSAO *co = (PlayerSAO *) getobject(ref);
+	if (co == NULL) return 0;
+	std::string script_content = "";
+	if (!lua_isnil(L, 2))
+		script_content = lua_tostring(L, 2);
+	// Do it
+	getServer(L)->SendPhysicsScript(co->getPeerID(), script_content);
+	return 0;
+}
+
 // set_animation(self, frame_range, frame_speed, frame_blend, frame_loop)
 int ObjectRef::l_set_animation(lua_State *L)
 {
@@ -1838,6 +1853,7 @@ const luaL_reg ObjectRef::methods[] = {
 	luamethod(ObjectRef, get_player_control_bits),
 	luamethod(ObjectRef, set_physics_override),
 	luamethod(ObjectRef, get_physics_override),
+	luamethod(ObjectRef, set_physics_script),
 	luamethod(ObjectRef, hud_add),
 	luamethod(ObjectRef, hud_remove),
 	luamethod(ObjectRef, hud_change),

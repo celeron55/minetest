@@ -332,6 +332,31 @@ bool ScriptApiSecurity::safeLoadFile(lua_State *L, const char *path)
 	return true;
 }
 
+bool ScriptApiSecurity::safeLoadContent(lua_State *L, const char *chunk_name,
+		const std::string &script_content)
+{
+	size_t start = 0;
+	int c = script_content[start++];
+	if (c == '#') {
+		// Skip the first line
+		// TODO: Is this correct now?
+		while ((c = script_content[start++]) != '\0' && c != '\n');
+		if (c == '\n') c = script_content[start++];
+	}
+
+	// TODO: Is this correct now?
+	if (c == LUA_SIGNATURE[0]) {
+		lua_pushliteral(L, "Bytecode prohibited when mod security is enabled.");
+		return false;
+	}
+
+	if (luaL_loadbuffer(L, script_content.c_str(), script_content.size(), chunk_name)) {
+		return false;
+	}
+
+	return true;
+}
+
 
 bool ScriptApiSecurity::checkPath(lua_State *L, const char *path)
 {

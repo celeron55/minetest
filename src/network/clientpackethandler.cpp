@@ -1197,6 +1197,19 @@ void Client::handleCommand_EyeOffset(NetworkPacket* pkt)
 	*pkt >> player->eye_offset_first >> player->eye_offset_third;
 }
 
+void Client::handleCommand_PhysicsScript(NetworkPacket* pkt)
+{
+	LocalPlayer *player = m_env.getLocalPlayer();
+	assert(player != NULL);
+
+	std::string script_content = pkt->readLongString();
+
+	verbosestream<<"Got physics script content: \""<<script_content<<"\""
+			<<std::endl;
+
+	player->setPhysicsScript(script_content);
+}
+
 void Client::handleCommand_SrpBytesSandB(NetworkPacket* pkt)
 {
 	if ((m_chosen_auth_mech != AUTH_MECHANISM_LEGACY_PASSWORD)

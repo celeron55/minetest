@@ -1877,6 +1877,22 @@ void Server::SendMovePlayer(u16 peer_id)
 	Send(&pkt);
 }
 
+void Server::SendPhysicsScript(u16 peer_id, const std::string &script_content)
+{
+	DSTACK(FUNCTION_NAME);
+	Player *player = m_env->getPlayer(peer_id);
+	assert(player);
+
+	NetworkPacket pkt(TOCLIENT_PHYSICS_SCRIPT, 0, peer_id);
+	pkt.putLongString(script_content);
+
+	verbosestream<<"Server: Sending TOCLIENT_PHYSICS_SCRIPT"
+			<<": player="<<player->getName()
+			<<", content=\""<<script_content<<"\""<<std::endl;
+
+	Send(&pkt);
+}
+
 void Server::SendLocalPlayerAnimations(u16 peer_id, v2s32 animation_frames[4], f32 animation_speed)
 {
 	NetworkPacket pkt(TOCLIENT_LOCAL_PLAYER_ANIMATIONS, 0,
