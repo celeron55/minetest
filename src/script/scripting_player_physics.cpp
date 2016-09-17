@@ -21,6 +21,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "cpp_api/s_internal.h"
 #include "lua_api/l_util.h"
 #include "lua_api/l_player_physics.h"
+#include "common/c_converter.h"
 #include "common/c_content.h"
 #include "server.h"
 #include "log.h"
@@ -77,31 +78,81 @@ void PlayerPhysicsScripting::loadScriptContent(const std::string &script_content
 	lua_pop(L, 1); // Pop error handler
 }
 
-void PlayerPhysicsScripting::apply_control(float dtime, const PlayerControl &control)
+void PlayerPhysicsScripting::apply_control(float dtime, Player *player)
+{
+	control_call("registered_local_player_physics_apply_control", dtime, player);
+}
+
+void PlayerPhysicsScripting::move(float dtime, Player *player)
+{
+	control_call("registered_local_player_physics_move", dtime, player);
+}
+
+static void push_player_params(lua_State *L, const Player &player)
+{
+	lua_newtable(L);
+	push_v3f(L, player.getPosition());
+	lua_setfield(L, -2, "position");
+	push_v3f(L, player.getSpeed());
+	lua_setfield(L, -2, "velocity");
+	lua_pushnumber(L, player.getPitch());
+	lua_setfield(L, -2, "pitch");
+	lua_pushnumber(L, player.getYaw());
+	lua_setfield(L, -2, "yaw");
+}
+
+static void read_player_params(lua_State *L, int table, Player *player)
+{
+	lua_getfield(L, table, "position");
+	if(!lua_isnil(L, -1))
+		player->setPosition(read_v3f(L, -1));
+	lua_pop(L, 1);
+
+	lua_getfield(L, table, "velocity");
+	if(!lua_isnil(L, -1))
+		player->setSpeed(read_v3f(L, -1));
+	lua_pop(L, 1);
+
+	lua_getfield(L, table, "pitch");
+	if(!lua_isnil(L, -1))
+		player->setPitch(lua_tonumber(L, -1));
+	lua_pop(L, 1);
+
+	lua_getfield(L, table, "yaw");
+	if(!lua_isnil(L, -1))
+		player->setYaw(lua_tonumber(L, -1));
+	lua_pop(L, 1);
+}
+
+void PlayerPhysicsScripting::control_call(
+		const char *func_name, float dtime, Player *player)
 {
 	lua_State *L = getStack();
 
 	int error_handler = PUSH_ERROR_HANDLER(L);
 
 	lua_getglobal(L, "core");
-	lua_getfield(L, -1, "registered_local_player_physics_apply_control");
+	lua_getfield(L, -1, func_name);
 	if (lua_isnil(L, -1)){
-		lua_pop(L, 2);
+		lua_pop(L, 2); // player params, error handler, core
 		return;
 	}
 	lua_remove(L, -2); // Remove core
 
-	if (lua_type(L, -1) != LUA_TFUNCTION) {
+	if (lua_type(L, -1) != LUA_TFUNCTION)
 		return;
-	}
-	lua_pushnumber(L, dtime);
-	push_player_control(L, control);
-	PCALL_RES(lua_pcall(L, 2, 0, error_handler));
-	lua_pop(L, 1); // Pop error handler
-}
 
-void PlayerPhysicsScripting::move(float dtime)
-{
+	lua_pushnumber(L, dtime);
+	push_player_control_full(L, player->control);
+	push_player_params(L, *player);
+
+	PCALL_RES(lua_pcall(L, 3, 1, error_handler));
+
+	if(!lua_isnil(L, -1))
+		read_player_params(L, -1, player);
+
+	lua_pop(L, 1); // Pop player params (return value)
+	lua_pop(L, 1); // Pop error handler
 }
 
 void PlayerPhysicsScripting::InitializeModApi(lua_State *L, int top)

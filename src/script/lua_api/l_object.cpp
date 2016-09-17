@@ -1229,7 +1229,7 @@ int ObjectRef::l_get_player_control(lua_State *L)
 	}
 	// Do it
 	PlayerControl control = player->getPlayerControl();
-	push_player_control(L, control);
+	push_player_control_minimal(L, control);
 	return 1;
 }
 

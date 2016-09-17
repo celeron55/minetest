@@ -77,7 +77,7 @@ void LocalPlayer::move(f32 dtime, Environment *env, f32 pos_max_d,
 {
 	// Physics script overrides everything
 	if(m_physics_script){
-		m_physics_script->move(dtime);
+		m_physics_script->move(dtime, this);
 		return;
 	}
 
@@ -417,7 +417,7 @@ void LocalPlayer::applyControl(float dtime)
 {
 	// Physics script overrides everything
 	if(m_physics_script){
-		m_physics_script->apply_control(dtime, control);
+		m_physics_script->apply_control(dtime, this);
 		return;
 	}
 

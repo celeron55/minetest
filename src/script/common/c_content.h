@@ -160,9 +160,11 @@ bool               push_json_value           (lua_State *L,
 void               read_json_value           (lua_State *L, Json::Value &root,
                                               int index, u8 recursion = 0);
 
-//PlayerControl      read_player_control       (lua_State *L, int table);
-void               push_player_control       (lua_State *L,
+void               push_player_control_minimal(lua_State *L,
                                               const PlayerControl &control);
+void               push_player_control_full  (lua_State *L,
+                                              const PlayerControl &control);
+//PlayerControl      read_player_control       (lua_State *L, int table);
 
 extern struct EnumString es_TileAnimationType[];
 

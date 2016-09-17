@@ -1332,11 +1332,7 @@ void read_json_value(lua_State *L, Json::Value &root, int index, u8 recursion)
 	lua_pop(L, 1); // Pop value
 }
 
-/*PlayerControl read_player_control(lua_State *L, int table)
-{
-}*/
-
-void push_player_control(lua_State *L, const PlayerControl &control)
+void push_player_control_minimal(lua_State *L, const PlayerControl &control)
 {
 	lua_newtable(L);
 	lua_pushboolean(L, control.up);
@@ -1358,4 +1354,22 @@ void push_player_control(lua_State *L, const PlayerControl &control)
 	lua_pushboolean(L, control.RMB);
 	lua_setfield(L, -2, "RMB");
 }
+
+void push_player_control_full(lua_State *L, const PlayerControl &control)
+{
+	push_player_control_minimal(L, control);
+
+	lua_pushnumber(L, control.pitch);
+	lua_setfield(L, -2, "pitch");
+	lua_pushnumber(L, control.yaw);
+	lua_setfield(L, -2, "yaw");
+	lua_pushnumber(L, control.sidew_move_joystick_axis);
+	lua_setfield(L, -2, "sidew_move_joystick_axis");
+	lua_pushnumber(L, control.forw_move_joystick_axis);
+	lua_setfield(L, -2, "forw_move_joystick_axis");
+}
+
+/*PlayerControl read_player_control(lua_State *L, int table)
+{
+}*/
 
