@@ -140,19 +140,19 @@ core.set_local_player_physics({
 		-- straighten it up
 
 		--print("rightward_velocity: "..rightward_velocity)
-		local rightward_rotate = dtime * rightward_velocity * 0.1
-		local d = 0.1
+		local rightward_rotate = dtime * rightward_velocity * 0.02
+		local d = 0.05
 		if rightward_rotate >  math.pi * d then rightward_rotate =  math.pi * d end
 		if rightward_rotate < -math.pi * d then rightward_rotate = -math.pi * d end
 		--print("rightward_rotate: "..rightward_rotate)
-		local pitch_factor = math.cos(current_roll + math.pi / 2)
-		local yaw_factor = math.sin(current_roll - math.pi / 2) * 2
+		local pitch_factor = math.cos(current_roll + math.pi / 2) * 2
+		local yaw_factor = math.sin(current_roll - math.pi / 2)
 		--player_params.pitch = player_params.pitch - pitch_factor * rightward_rotate
 		player_params.yaw = player_params.yaw + yaw_factor * rightward_rotate
 
 		--print("upward_velocity: "..upward_velocity)
-		local upward_rotate = dtime * upward_velocity * -0.1
-		local d = 0.1
+		local upward_rotate = dtime * upward_velocity * -0.02
+		local d = 0.05
 		if upward_rotate >  math.pi * d then upward_rotate =  math.pi * d end
 		if upward_rotate < -math.pi * d then upward_rotate = -math.pi * d end
 		--print("upward_rotate: "..upward_rotate)
@@ -162,16 +162,18 @@ core.set_local_player_physics({
 		player_params.yaw = player_params.yaw + yaw_factor * upward_rotate
 
 		-- Restrict sideways movement
-		local a = 0.2 + forward_velocity * 0.3
+		local a = 0.2 + forward_velocity * 0.2
 		rightward_velocity = accelerate_towards(rightward_velocity, 0, a, dtime)
 
 		-- Provide lift
-		local a = 1.0 + forward_velocity * 3.0
+		local a = 1.0 + forward_velocity * 1.0
+		-- Stay level
 		upward_velocity = accelerate_towards(upward_velocity, 0, a, dtime)
+		-- Rise a bit
+		--upward_velocity = upward_velocity + forward_velocity * dtime * 0.5
 
 		-- Weird roll-based auto-yaw
-		upward_velocity = upward_velocity + forward_velocity * dtime * 0.5
-		local yaw_factor = math.sin(current_roll) * 2
+		local yaw_factor = math.sin(current_roll)
 		local d = yaw_factor * forward_velocity * dtime * 0.002
 		player_params.yaw = player_params.yaw + d
 
