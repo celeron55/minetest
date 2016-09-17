@@ -121,7 +121,7 @@ public:
 			std::vector<CollisionInfo> *collision_info)
 	{}
 
-	v3f getSpeed()
+	v3f getSpeed() const
 	{
 		return m_speed;
 	}
@@ -131,20 +131,20 @@ public:
 		m_speed = speed;
 	}
 
-	v3f getPosition()
+	v3f getPosition() const
 	{
 		return m_position;
 	}
 
 	v3s16 getLightPosition() const;
 
-	v3f getEyeOffset()
+	v3f getEyeOffset() const
 	{
 		float eye_height = camera_barely_in_ceiling ? 1.5f : 1.625f;
 		return v3f(0, BS * eye_height, 0);
 	}
 
-	v3f getEyePosition()
+	v3f getEyePosition() const
 	{
 		return m_position + getEyeOffset();
 	}
@@ -170,17 +170,17 @@ public:
 		m_yaw = yaw;
 	}
 
-	f32 getPitch()
+	f32 getPitch() const
 	{
 		return m_pitch;
 	}
 
-	f32 getYaw()
+	f32 getYaw() const
 	{
 		return m_yaw;
 	}
 
-	u16 getBreath()
+	u16 getBreath() const
 	{
 		return m_breath;
 	}
@@ -193,23 +193,23 @@ public:
 	}
 
 	// Deprecated
-	f32 getRadPitchDep()
+	f32 getRadPitchDep() const
 	{
 		return -1.0 * m_pitch * core::DEGTORAD;
 	}
 
 	// Deprecated
-	f32 getRadYawDep()
+	f32 getRadYawDep() const
 	{
 		return (m_yaw + 90.) * core::DEGTORAD;
 	}
 
-	f32 getRadPitch()
+	f32 getRadPitch() const
 	{
 		return m_pitch * core::DEGTORAD;
 	}
 
-	f32 getRadYaw()
+	f32 getRadYaw() const
 	{
 		return m_yaw * core::DEGTORAD;
 	}
@@ -219,12 +219,12 @@ public:
 		return m_name;
 	}
 
-	aabb3f getCollisionbox()
+	aabb3f getCollisionbox() const
 	{
 		return m_collisionbox;
 	}
 
-	u32 getFreeHudID() {
+	u32 getFreeHudID() const {
 		size_t size = hud.size();
 		for (size_t i = 0; i != size; i++) {
 			if (!hud[i])
@@ -238,7 +238,7 @@ public:
 		hud_hotbar_itemcount = hotbar_itemcount;
 	}
 
-	s32 getHotbarItemcount()
+	s32 getHotbarItemcount() const
 	{
 		return hud_hotbar_itemcount;
 	}
@@ -248,7 +248,7 @@ public:
 		hud_hotbar_image = name;
 	}
 
-	std::string getHotbarImage()
+	std::string getHotbarImage() const
 	{
 		return hud_hotbar_image;
 	}
@@ -258,7 +258,7 @@ public:
 		hud_hotbar_selected_image = name;
 	}
 
-	std::string getHotbarSelectedImage() {
+	std::string getHotbarSelectedImage() const {
 		return hud_hotbar_selected_image;
 	}
 
@@ -271,7 +271,7 @@ public:
 	}
 
 	void getSky(video::SColor *bgcolor, std::string *type,
-		std::vector<std::string> *params)
+		std::vector<std::string> *params) const
 	{
 		*bgcolor = m_sky_bgcolor;
 		*type = m_sky_type;
@@ -284,7 +284,7 @@ public:
 		m_day_night_ratio = ratio;
 	}
 
-	void getDayNightRatio(bool *do_override, float *ratio)
+	void getDayNightRatio(bool *do_override, float *ratio) const
 	{
 		*do_override = m_day_night_ratio_do_override;
 		*ratio = m_day_night_ratio;
@@ -297,7 +297,7 @@ public:
 		local_animation_speed = frame_speed;
 	}
 
-	void getLocalAnimations(v2s32 *frames, float *frame_speed)
+	void getLocalAnimations(v2s32 *frames, float *frame_speed) const
 	{
 		for (int i = 0; i < 4; i++)
 			frames[i] = local_animations[i];
@@ -391,7 +391,7 @@ public:
 	std::string inventory_formspec;
 
 	PlayerControl control;
-	PlayerControl getPlayerControl()
+	PlayerControl getPlayerControl() const
 	{
 		return control;
 	}
