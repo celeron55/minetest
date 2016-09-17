@@ -380,7 +380,12 @@ void Camera::update(LocalPlayer* player, f32 frametime, f32 busytime,
 
 	// Set camera node transformation
 	m_cameranode->setPosition(my_cp-intToFloat(m_camera_offset, BS));
-	m_cameranode->setUpVector(abs_cam_up);
+	v3f upv;
+	if (player->getPhysicsScriptCameraUpVector(&upv)) {
+		m_cameranode->setUpVector(upv);
+	} else {
+		m_cameranode->setUpVector(abs_cam_up);
+	}
 	// *100.0 helps in large map coordinates
 	m_cameranode->setTarget(my_cp-intToFloat(m_camera_offset, BS) + 100 * m_camera_direction);
 

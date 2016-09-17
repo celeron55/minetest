@@ -155,6 +155,38 @@ void PlayerPhysicsScripting::control_call(
 	lua_pop(L, 1); // Pop error handler
 }
 
+bool PlayerPhysicsScripting::camera_up_vector(v3f *result)
+{
+	lua_State *L = getStack();
+
+	int error_handler = PUSH_ERROR_HANDLER(L);
+
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "registered_local_player_physics_camera_up_vector");
+	if (lua_isnil(L, -1)){
+		lua_pop(L, 2); // player params, error handler, core
+		return false;
+	}
+	lua_remove(L, -2); // Remove core
+
+	if (lua_type(L, -1) != LUA_TFUNCTION)
+		return false;
+
+	PCALL_RES(lua_pcall(L, 0, 1, error_handler));
+
+	if (lua_isnil(L, -1)){
+		lua_pop(L, 1); // Pop error handler
+		return false;
+	}
+
+	*result = read_v3f(L, -1);
+
+	lua_pop(L, 1); // Pop return value
+	lua_pop(L, 1); // Pop error handler
+
+	return true;
+}
+
 void PlayerPhysicsScripting::InitializeModApi(lua_State *L, int top)
 {
 	// Initialize mod api modules

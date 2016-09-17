@@ -22,6 +22,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "cpp_api/s_base.h"
 #include "cpp_api/s_security.h"
+#include "irr_v3d.h"
 
 class Client;
 class Player;
@@ -39,6 +40,7 @@ public:
 	// TODO: Maybe move these into ScriptApiLocalPlayerPhysics
 	void apply_control(float dtime, Player *player);
 	void move(float dtime, Player *player);
+	bool camera_up_vector(v3f *result);
 
 private:
 	void control_call(const char *func_name, float dtime, Player *player);

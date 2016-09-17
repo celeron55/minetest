@@ -4144,6 +4144,7 @@ The Biome API is still in an experimental phase and subject to change.
     minetest.set_local_player_physics({
         apply_control = function(dtime, control, player_params) -> player_params or nil,
         move = function(dtime, control, player_params) -> player_params or nil, -- Called more often if velocity is high
+        camera_up_vector = function() -> vector or nil,
         get_collision_box = function(), -- TODO
         get_eye_offset = function(), -- TODO
     })
