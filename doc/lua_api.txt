@@ -4149,3 +4149,38 @@ The Biome API is still in an experimental phase and subject to change.
         get_eye_offset = function(), -- TODO
     })
 
+    minetest.send_local_player_physics_message(message)
+
+    control format:
+    {
+        right = false,
+        aux1 = false,
+        sneak = false,
+        down = false,
+        left = false,
+        up = false,
+        jump = false
+        LMB = false,
+        RMB = false,
+        yaw = 3.5694076447901,
+        pitch = 1.5620696805349,
+        sidew_move_joystick_axis = 0,
+        forw_move_joystick_axis = 0,
+    }
+
+    player_params format:
+    {
+        position = {
+            y = -626.39599609375,
+            x = -3668.8452148438,
+            z = 4305.4926757812
+        },
+        velocity = {
+            y = -87.501235961914,
+            x = 0.62141418457031,
+            z = -1.3628302812576
+        },
+        yaw = 606.75519234034,
+        pitch = 604.74785916978
+    }
+
