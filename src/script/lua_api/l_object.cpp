@@ -1229,25 +1229,7 @@ int ObjectRef::l_get_player_control(lua_State *L)
 	}
 	// Do it
 	PlayerControl control = player->getPlayerControl();
-	lua_newtable(L);
-	lua_pushboolean(L, control.up);
-	lua_setfield(L, -2, "up");
-	lua_pushboolean(L, control.down);
-	lua_setfield(L, -2, "down");
-	lua_pushboolean(L, control.left);
-	lua_setfield(L, -2, "left");
-	lua_pushboolean(L, control.right);
-	lua_setfield(L, -2, "right");
-	lua_pushboolean(L, control.jump);
-	lua_setfield(L, -2, "jump");
-	lua_pushboolean(L, control.aux1);
-	lua_setfield(L, -2, "aux1");
-	lua_pushboolean(L, control.sneak);
-	lua_setfield(L, -2, "sneak");
-	lua_pushboolean(L, control.LMB);
-	lua_setfield(L, -2, "LMB");
-	lua_pushboolean(L, control.RMB);
-	lua_setfield(L, -2, "RMB");
+	push_player_control(L, control);
 	return 1;
 }
 

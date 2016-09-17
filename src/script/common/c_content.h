@@ -60,6 +60,7 @@ struct HitParams;
 struct EnumString;
 struct NoiseParams;
 class Schematic;
+struct PlayerControl;
 
 
 ContentFeatures    read_content_features     (lua_State *L, int index);
@@ -158,6 +159,10 @@ bool               push_json_value           (lua_State *L,
                                               int nullindex);
 void               read_json_value           (lua_State *L, Json::Value &root,
                                               int index, u8 recursion = 0);
+
+//PlayerControl      read_player_control       (lua_State *L, int table);
+void               push_player_control       (lua_State *L,
+                                              const PlayerControl &control);
 
 extern struct EnumString es_TileAnimationType[];
 

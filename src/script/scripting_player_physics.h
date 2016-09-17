@@ -24,7 +24,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "cpp_api/s_security.h"
 
 class Client;
+struct PlayerControl;
 
+// TODO: Maybe rename to LocalPlayerPhysicsScripting
 class PlayerPhysicsScripting :
 		virtual public ScriptApiBase,
 		public ScriptApiSecurity
@@ -32,7 +34,11 @@ class PlayerPhysicsScripting :
 public:
 	PlayerPhysicsScripting(Client *client);
 	
-	void loadScript(const std::string &script_content);
+	void loadScriptContent(const std::string &script_content);
+
+	// TODO: Maybe move these into ScriptApiLocalPlayerPhysics
+	void apply_control(float dtime, const PlayerControl &control);
+	void move(float dtime);
 
 private:
 	void InitializeModApi(lua_State *L, int top);

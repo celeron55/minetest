@@ -45,6 +45,8 @@ elseif INIT == "mainmenu" then
 	end
 elseif INIT == "async" then
 	dofile(asyncpath .. "init.lua")
+elseif INIT == "local_player_physics" then
+	dofile(scriptdir .. "local_player_physics" .. DIR_DELIM .. "init.lua")
 else
 	error(("Unrecognized builtin initialization type %s!"):format(tostring(INIT)))
 end

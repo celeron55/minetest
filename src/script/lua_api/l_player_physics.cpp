@@ -21,17 +21,18 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "lua_api/l_internal.h"
 #include "log.h"
 
+// TODO: Remove this?
 // params: table
-int ModApiPlayerPhysics::l_set_local_player_physics(lua_State *L)
+/*int ModApiPlayerPhysics::l_set_local_player_physics(lua_State *L)
 {
 	infostream<<"ModApiPlayerPhysics::l_set_local_player_physics"<<std::endl;
 
 	// TODO
 
 	return 0;
-}
+}*/
 
 void ModApiPlayerPhysics::Initialize(lua_State *L, int top)
 {
-	API_FCT(set_local_player_physics);
+	//API_FCT(set_local_player_physics);
 }

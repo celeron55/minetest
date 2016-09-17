@@ -75,6 +75,12 @@ LocalPlayer::~LocalPlayer()
 void LocalPlayer::move(f32 dtime, Environment *env, f32 pos_max_d,
 		std::vector<CollisionInfo> *collision_info)
 {
+	// Physics script overrides everything
+	if(m_physics_script){
+		m_physics_script->move(dtime);
+		return;
+	}
+
 	Map *map = &env->getMap();
 	INodeDefManager *nodemgr = m_gamedef->ndef();
 
@@ -409,6 +415,12 @@ void LocalPlayer::move(f32 dtime, Environment *env, f32 pos_max_d)
 
 void LocalPlayer::applyControl(float dtime)
 {
+	// Physics script overrides everything
+	if(m_physics_script){
+		m_physics_script->apply_control(dtime, control);
+		return;
+	}
+
 	// Clear stuff
 	swimming_vertical = false;
 
@@ -643,7 +655,7 @@ void LocalPlayer::setPhysicsScript(const std::string &script_content)
 	if (script_content != "") {
 		m_physics_script = new PlayerPhysicsScripting(m_client);
 		// TODO: This can throw ModError; how should it be handled?
-		m_physics_script->loadScript(script_content);
+		m_physics_script->loadScriptContent(script_content);
 	}
 }
 
