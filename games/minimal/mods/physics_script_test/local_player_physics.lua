@@ -70,9 +70,9 @@ core.set_local_player_physics({
 		end
 
 		-- Wrap
-		if current_roll < -math.pi then
+		if current_roll < -math.pi - 0.1 then
 			current_roll = current_roll + math.pi * 2
-		elseif current_roll > -math.pi  then
+		elseif current_roll > -math.pi + 0.1 then
 			current_roll = current_roll - math.pi * 2
 		end
 
@@ -89,16 +89,16 @@ core.set_local_player_physics({
 		end
 
 		-- Wrap
-		if player_params.pitch < -math.pi then
+		if player_params.pitch < -math.pi - 0.1 then
 			player_params.pitch = player_params.pitch + math.pi * 2
-		elseif player_params.pitch > -math.pi then
+		elseif player_params.pitch > -math.pi + 0.1 then
 			player_params.pitch = player_params.pitch + math.pi * 2
 		end
 
 		-- Wrap
-		if player_params.yaw < -math.pi then
+		if player_params.yaw < -math.pi - 0.1 then
 			player_params.yaw = player_params.yaw + math.pi * 2
-		elseif player_params.yaw > -math.pi then
+		elseif player_params.yaw > -math.pi + 0.1 then
 			player_params.yaw = player_params.yaw + math.pi * 2
 		end
 
