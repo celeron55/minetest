@@ -48,8 +48,8 @@ local current_roll = 0.0
 
 core.set_local_player_physics({
 	apply_control = function(dtime, control, player_params)
-		print("apply_control: dtime="..dump(dtime)..", control="..dump(control)..
-				", player_params="..dump(player_params))
+		--print("apply_control: dtime="..dump(dtime)..", control="..dump(control)..
+		--		", player_params="..dump(player_params))
 
 		if control.jump and not previous_control.jump then
 			throttle_on = not throttle_on
@@ -135,23 +135,23 @@ core.set_local_player_physics({
 		-- Pull the plane's pitch, yaw and roll towards velocity vector to
 		-- straighten it up
 
-		print("rightward_velocity: "..rightward_velocity)
+		--print("rightward_velocity: "..rightward_velocity)
 		local rightward_rotate = dtime * rightward_velocity * 0.1
 		local d = 0.1
 		if rightward_rotate >  math.pi * d then rightward_rotate =  math.pi * d end
 		if rightward_rotate < -math.pi * d then rightward_rotate = -math.pi * d end
-		print("rightward_rotate: "..rightward_rotate)
+		--print("rightward_rotate: "..rightward_rotate)
 		local pitch_factor = math.cos(current_roll + math.pi / 2)
 		local yaw_factor = math.sin(current_roll - math.pi / 2) * 2
 		--player_params.pitch = player_params.pitch - pitch_factor * rightward_rotate
 		player_params.yaw = player_params.yaw + yaw_factor * rightward_rotate
 
-		print("upward_velocity: "..upward_velocity)
+		--print("upward_velocity: "..upward_velocity)
 		local upward_rotate = dtime * upward_velocity * -0.1
 		local d = 0.1
 		if upward_rotate >  math.pi * d then upward_rotate =  math.pi * d end
 		if upward_rotate < -math.pi * d then upward_rotate = -math.pi * d end
-		print("upward_rotate: "..upward_rotate)
+		--print("upward_rotate: "..upward_rotate)
 		local pitch_factor = math.cos(current_roll)
 		local yaw_factor = math.sin(current_roll) * 2
 		--player_params.pitch = player_params.pitch - pitch_factor * upward_rotate
@@ -192,7 +192,7 @@ core.set_local_player_physics({
 	end,
 	move = function(dtime, control, player_params)
 		if dtime < 0.00001 then
-			print("move: Something went probably wrong (dtime is very small)")
+			--print("move: Something went probably wrong (dtime is very small)")
 			-- Crash somehow
 			local a = nil
 			a.a = nil
