@@ -48,6 +48,8 @@ public:
 
 	v3f overridePosition;
 
+	void applyEnvironmentPhysics(float dtime);
+
 	void move(f32 dtime, Environment *env, f32 pos_max_d);
 	void move(f32 dtime, Environment *env, f32 pos_max_d,
 			std::vector<CollisionInfo> *collision_info);
@@ -83,6 +85,7 @@ public:
 	}
 
 	void setPhysicsScript(const std::string &script_content);
+	bool hasPhysicsScript(){ return !!m_physics_script; }
 
 private:
 	void accelerateHorizontal(const v3f &target_speed, const f32 max_increase);

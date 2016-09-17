@@ -95,9 +95,9 @@ static void push_player_params(lua_State *L, const Player &player)
 	lua_setfield(L, -2, "position");
 	push_v3f(L, player.getSpeed());
 	lua_setfield(L, -2, "velocity");
-	lua_pushnumber(L, player.getPitch());
+	lua_pushnumber(L, player.getPitch() / 180.0 * M_PI);
 	lua_setfield(L, -2, "pitch");
-	lua_pushnumber(L, player.getYaw());
+	lua_pushnumber(L, player.getYaw() / 180.0 * M_PI);
 	lua_setfield(L, -2, "yaw");
 }
 
@@ -115,12 +115,12 @@ static void read_player_params(lua_State *L, int table, Player *player)
 
 	lua_getfield(L, table, "pitch");
 	if(!lua_isnil(L, -1))
-		player->setPitch(lua_tonumber(L, -1));
+		player->setPitch(lua_tonumber(L, -1) * 180.0 / M_PI);
 	lua_pop(L, 1);
 
 	lua_getfield(L, table, "yaw");
 	if(!lua_isnil(L, -1))
-		player->setYaw(lua_tonumber(L, -1));
+		player->setYaw(lua_tonumber(L, -1) * 180.0 / M_PI);
 	lua_pop(L, 1);
 }
 

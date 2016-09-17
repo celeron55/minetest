@@ -4139,7 +4139,7 @@ The Biome API is still in an experimental phase and subject to change.
         data = "response"
     }
 
-### `Player physics script internal API`
+### `Player physics script API`
 
     minetest.set_local_player_physics({
         apply_control = function(dtime, control, player_params) -> player_params or nil,

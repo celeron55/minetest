@@ -2413,8 +2413,6 @@ void ClientEnvironment::step(float dtime)
 	/*
 		Get the speed the player is going
 	*/
-	bool is_climbing = lplayer->is_climbing;
-
 	f32 player_speed = lplayer->getSpeed().getLength();
 
 	/*
@@ -2470,36 +2468,9 @@ void ClientEnvironment::step(float dtime)
 		*/
 
 		{
-			// Apply physics
-			if(free_move == false && is_climbing == false)
-			{
-				// Gravity
-				v3f speed = lplayer->getSpeed();
-				if(lplayer->in_liquid == false)
-					speed.Y -= lplayer->movement_gravity * lplayer->physics_override_gravity * dtime_part * 2;
-
-				// Liquid floating / sinking
-				if(lplayer->in_liquid && !lplayer->swimming_vertical)
-					speed.Y -= lplayer->movement_liquid_sink * dtime_part * 2;
-
-				// Liquid resistance
-				if(lplayer->in_liquid_stable || lplayer->in_liquid)
-				{
-					// How much the node's viscosity blocks movement, ranges between 0 and 1
-					// Should match the scale at which viscosity increase affects other liquid attributes
-					const f32 viscosity_factor = 0.3;
-
-					v3f d_wanted = -speed / lplayer->movement_liquid_fluidity;
-					f32 dl = d_wanted.getLength();
-					if(dl > lplayer->movement_liquid_fluidity_smooth)
-						dl = lplayer->movement_liquid_fluidity_smooth;
-					dl *= (lplayer->liquid_viscosity * viscosity_factor) + (1 - viscosity_factor);
-
-					v3f d = d_wanted.normalize() * dl;
-					speed += d;
-				}
-
-				lplayer->setSpeed(speed);
+			if(!free_move){
+				// Gravity, liquids
+				lplayer->applyEnvironmentPhysics(dtime_part);
 			}
 
 			/*

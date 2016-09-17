@@ -72,6 +72,46 @@ LocalPlayer::~LocalPlayer()
 	delete m_physics_script;
 }
 
+void LocalPlayer::applyEnvironmentPhysics(f32 dtime)
+{
+	if(is_climbing)
+		return;
+
+	// Physics script overrides everything (in this case, implements this inside
+	// move())
+	if(m_physics_script){
+		return;
+	}
+
+	// Gravity
+	v3f speed = getSpeed();
+	if(in_liquid == false)
+		speed.Y -= movement_gravity * physics_override_gravity * dtime * 2;
+
+	// Liquid floating / sinking
+	if(in_liquid && !swimming_vertical)
+		speed.Y -= movement_liquid_sink * dtime * 2;
+
+	// Liquid resistance
+	if(in_liquid_stable || in_liquid)
+	{
+		// How much the node's viscosity blocks movement, ranges between 0 and 1
+		// Should match the scale at which viscosity increase affects other liquid attributes
+		const f32 viscosity_factor = 0.3;
+
+		v3f d_wanted = -speed / movement_liquid_fluidity;
+		f32 dl = d_wanted.getLength();
+		if(dl > movement_liquid_fluidity_smooth)
+			dl = movement_liquid_fluidity_smooth;
+		dl *= (liquid_viscosity * viscosity_factor) + (1 - viscosity_factor);
+
+		v3f d = d_wanted.normalize() * dl;
+		speed += d;
+	}
+
+	setSpeed(speed);
+}
+
 void LocalPlayer::move(f32 dtime, Environment *env, f32 pos_max_d,
 		std::vector<CollisionInfo> *collision_info)
 {

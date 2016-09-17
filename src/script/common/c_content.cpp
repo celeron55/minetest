@@ -1359,9 +1359,9 @@ void push_player_control_full(lua_State *L, const PlayerControl &control)
 {
 	push_player_control_minimal(L, control);
 
-	lua_pushnumber(L, control.pitch);
+	lua_pushnumber(L, control.pitch / 180.0 * M_PI);
 	lua_setfield(L, -2, "pitch");
-	lua_pushnumber(L, control.yaw);
+	lua_pushnumber(L, control.yaw / 180.0 * M_PI);
 	lua_setfield(L, -2, "yaw");
 	lua_pushnumber(L, control.sidew_move_joystick_axis);
 	lua_setfield(L, -2, "sidew_move_joystick_axis");

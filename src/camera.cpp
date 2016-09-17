@@ -468,7 +468,8 @@ void Camera::update(LocalPlayer* player, f32 frametime, f32 busytime,
 	const bool climbing = movement_Y && player->is_climbing;
 	if ((walking || swimming || climbing) &&
 			m_cache_view_bobbing &&
-			(!g_settings->getBool("free_move") || !m_gamedef->checkLocalPrivilege("fly")))
+			(!g_settings->getBool("free_move") || !m_gamedef->checkLocalPrivilege("fly")) &&
+			!player->hasPhysicsScript())
 	{
 		// Start animation
 		m_view_bobbing_state = 1;
