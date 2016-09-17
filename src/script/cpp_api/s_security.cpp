@@ -398,7 +398,6 @@ bool ScriptApiSecurity::checkPath(lua_State *L, const char *path)
 	lua_rawgeti(L, LUA_REGISTRYINDEX, CUSTOM_RIDX_CURRENT_MOD_NAME);
 	if (lua_isstring(L, -1)) {
 		mod_name = lua_tostring(L, -1);
-		infostream<<"Current mod name: "<<mod_name<<std::endl;
 	}
 
 	// Builtin can access anything
