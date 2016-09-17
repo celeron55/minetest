@@ -53,6 +53,10 @@ core.set_local_player_physics({
 
 		if control.jump and not previous_control.jump then
 			throttle_on = not throttle_on
+			core.send_local_player_physics_message({
+				name = "throttle_status",
+				status = throttle_on,
+			})
 		end
 
 		-- Left/right

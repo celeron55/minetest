@@ -24,9 +24,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 class ModApiPlayerPhysics : public ModApiBase {
 private:
-	// TODO: Remove?
-	// params: table
-	//static int l_set_local_player_physics(lua_State *L);
+	static int l_send_local_player_physics_message(lua_State *L);
 
 public:
 	static void Initialize(lua_State *L, int top);
