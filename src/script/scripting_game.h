@@ -28,6 +28,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "cpp_api/s_player.h"
 #include "cpp_api/s_server.h"
 #include "cpp_api/s_security.h"
+#include "cpp_api/s_player_physics.h"
 
 /*****************************************************************************/
 /* Scripting <-> Game Interface                                              */
@@ -41,7 +42,8 @@ class GameScripting :
 		public ScriptApiNode,
 		public ScriptApiPlayer,
 		public ScriptApiServer,
-		public ScriptApiSecurity
+		public ScriptApiSecurity,
+		public ScriptApiPlayerPhysics
 {
 public:
 	GameScripting(Server* server);

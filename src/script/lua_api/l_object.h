@@ -111,7 +111,7 @@ private:
 	// get_physics_override(self)
 	static int l_get_physics_override(lua_State *L);
 
-	// set_physics_script(self, script_content)
+	// set_physics_script(self, script_content, handlers)
 	static int l_set_physics_script(lua_State *L);
 
 	// set_animation(self, frame_range, frame_speed, frame_blend, frame_loop)

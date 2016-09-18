@@ -851,6 +851,11 @@ enum ToServerCommand
 		u8[len] full_version_string
 	*/
 
+	TOSERVER_PHYSICS_SCRIPT_MESSAGE = 0x44,
+	/*
+		long string serialized_lua_value
+	*/
+
 	TOSERVER_FIRST_SRP = 0x50,
 	/*
 		Belonging to AUTH_MECHANISM_FIRST_SRP.

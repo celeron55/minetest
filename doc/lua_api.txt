@@ -2813,7 +2813,10 @@ This is basically a reference to a C++ `ServerActiveObject`
         * `sneak`: whether player can sneak (default: `true`)
         * `sneak_glitch`: whether player can use the sneak glitch (default: `true`)
 * `get_physics_override()`: returns the table given to set_physics_override
-* `set_physics_script(script_content)`: See `Player physics script internal API`
+* `set_physics_script(script_content, handlers)`
+    * `script_content`: A Lua script. See `Player physics script internal API`
+    * `handlers´: `{on_message=function(message)}`
+        * `message´: string from client-side send_local_player_physics_message()
 * `hud_add(hud definition)`: add a HUD element described by HUD def, returns ID
    number on success
 * `hud_remove(id)`: remove the HUD element of the specified id
@@ -4147,9 +4150,12 @@ The Biome API is still in an experimental phase and subject to change.
         camera_up_vector = function() -> vector or nil,
         get_collision_box = function(), -- TODO
         get_eye_offset = function(), -- TODO
+        on_message = function(message),
+            * message: string from server-side send_local_player_physics_message()
     })
 
     minetest.send_local_player_physics_message(message)
+        * message: string (Hint: use minetest.serialize() for tables)
 
     control format:
     {

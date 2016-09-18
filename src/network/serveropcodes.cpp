@@ -92,7 +92,7 @@ const ToServerCommandHandler toServerCommandTable[TOSERVER_NUM_MSG_TYPES] =
 	{ "TOSERVER_RECEIVED_MEDIA",           TOSERVER_STATE_STARTUP, &Server::handleCommand_ReceivedMedia }, // 0x41
 	{ "TOSERVER_BREATH",                   TOSERVER_STATE_INGAME, &Server::handleCommand_Breath }, // 0x42
 	{ "TOSERVER_CLIENT_READY",             TOSERVER_STATE_STARTUP, &Server::handleCommand_ClientReady }, // 0x43
-	null_command_handler, // 0x44
+	{ "TOSERVER_PHYSICS_SCRIPT_MESSAGE",   TOSERVER_STATE_INGAME, &Server::handleCommand_PhysicsScriptMessage }, // 0x44
 	null_command_handler, // 0x45
 	null_command_handler, // 0x46
 	null_command_handler, // 0x47

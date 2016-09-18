@@ -47,6 +47,11 @@ GUIEngine *ModApiBase::getGuiEngine(lua_State *L)
 	return getScriptApiBase(L)->getGuiEngine();
 }
 
+Client *ModApiBase::getClient(lua_State *L)
+{
+	return getScriptApiBase(L)->getClient();
+}
+
 std::string ModApiBase::getCurrentModPath(lua_State *L)
 {
 	lua_rawgeti(L, LUA_REGISTRYINDEX, CUSTOM_RIDX_CURRENT_MOD_NAME);

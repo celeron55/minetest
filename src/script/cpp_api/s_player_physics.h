@@ -17,27 +17,16 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#include "lua_api/l_player_physics.h"
-#include "lua_api/l_internal.h"
-#include "log.h"
-#include "client.h"
+#ifndef S_PLAYER_PHYSICS_H_
+#define S_PLAYER_PHYSICS_H_
 
-int ModApiPlayerPhysics::l_send_local_player_physics_message(lua_State *L)
+#include "cpp_api/s_base.h"
+
+class ScriptApiPlayerPhysics
+		: virtual public ScriptApiBase
 {
-	//infostream<<"ModApiPlayerPhysics::l_send_local_player_physics_message"<<std::endl;
+public:
+	void player_physics_on_message(const std::string &message);
+};
 
-	size_t message_len = 0;
-	const char *message_c = luaL_checklstring(L, 1, &message_len);
-	std::string message(message_c, message_len);
-
-	Client *client = getClient(L);
-	if(client)
-		client->sendPhysicsScriptMessage(message);
-
-	return 0;
-}
-
-void ModApiPlayerPhysics::Initialize(lua_State *L, int top)
-{
-	API_FCT(send_local_player_physics_message);
-}
+#endif /* S_PLAYER_PHYSICS_H_ */

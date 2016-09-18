@@ -1262,6 +1262,13 @@ void Client::sendReady()
 	Send(&pkt);
 }
 
+void Client::sendPhysicsScriptMessage(const std::string &message)
+{
+	NetworkPacket pkt(TOSERVER_PHYSICS_SCRIPT_MESSAGE, 0);
+	pkt.putLongString(message);
+	Send(&pkt);
+}
+
 void Client::sendPlayerPos()
 {
 	LocalPlayer *myplayer = m_env.getLocalPlayer();

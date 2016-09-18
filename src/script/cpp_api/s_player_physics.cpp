@@ -17,27 +17,30 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#include "lua_api/l_player_physics.h"
-#include "lua_api/l_internal.h"
+#include "cpp_api/s_player_physics.h"
+#include "cpp_api/s_internal.h"
 #include "log.h"
-#include "client.h"
 
-int ModApiPlayerPhysics::l_send_local_player_physics_message(lua_State *L)
+void ScriptApiPlayerPhysics::player_physics_on_message(const std::string &message)
 {
-	//infostream<<"ModApiPlayerPhysics::l_send_local_player_physics_message"<<std::endl;
+	SCRIPTAPI_PRECHECKHEADER
 
-	size_t message_len = 0;
-	const char *message_c = luaL_checklstring(L, 1, &message_len);
-	std::string message(message_c, message_len);
+	int error_handler = PUSH_ERROR_HANDLER(L);
 
-	Client *client = getClient(L);
-	if(client)
-		client->sendPhysicsScriptMessage(message);
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "registered_local_player_physics_on_message");
+	if (lua_isnil(L, -1)){
+		lua_pop(L, 2); // player params, error handler, core
+		return;
+	}
+	lua_remove(L, -2); // Remove core
 
-	return 0;
-}
+	if (lua_type(L, -1) != LUA_TFUNCTION)
+		return;
 
-void ModApiPlayerPhysics::Initialize(lua_State *L, int top)
-{
-	API_FCT(send_local_player_physics_message);
+	lua_pushlstring(L, message.c_str(), message.size());
+
+	PCALL_RES(lua_pcall(L, 1, 0, error_handler));
+
+	lua_pop(L, 1); // Pop error handler
 }

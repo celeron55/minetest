@@ -9,4 +9,5 @@ function core.set_local_player_physics(def)
 	core.registered_local_player_physics_apply_control = def and def.apply_control
 	core.registered_local_player_physics_move = def and def.move
 	core.registered_local_player_physics_camera_up_vector = def and def.camera_up_vector
+	core.registered_local_player_physics_on_message = def and def.on_message
 end

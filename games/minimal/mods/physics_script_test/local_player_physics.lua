@@ -46,17 +46,18 @@ local previous_control = {}
 local previous_player_params = {}
 local current_roll = 0.0
 
-core.set_local_player_physics({
+minetest.set_local_player_physics({
 	apply_control = function(dtime, control, player_params)
 		--print("apply_control: dtime="..dump(dtime)..", control="..dump(control)..
 		--		", player_params="..dump(player_params))
 
 		if control.jump and not previous_control.jump then
 			throttle_on = not throttle_on
-			core.send_local_player_physics_message({
+			print("throttle_on = "..dump(throttle_on))
+			minetest.send_local_player_physics_message(minetest.serialize({
 				name = "throttle_status",
 				status = throttle_on,
-			})
+			}))
 		end
 
 		-- Left/right

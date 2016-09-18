@@ -457,18 +457,25 @@ int ObjectRef::l_get_physics_override(lua_State *L)
 	return 1;
 }
 
-// set_physics_script(self, std::string script_content)
+// set_physics_script(self, script_content, handlers)
 int ObjectRef::l_set_physics_script(lua_State *L)
 {
 	NO_MAP_LOCK_REQUIRED;
 	ObjectRef *ref = checkobject(L, 1);
 	PlayerSAO *co = (PlayerSAO *) getobject(ref);
 	if (co == NULL) return 0;
+
+	lua_getglobal(L, "core");
+	lua_getfield(L, 3, "on_message"); // handlers.on_message
+	lua_setfield(L, -2, "registered_local_player_physics_on_message");
+	lua_pop(L, 1); // core
+
 	std::string script_content = "";
 	if (!lua_isnil(L, 2))
 		script_content = lua_tostring(L, 2);
-	// Do it
+
 	getServer(L)->SendPhysicsScript(co->getPeerID(), script_content);
+
 	return 0;
 }
 

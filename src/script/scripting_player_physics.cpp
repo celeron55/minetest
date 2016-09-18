@@ -189,7 +189,14 @@ bool PlayerPhysicsScripting::camera_up_vector(v3f *result)
 
 void PlayerPhysicsScripting::InitializeModApi(lua_State *L, int top)
 {
-	// Initialize mod api modules
+	// NOTE: Do not add a lot of stuff in here because this script environment
+	//       is run synchronously to physics and can't do heavy processing or
+	//       synchronous i/o.
+	//       For that purpose, add a messaging interface that can transfer
+	//       events and data between this and some asynchronous client-side Lua
+	//       environment.
+
+	// Initialize API modules
 	ModApiUtil::Initialize(L, top);
 	ModApiPlayerPhysics::Initialize(L, top);
 

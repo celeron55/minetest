@@ -2045,3 +2045,12 @@ void Server::handleCommand_SrpBytesM(NetworkPacket* pkt)
 
 	acceptAuth(pkt->getPeerId(), wantSudo);
 }
+
+void Server::handleCommand_PhysicsScriptMessage(NetworkPacket* pkt)
+{
+	verbosestream << "Server: Received TOSERVER_PHYSICS_SCRIPT_MESSAGE" << std::endl;
+
+	std::string message = pkt->readLongString();
+
+	m_script->player_physics_on_message(message);
+}
