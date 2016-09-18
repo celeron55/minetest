@@ -2817,6 +2817,8 @@ This is basically a reference to a C++ `ServerActiveObject`
     * `script_content`: A Lua script. See `Player physics script internal API`
     * `handlers´: `{on_message=function(message)}`
         * `message´: string from client-side send_local_player_physics_message()
+* `send_physics_script_message(message)`
+    * `message´: string (Hint: use minetest.serialize() for tables)
 * `hud_add(hud definition)`: add a HUD element described by HUD def, returns ID
    number on success
 * `hud_remove(id)`: remove the HUD element of the specified id

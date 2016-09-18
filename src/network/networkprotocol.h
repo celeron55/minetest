@@ -600,6 +600,11 @@ enum ToClientCommand
 		long string script_content
 	*/
 
+	TOCLIENT_PHYSICS_SCRIPT_MESSAGE = 0x55,
+	/*
+		long string message
+	*/
+
 	TOCLIENT_SRP_BYTES_S_B = 0x60,
 	/*
 		Belonging to AUTH_MECHANISM_LEGACY_PASSWORD and AUTH_MECHANISM_SRP.
@@ -853,7 +858,7 @@ enum ToServerCommand
 
 	TOSERVER_PHYSICS_SCRIPT_MESSAGE = 0x44,
 	/*
-		long string serialized_lua_value
+		long string message
 	*/
 
 	TOSERVER_FIRST_SRP = 0x50,

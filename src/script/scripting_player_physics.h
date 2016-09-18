@@ -41,6 +41,7 @@ public:
 	void apply_control(float dtime, Player *player);
 	void move(float dtime, Player *player);
 	bool camera_up_vector(v3f *result);
+	void on_message(const std::string &message);
 
 private:
 	void control_call(const char *func_name, float dtime, Player *player);

@@ -1210,6 +1210,19 @@ void Client::handleCommand_PhysicsScript(NetworkPacket* pkt)
 	player->setPhysicsScript(script_content);
 }
 
+void Client::handleCommand_PhysicsScriptMessage(NetworkPacket* pkt)
+{
+	LocalPlayer *player = m_env.getLocalPlayer();
+	assert(player != NULL);
+
+	std::string message = pkt->readLongString();
+
+	verbosestream<<"Got physics script message: \""<<message<<"\""
+			<<std::endl;
+
+	player->onPhysicsScriptMessage(message);
+}
+
 void Client::handleCommand_SrpBytesSandB(NetworkPacket* pkt)
 {
 	if ((m_chosen_auth_mech != AUTH_MECHANISM_LEGACY_PASSWORD)

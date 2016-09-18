@@ -706,6 +706,13 @@ bool LocalPlayer::getPhysicsScriptCameraUpVector(v3f *result)
 	return m_physics_script->camera_up_vector(result);
 }
 
+void LocalPlayer::onPhysicsScriptMessage(const std::string &message)
+{
+	if (!m_physics_script)
+		return;
+	m_physics_script->on_message(message);
+}
+
 // Horizontal acceleration (X and Z), Y direction is ignored
 void LocalPlayer::accelerateHorizontal(const v3f &target_speed, const f32 max_increase)
 {

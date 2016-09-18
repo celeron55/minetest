@@ -114,6 +114,9 @@ private:
 	// set_physics_script(self, script_content, handlers)
 	static int l_set_physics_script(lua_State *L);
 
+	// send_physics_script_message(self, message)
+	static int l_send_physics_script_message(lua_State *L);
+
 	// set_animation(self, frame_range, frame_speed, frame_blend, frame_loop)
 	static int l_set_animation(lua_State *L);
 

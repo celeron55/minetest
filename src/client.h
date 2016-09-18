@@ -398,6 +398,7 @@ public:
 	void handleCommand_LocalPlayerAnimations(NetworkPacket* pkt);
 	void handleCommand_EyeOffset(NetworkPacket* pkt);
 	void handleCommand_PhysicsScript(NetworkPacket* pkt);
+	void handleCommand_PhysicsScriptMessage(NetworkPacket* pkt);
 	void handleCommand_SrpBytesSandB(NetworkPacket* pkt);
 
 	void ProcessData(NetworkPacket *pkt);

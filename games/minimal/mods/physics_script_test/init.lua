@@ -65,6 +65,7 @@ minetest.register_globalstep(function(dtime)
 	for name, state in pairs(airplane_players) do
 		state.player:hud_change(state.hud_id_speed_text, "text", "Speed: "..
 				(math.floor(vector.length(state.player:get_player_velocity())*10)/10).." m/s")
+		--state.player:send_physics_script_message("test message")
 	end
 end)
 

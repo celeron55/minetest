@@ -53,7 +53,7 @@ minetest.set_local_player_physics({
 
 		if control.jump and not previous_control.jump then
 			throttle_on = not throttle_on
-			print("throttle_on = "..dump(throttle_on))
+			print("local_player_physics: throttle_on = "..dump(throttle_on))
 			minetest.send_local_player_physics_message(minetest.serialize({
 				name = "throttle_status",
 				status = throttle_on,
@@ -212,5 +212,8 @@ minetest.set_local_player_physics({
 		v = vector_rotate_x(v, previous_player_params.pitch)
 		v = vector_rotate_y(v, previous_player_params.yaw)
 		return v
+    end,
+    on_message = function(message)
+		print("local_player_physics/on_message: message = "..dump(message))
     end,
 })

@@ -87,6 +87,7 @@ public:
 	void setPhysicsScript(const std::string &script_content);
 	bool hasPhysicsScript(){ return !!m_physics_script; }
 	bool getPhysicsScriptCameraUpVector(v3f *result);
+	void onPhysicsScriptMessage(const std::string &message);
 
 private:
 	void accelerateHorizontal(const v3f &target_speed, const f32 max_increase);

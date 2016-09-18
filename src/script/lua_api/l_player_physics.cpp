@@ -31,8 +31,7 @@ int ModApiPlayerPhysics::l_send_local_player_physics_message(lua_State *L)
 	std::string message(message_c, message_len);
 
 	Client *client = getClient(L);
-	if(client)
-		client->sendPhysicsScriptMessage(message);
+	client->sendPhysicsScriptMessage(message);
 
 	return 0;
 }
