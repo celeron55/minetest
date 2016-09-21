@@ -4,13 +4,24 @@ Minetest Lua Modding API Reference 0.4.14: Player Physics API
 * `minetest.set_local_player_physics(handlers)`
     handlers = {
         apply_control = function(dtime, control, player_params) -> player_params or nil,
-        move = function(dtime, control, player_params) -> player_params or nil, -- Called more often if velocity is high
+        move = function(dtime, control, player_params, pos_max_d) -> player_params or nil, -- Called more often if velocity is high
         camera_up_vector = function() -> vector or nil,
         get_collision_box = function(), -- TODO
         get_eye_offset = function(), -- TODO
         on_message = function(message),
-            * message: string from server-side send_local_player_physics_message()
+            * message: string from server-side player:send_physics_script_message()
     })
+
+* `minetest.collision_move_simple(pos_max_d, box, stepheight, dtime, pos,
+        speed, accel)` -> result
+    * `pos_max_d`: maximum movement distance
+    * `box`: collision box {minx, miny, minz, maxx, maxy, maxz}
+    * `stepheight`: Maximum node height difference to step over
+    * `dtime`: Time step length in seconds
+    * `pos`: Position vector {x=, y=, z=}
+    * `speed`: Speed vector
+    * `accel`: Acceleration vector
+    * `result`: {pos, speed}
 
 * `minetest.send_local_player_physics_message(message)`
     * message: string (Hint: use minetest.serialize() for tables)
