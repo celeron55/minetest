@@ -44,6 +44,118 @@ with this program; ifnot, write to the Free Software Foundation, Inc.,
 #include <vector>
 #include <fstream>
 #include "util/cpp11_container.h"
+#include "util/container.h"
+#include "util/string.h"
+#include "filesys.h"
+#include "settings.h"
+
+/*
+	A cache from sound name to sound path
+*/
+MutexedMap<std::string, std::string> g_soundname_to_path_cache;
+
+/*
+	Replaces the filename extension.
+	eg:
+		std::string image = "a/image.png"
+		replace_ext(image, "jpg")
+		-> image = "a/image.jpg"
+	Returns true on success.
+*/
+static bool replace_sound_ext(std::string &path, const char *ext)
+{
+	if (ext == NULL)
+		return false;
+	// Find place of last dot, fail if \ or / found.
+	s32 last_dot_i = -1;
+	for (s32 i=path.size()-1; i>=0; i--)
+	{
+		if (path[i] == '.')
+		{
+			last_dot_i = i;
+			break;
+		}
+
+		if (path[i] == '\\' || path[i] == '/')
+			break;
+	}
+	// If not found, return an empty string
+	if (last_dot_i == -1)
+		return false;
+	// See if there's still something like ".3" left and remove it
+	if (last_dot_i >= 2 && path[last_dot_i-2] == '.')
+		last_dot_i -= 2;
+	// Else make the new path
+	path = path.substr(0, last_dot_i+1) + ext;
+	return true;
+}
+
+/*
+	Find out the full path of a sound by trying different filename extensions.
+
+	If failed, return "".
+*/
+static std::string getSoundFilePath(std::string path)
+{
+	// A NULL-ended list of possible image extensions
+	const char *extensions[] = {
+		"0.ogg", "1.ogg", "2.ogg", "3.ogg", "4.ogg",
+		"5.ogg", "6.ogg", "7.ogg", "8.ogg", "9.ogg",
+		"ogg", NULL
+	};
+	// If there is no extension, add one
+	if (removeStringEnd(path, extensions) == "")
+		path = path + ".ogg";
+	// Check paths until something is found to exist
+	const char **ext = extensions;
+	do{
+		bool r = replace_sound_ext(path, *ext);
+		if (r == false)
+			return "";
+		if (fs::PathExists(path))
+			return path;
+	}
+	while((++ext) != NULL);
+
+	return "";
+}
+
+/*
+	Gets the path to a sound by first checking if the sound exists
+	in sound_path and if not, using the data path.
+
+	Checks all supported extensions by replacing the original extension.
+
+	If not found, returns "".
+
+	Utilizes a thread-safe cache.
+*/
+std::string getSoundPath(const std::string &filename)
+{
+	std::string fullpath = "";
+	/*
+		Check from cache
+	*/
+	bool incache = g_soundname_to_path_cache.get(filename, &fullpath);
+	if (incache)
+		return fullpath;
+
+	/*
+		Check from sound_path
+	*/
+	const std::string &sound_path = g_settings->get("texture_path");
+	if (sound_path != "") {
+		std::string testpath = sound_path + DIR_DELIM + filename;
+		// Check all filename extensions. Returns "" if not found.
+		fullpath = getSoundFilePath(testpath);
+	}
+
+	// Add to cache (also an empty result is cached)
+	g_soundname_to_path_cache.set(filename, fullpath);
+
+	// Finally return it
+	return fullpath;
+}
 
 #define BUFFER_SIZE 30000
 
@@ -518,10 +630,18 @@ public:
 	bool loadSoundData(const std::string &name,
 			const std::string &filedata)
 	{
-		SoundBuffer *buf = load_ogg_from_buffer(filedata, name);
-		if (buf)
-			addBuffer(name, buf);
-		return false;
+		// Check texture pack
+		std::string path = getSoundPath(name);
+		if (path != ""){
+			// Prioritize texture pack
+			warningstream<<"Loading sound from texture pack: name="<<name<<" path="<<path<<std::endl;
+			return loadSoundFile(name, path);
+		} else {
+			SoundBuffer *buf = load_ogg_from_buffer(filedata, name);
+			if (buf)
+				addBuffer(name, buf);
+			return false;
+		}
 	}
 
 	void updateListener(v3f pos, v3f vel, v3f at, v3f up)
