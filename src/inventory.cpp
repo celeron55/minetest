@@ -29,6 +29,17 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "util/serialize.h"
 #include "util/string.h"
 
+#include "porting.h"
+#include "profiler.h"
+#define PROF_START \
+		{ \
+			u32 t0 = porting::getTime(PRECISION_MICRO);
+#define PROF_ADD(desc) \
+			u32 t1 = porting::getTime(PRECISION_MICRO); \
+			g_profiler->graphAdd(desc " (s)", (t1 - t0) / 1000000.0); \
+		}
+
+
 /*
 	ItemStack
 */
@@ -890,6 +901,7 @@ void Inventory::serialize(std::ostream &os) const
 
 void Inventory::deSerialize(std::istream &is)
 {
+	PROF_START
 	clear();
 
 	for(;;)
@@ -923,12 +935,15 @@ void Inventory::deSerialize(std::istream &is)
 			list->deSerialize(is);
 
 			m_lists.push_back(list);
+
+			g_profiler->graphAdd("Inventory::deSerialize: # total lists", 1);
 		}
 		else
 		{
 			throw SerializationError("invalid inventory specifier: " + name);
 		}
 	}
+	PROF_ADD("Inventory::deSerialize");
 }
 
 InventoryList * Inventory::addList(const std::string &name, u32 size)

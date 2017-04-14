@@ -660,7 +660,7 @@ void Client::step(float dtime)
 		}
 
 		if (num_processed_meshes > 0)
-			g_profiler->graphAdd("num_processed_meshes", num_processed_meshes);
+			g_profiler->graphAdd("# processed meshes", num_processed_meshes);
 	}
 
 	/*
@@ -1668,6 +1668,16 @@ void Client::typeChatMessage(const std::wstring &message)
 	}
 }
 
+#include "porting.h"
+#include "profiler.h"
+#define PROF_START \
+		{ \
+			u32 t0 = porting::getTime(PRECISION_MICRO);
+#define PROF_ADD(desc) \
+			u32 t1 = porting::getTime(PRECISION_MICRO); \
+			g_profiler->graphAdd(desc " (s)", (t1 - t0) / 1000000.0); \
+		}
+
 void Client::addUpdateMeshTask(v3s16 p, bool ack_to_server, bool urgent)
 {
 	MapBlock *b = m_env.getMap().getBlockNoCreateNoEx(p);
@@ -1682,12 +1692,14 @@ void Client::addUpdateMeshTask(v3s16 p, bool ack_to_server, bool urgent)
 		m_cache_use_tangent_vertices);
 
 	{
+		PROF_START
 		//TimeTaker timer("data fill");
 		// Release: ~0ms
 		// Debug: 1-6ms, avg=2ms
 		data->fill(b);
 		data->setCrack(m_crack_level, m_crack_pos);
 		data->setSmoothLighting(m_cache_smooth_lighting);
+		PROF_ADD("MeshMakeData::fill")
 	}
 
 	// Add task to queue

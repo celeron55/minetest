@@ -36,6 +36,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "util/string.h"
 #include "util/serialize.h"
 #include "util/basic_macros.h"
+#include "porting.h"
+#include "profiler.h"
 
 static const char *modified_reason_strings[] = {
 	"initial",
@@ -651,6 +653,14 @@ void MapBlock::serializeNetworkSpecific(std::ostream &os)
 	writeF1000(os, 0); // deprecated humidity
 }
 
+#define PROF_START \
+		{ \
+			u32 t0 = porting::getTime(PRECISION_MICRO);
+#define PROF_ADD(desc) \
+			u32 t1 = porting::getTime(PRECISION_MICRO); \
+			g_profiler->graphAdd(desc " (s)", (t1 - t0) / 1000000.0); \
+		}
+
 void MapBlock::deSerialize(std::istream &is, u8 version, bool disk)
 {
 	if(!ser_ver_supported(version))
@@ -662,7 +672,9 @@ void MapBlock::deSerialize(std::istream &is, u8 version, bool disk)
 
 	if(version <= 21)
 	{
+		PROF_START
 		deSerialize_pre22(is, version, disk);
+		PROF_ADD("MapBlock::deSerialize: deser_pre22")
 		return;
 	}
 
@@ -693,6 +705,7 @@ void MapBlock::deSerialize(std::istream &is, u8 version, bool disk)
 	/*
 		NodeMetadata
 	*/
+	PROF_START
 	TRACESTREAM(<<"MapBlock::deSerialize "<<PP(getPos())
 			<<": Node metadata"<<std::endl);
 	// Ignore errors
@@ -711,12 +724,14 @@ void MapBlock::deSerialize(std::istream &is, u8 version, bool disk)
 				<<" while deserializing node metadata at ("
 				<<PP(getPos())<<": "<<e.what()<<std::endl;
 	}
+	PROF_ADD("MapBlock::deSerialize: nodemeta")
 
 	/*
 		Data that is only on disk
 	*/
 	if(disk)
 	{
+		PROF_START
 		// Node timers
 		if(version == 23){
 			// Read unused zero
@@ -751,6 +766,7 @@ void MapBlock::deSerialize(std::istream &is, u8 version, bool disk)
 					<<": Node timers (ver>=25)"<<std::endl);
 			m_node_timers.deSerialize(is, version);
 		}
+		PROF_ADD("MapBlock::deSerialize: disk")
 	}
 
 	TRACESTREAM(<<"MapBlock::deSerialize "<<PP(getPos())

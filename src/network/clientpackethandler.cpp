@@ -34,6 +34,15 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "util/serialize.h"
 #include "util/srp.h"
 #include "tileanimation.h"
+#include "profiler.h"
+
+#define PROF_START \
+		{ \
+			u32 t0 = porting::getTime(PRECISION_MICRO);
+#define PROF_ADD(desc) \
+			u32 t1 = porting::getTime(PRECISION_MICRO); \
+			g_profiler->graphAdd(desc " (s)", (t1 - t0) / 1000000.0); \
+		}
 
 void Client::handleCommand_Deprecated(NetworkPacket* pkt)
 {
@@ -285,6 +294,10 @@ void Client::handleCommand_BlockData(NetworkPacket* pkt)
 	if (pkt->getSize() < 6)
 		return;
 
+	g_profiler->graphAdd("# received blocks", 1);
+
+	PROF_START
+
 	v3s16 p;
 	*pkt >> p;
 
@@ -304,8 +317,10 @@ void Client::handleCommand_BlockData(NetworkPacket* pkt)
 		/*
 			Update an existing block
 		*/
+		PROF_START
 		block->deSerialize(istr, m_server_ser_ver, false);
 		block->deSerializeNetworkSpecific(istr);
+		PROF_ADD("TOCLIENT_BLOCKDATA: deserialize for update")
 	}
 	else {
 		/*
@@ -318,13 +333,19 @@ void Client::handleCommand_BlockData(NetworkPacket* pkt)
 	}
 
 	if (m_localdb) {
+		PROF_START
 		ServerMap::saveBlock(block, m_localdb);
+		PROF_ADD("TOCLIENT_BLOCKDATA: local map saving")
 	}
 
 	/*
 		Add it to mesh update queue and set it to be acknowledged after update.
 	*/
+	PROF_START
 	addUpdateMeshTaskWithEdge(p, true);
+	PROF_ADD("TOCLIENT_BLOCKDATA: add update mesh task")
+
+	PROF_ADD("TOCLIENT_BLOCKDATA: entire handler");
 }
 
 void Client::handleCommand_Inventory(NetworkPacket* pkt)
