@@ -34,19 +34,40 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 		}
 
 /*
+	CachedMapBlockData
+*/
+
+CachedMapBlockData::CachedMapBlockData():
+	p(-1337,-1337,-1337),
+	data(NULL),
+	refcount_from_queue(1),
+	last_used_timestamp(time(0))
+{
+}
+
+CachedMapBlockData::~CachedMapBlockData()
+{
+	assert(refcount_from_queue == 0);
+
+	if (data)
+		delete[] data;
+}
+
+/*
 	QueuedMeshUpdate
 */
 
 QueuedMeshUpdate::QueuedMeshUpdate():
 	p(-1337,-1337,-1337),
-	data(NULL),
-	ack_block_to_server(false)
+	ack_block_to_server(false),
+	urgent(false),
+	data(NULL)
 {
 }
 
 QueuedMeshUpdate::~QueuedMeshUpdate()
 {
-	if(data)
+	if (data)
 		delete data;
 }
 
@@ -54,8 +75,14 @@ QueuedMeshUpdate::~QueuedMeshUpdate()
 	MeshUpdateQueue
 */
 
-MeshUpdateQueue::MeshUpdateQueue()
+MeshUpdateQueue::MeshUpdateQueue(Client *client):
+	m_client(client)
 {
+	m_cache_enable_shaders = g_settings->getBool("enable_shaders");
+	m_cache_use_tangent_vertices = m_cache_enable_shaders && (
+		g_settings->getBool("enable_bumpmapping") ||
+		g_settings->getBool("enable_parallax_occlusion"));
+	m_cache_smooth_lighting = g_settings->getBool("smooth_lighting");
 }
 
 MeshUpdateQueue::~MeshUpdateQueue()
@@ -71,17 +98,45 @@ MeshUpdateQueue::~MeshUpdateQueue()
 	}
 }
 
-/*
-	peer_id=0 adds with nobody to send to
-*/
-void MeshUpdateQueue::addBlock(v3s16 p, MeshMakeData *data, bool ack_block_to_server, bool urgent)
+void MeshUpdateQueue::addBlock(MapBlock *b, bool ack_block_to_server, bool urgent)
 {
 	DSTACK(FUNCTION_NAME);
 
-	assert(data);	// pre-condition
+	v3s16 p = b->getPos();
 
 	MutexAutoLock lock(m_mutex);
 
+	cleanupCache();
+
+	/*
+		Cache the block data (update the cache if already cached)
+	*/
+
+	CachedMapBlockData *cached_block = NULL;
+	UNORDERED_MAP<v3s16, CachedMapBlockData*>::iterator it =
+			m_cache.find(p);
+	if (it != m_cache.end()) {
+		// Already in cache
+		cached_block = it->second;
+		memcpy(cached_block->data, b->getData(),
+				MAP_BLOCKSIZE * MAP_BLOCKSIZE * MAP_BLOCKSIZE * sizeof(MapNode));
+	} else {
+		// Not yet in cache
+		cached_block = new CachedMapBlockData();
+		m_cache[p] = cached_block;
+		cached_block->data = new MapNode[MAP_BLOCKSIZE * MAP_BLOCKSIZE * MAP_BLOCKSIZE];
+		memcpy(cached_block->data, b->getData(),
+				MAP_BLOCKSIZE * MAP_BLOCKSIZE * MAP_BLOCKSIZE * sizeof(MapNode));
+		// The rest of this function assumes start from 0 for newly made caches
+		cached_block->refcount_from_queue = 0;
+	}
+
+	// TODO: Fill missing neighbor blocks into cache (in the case they have been
+	//       dropped after they were last updated)
+
+	/*
+		Mark the block as urgent if requested
+	*/
 	if(urgent)
 		m_urgents.insert(p);
 
@@ -96,9 +151,8 @@ void MeshUpdateQueue::addBlock(v3s16 p, MeshMakeData *data, bool ack_block_to_se
 		QueuedMeshUpdate *q = *i;
 		if(q->p == p)
 		{
-			if(q->data)
-				delete q->data;
-			q->data = data;
+			// NOTE: We are not adding a new position to the queue, thus
+			//       refcount_from_queue stays the same.
 			if(ack_block_to_server)
 				q->ack_block_to_server = true;
 			return;
@@ -110,9 +164,13 @@ void MeshUpdateQueue::addBlock(v3s16 p, MeshMakeData *data, bool ack_block_to_se
 	*/
 	QueuedMeshUpdate *q = new QueuedMeshUpdate;
 	q->p = p;
-	q->data = data;
 	q->ack_block_to_server = ack_block_to_server;
 	m_queue.push_back(q);
+
+	// This queue entry is a new reference to the cached blocks
+	cached_block->refcount_from_queue++;
+
+	// TODO: Refer to neighbors
 }
 
 // Returned pointer must be deleted
@@ -131,9 +189,58 @@ QueuedMeshUpdate *MeshUpdateQueue::pop()
 			continue;
 		m_queue.erase(i);
 		m_urgents.erase(q->p);
+		fillDataFromMapBlockCache(q);
 		return q;
 	}
 	return NULL;
+}
+
+CachedMapBlockData* MeshUpdateQueue::getCachedBlock(const v3s16 &p)
+{
+	UNORDERED_MAP<v3s16, CachedMapBlockData*>::iterator it = m_cache.find(p);
+	if (it != m_cache.end()) {
+		return it->second;
+	}
+	return NULL;
+}
+
+void MeshUpdateQueue::fillDataFromMapBlockCache(QueuedMeshUpdate *q)
+{
+	PROF_START
+
+	MeshMakeData *data = new MeshMakeData(m_client, m_cache_enable_shaders,
+			m_cache_use_tangent_vertices);
+	q->data = data;
+
+	data->setSmoothLighting(m_cache_smooth_lighting);
+
+	// TODO: Get these from somewhere (we're not in the main thread)
+	//data->setCrack(m_client->getCrackLevel(), m_client->getCrackPos());
+
+	data->fillBlockDataBegin(q->p);
+
+	// Collect data for 3*3*3 blocks from cache
+	v3s16 dp;
+	for (dp.X = -1; dp.X <= 1; dp.X++) {
+		for (dp.Y = -1; dp.Y <= 1; dp.Y++) {
+			for (dp.Z = -1; dp.Z <= 1; dp.Z++) {
+				v3s16 p = q->p + dp;
+				CachedMapBlockData *cached_block = getCachedBlock(p);
+				if (cached_block && cached_block->data)
+					data->fillBlockData(dp, cached_block->data);
+			}
+		}
+	}
+
+	PROF_ADD("MeshUpdateQueue::fillDataFromMapBlockCache")
+}
+
+void MeshUpdateQueue::cleanupCache()
+{
+	g_profiler->avg("MeshUpdateQueue MapBlock cache size", m_cache.size());
+
+	// TODO: Drop stuff that isn't referenced by the queue and hasn't been used
+	//       for a while
 }
 
 /*
@@ -142,37 +249,19 @@ QueuedMeshUpdate *MeshUpdateQueue::pop()
 
 MeshUpdateThread::MeshUpdateThread(Client *client):
 	UpdateThread("Mesh"),
-	m_client(client)
+	m_queue_in(client)
 {
 	m_generation_interval = g_settings->getU16("mesh_generation_interval");
 	m_generation_interval = rangelim(m_generation_interval, 0, 50);
-	m_cache_enable_shaders = g_settings->getBool("enable_shaders");
-	m_cache_use_tangent_vertices = m_cache_enable_shaders && (
-		g_settings->getBool("enable_bumpmapping") ||
-		g_settings->getBool("enable_parallax_occlusion"));
-	m_cache_smooth_lighting = g_settings->getBool("smooth_lighting");
 }
 
 void MeshUpdateThread::updateBlock(MapBlock *b, bool ack_block_to_server, bool urgent)
 {
-	MeshMakeData *data = new MeshMakeData(m_client, m_cache_enable_shaders,
-		m_cache_use_tangent_vertices);
+	// Don't make MeshMakeData here but instead make a copy of the updated
+	// MapBlock data and pass it to the mesh generator thread along with the
+	// parameters
 
-	{
-		PROF_START
-		data->fill(b);
-		data->setCrack(m_client->getCrackLevel(), m_client->getCrackPos());
-		data->setSmoothLighting(m_cache_smooth_lighting);
-		PROF_ADD("MeshMakeData::fill")
-	}
-
-	enqueueUpdate(b->getPos(), data, ack_block_to_server, urgent);
-}
-
-void MeshUpdateThread::enqueueUpdate(v3s16 p, MeshMakeData *data,
-		bool ack_block_to_server, bool urgent)
-{
-	m_queue_in.addBlock(p, data, ack_block_to_server, urgent);
+	m_queue_in.addBlock(b, ack_block_to_server, urgent);
 	deferUpdate();
 }
 

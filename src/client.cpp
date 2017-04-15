@@ -1526,13 +1526,25 @@ void Client::typeChatMessage(const std::wstring &message)
 	}
 }
 
+#include "porting.h"
+#include "profiler.h"
+#define PROF_START \
+		{ \
+			u32 t0 = porting::getTime(PRECISION_MICRO);
+#define PROF_ADD(desc) \
+			u32 t1 = porting::getTime(PRECISION_MICRO); \
+			g_profiler->graphAdd(desc " (s)", (t1 - t0) / 1000000.0); \
+		}
+
 void Client::addUpdateMeshTask(v3s16 p, bool ack_to_server, bool urgent)
 {
+	PROF_START
 	MapBlock *b = m_env.getMap().getBlockNoCreateNoEx(p);
 	if (b == NULL) // Occurs when non-existing neighbors are automatically added
 		return;
 
 	m_mesh_update_thread.updateBlock(b, ack_to_server, urgent);
+	PROF_ADD("Client::addUpdateMeshTask")
 }
 
 void Client::addUpdateMeshTaskWithEdge(v3s16 blockpos, bool ack_to_server, bool urgent)
