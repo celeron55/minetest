@@ -41,6 +41,8 @@ struct QueuedMeshUpdate
 	v3s16 p;
 	bool ack_block_to_server;
 	bool urgent;
+	int crack_level;
+	v3s16 crack_pos;
 	MeshMakeData *data; // This is generated in MeshUpdateQueue::pop()
 
 	QueuedMeshUpdate();

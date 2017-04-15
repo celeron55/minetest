@@ -62,6 +62,8 @@ QueuedMeshUpdate::QueuedMeshUpdate():
 	p(-1337,-1337,-1337),
 	ack_block_to_server(false),
 	urgent(false),
+	crack_level(-1),
+	crack_pos(0,0,0),
 	data(NULL)
 {
 }
@@ -149,6 +151,8 @@ void MeshUpdateQueue::addBlock(Map *map, v3s16 p, bool ack_block_to_server, bool
 			//       refcount_from_queue stays the same.
 			if(ack_block_to_server)
 				q->ack_block_to_server = true;
+			q->crack_level = m_client->getCrackLevel();
+			q->crack_pos = m_client->getCrackPos();
 			return;
 		}
 	}
@@ -159,6 +163,8 @@ void MeshUpdateQueue::addBlock(Map *map, v3s16 p, bool ack_block_to_server, bool
 	QueuedMeshUpdate *q = new QueuedMeshUpdate;
 	q->p = p;
 	q->ack_block_to_server = ack_block_to_server;
+	q->crack_level = m_client->getCrackLevel();
+	q->crack_pos = m_client->getCrackPos();
 	m_queue.push_back(q);
 
 	// This queue entry is a new reference to the cached blocks
@@ -242,11 +248,6 @@ void MeshUpdateQueue::fillDataFromMapBlockCache(QueuedMeshUpdate *q)
 			m_cache_use_tangent_vertices);
 	q->data = data;
 
-	data->setSmoothLighting(m_cache_smooth_lighting);
-
-	// TODO: Get these from somewhere (we're not in the main thread)
-	//data->setCrack(m_client->getCrackLevel(), m_client->getCrackPos());
-
 	data->fillBlockDataBegin(q->p);
 
 	// Collect data for 3*3*3 blocks from cache
@@ -264,6 +265,9 @@ void MeshUpdateQueue::fillDataFromMapBlockCache(QueuedMeshUpdate *q)
 			}
 		}
 	}
+
+	data->setCrack(q->crack_level, q->crack_pos);
+	data->setSmoothLighting(m_cache_smooth_lighting);
 
 	PROF_ADD("MeshUpdateQueue::fillDataFromMapBlockCache")
 }
