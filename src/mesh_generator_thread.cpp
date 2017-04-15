@@ -22,6 +22,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "profiler.h"
 #include "client.h"
 #include "mapblock.h"
+#include "map.h"
 
 #include "porting.h"
 #include "profiler.h"
@@ -40,7 +41,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 CachedMapBlockData::CachedMapBlockData():
 	p(-1337,-1337,-1337),
 	data(NULL),
-	refcount_from_queue(1),
+	refcount_from_queue(0),
 	last_used_timestamp(time(0))
 {
 }
@@ -98,41 +99,34 @@ MeshUpdateQueue::~MeshUpdateQueue()
 	}
 }
 
-void MeshUpdateQueue::addBlock(MapBlock *b, bool ack_block_to_server, bool urgent)
+void MeshUpdateQueue::addBlock(Map *map, v3s16 p, bool ack_block_to_server, bool urgent)
 {
 	DSTACK(FUNCTION_NAME);
-
-	v3s16 p = b->getPos();
 
 	MutexAutoLock lock(m_mutex);
 
 	cleanupCache();
 
 	/*
-		Cache the block data (update the cache if already cached)
+		Cache the block data (force-update the center block, don't update the
+		neighbors but get them if they aren't already cached)
 	*/
-
-	CachedMapBlockData *cached_block = NULL;
-	UNORDERED_MAP<v3s16, CachedMapBlockData*>::iterator it =
-			m_cache.find(p);
-	if (it != m_cache.end()) {
-		// Already in cache
-		cached_block = it->second;
-		memcpy(cached_block->data, b->getData(),
-				MAP_BLOCKSIZE * MAP_BLOCKSIZE * MAP_BLOCKSIZE * sizeof(MapNode));
-	} else {
-		// Not yet in cache
-		cached_block = new CachedMapBlockData();
-		m_cache[p] = cached_block;
-		cached_block->data = new MapNode[MAP_BLOCKSIZE * MAP_BLOCKSIZE * MAP_BLOCKSIZE];
-		memcpy(cached_block->data, b->getData(),
-				MAP_BLOCKSIZE * MAP_BLOCKSIZE * MAP_BLOCKSIZE * sizeof(MapNode));
-		// The rest of this function assumes start from 0 for newly made caches
-		cached_block->refcount_from_queue = 0;
+	std::vector<CachedMapBlockData*> cached_blocks;
+	cached_blocks.reserve(3*3*3);
+	v3s16 dp;
+	for (dp.X = -1; dp.X <= 1; dp.X++) {
+		for (dp.Y = -1; dp.Y <= 1; dp.Y++) {
+			for (dp.Z = -1; dp.Z <= 1; dp.Z++) {
+				v3s16 p1 = p + dp;
+				CachedMapBlockData *cached_block;
+				if (dp == v3s16(0, 0, 0))
+					cached_block = cacheBlock(map, p1, FORCE_UPDATE);
+				else
+					cached_block = cacheBlock(map, p1, SKIP_UPDATE_IF_ALREADY_CACHED);
+				cached_blocks.push_back(cached_block);
+			}
+		}
 	}
-
-	// TODO: Fill missing neighbor blocks into cache (in the case they have been
-	//       dropped after they were last updated)
 
 	/*
 		Mark the block as urgent if requested
@@ -168,9 +162,9 @@ void MeshUpdateQueue::addBlock(MapBlock *b, bool ack_block_to_server, bool urgen
 	m_queue.push_back(q);
 
 	// This queue entry is a new reference to the cached blocks
-	cached_block->refcount_from_queue++;
-
-	// TODO: Refer to neighbors
+	for (size_t i=0; i<cached_blocks.size(); i++) {
+		cached_blocks[i]->refcount_from_queue++;
+	}
 }
 
 // Returned pointer must be deleted
@@ -193,6 +187,42 @@ QueuedMeshUpdate *MeshUpdateQueue::pop()
 		return q;
 	}
 	return NULL;
+}
+
+CachedMapBlockData* MeshUpdateQueue::cacheBlock(Map *map, v3s16 p, UpdateMode mode)
+{
+	UNORDERED_MAP<v3s16, CachedMapBlockData*>::iterator it =
+			m_cache.find(p);
+	if (it != m_cache.end()) {
+		// Already in cache
+		CachedMapBlockData *cached_block = it->second;
+		if (mode == SKIP_UPDATE_IF_ALREADY_CACHED)
+			return cached_block;
+		MapBlock *b = map->getBlockNoCreateNoEx(p);
+		if (b) {
+			if (cached_block->data == NULL)
+				cached_block->data =
+						new MapNode[MAP_BLOCKSIZE * MAP_BLOCKSIZE * MAP_BLOCKSIZE];
+			memcpy(cached_block->data, b->getData(),
+					MAP_BLOCKSIZE * MAP_BLOCKSIZE * MAP_BLOCKSIZE * sizeof(MapNode));
+		} else {
+			delete[] cached_block->data;
+			cached_block->data = NULL;
+		}
+		return cached_block;
+	} else {
+		// Not yet in cache
+		CachedMapBlockData *cached_block = new CachedMapBlockData();
+		m_cache[p] = cached_block;
+		MapBlock *b = map->getBlockNoCreateNoEx(p);
+		if (b) {
+			cached_block->data =
+					new MapNode[MAP_BLOCKSIZE * MAP_BLOCKSIZE * MAP_BLOCKSIZE];
+			memcpy(cached_block->data, b->getData(),
+					MAP_BLOCKSIZE * MAP_BLOCKSIZE * MAP_BLOCKSIZE * sizeof(MapNode));
+		}
+		return cached_block;
+	}
 }
 
 CachedMapBlockData* MeshUpdateQueue::getCachedBlock(const v3s16 &p)
@@ -226,8 +256,11 @@ void MeshUpdateQueue::fillDataFromMapBlockCache(QueuedMeshUpdate *q)
 			for (dp.Z = -1; dp.Z <= 1; dp.Z++) {
 				v3s16 p = q->p + dp;
 				CachedMapBlockData *cached_block = getCachedBlock(p);
-				if (cached_block && cached_block->data)
-					data->fillBlockData(dp, cached_block->data);
+				if (cached_block) {
+					cached_block->refcount_from_queue--;
+					if (cached_block->data)
+						data->fillBlockData(dp, cached_block->data);
+				}
 			}
 		}
 	}
@@ -239,8 +272,22 @@ void MeshUpdateQueue::cleanupCache()
 {
 	g_profiler->avg("MeshUpdateQueue MapBlock cache size", m_cache.size());
 
-	// TODO: Drop stuff that isn't referenced by the queue and hasn't been used
-	//       for a while
+	const int cache_seconds = 10;
+	int t_now = time(0);
+
+	size_t num_blocks_erased = 0;
+	for (UNORDERED_MAP<v3s16, CachedMapBlockData*>::iterator it = m_cache.begin();
+			it != m_cache.end(); ) {
+		CachedMapBlockData *cached_block = it->second;
+		if (cached_block->refcount_from_queue == 0 &&
+				cached_block->last_used_timestamp < t_now - cache_seconds) {
+			m_cache.erase(it++);
+			num_blocks_erased++;
+		} else {
+			++it;
+		}
+	}
+	g_profiler->add("MeshUpdateQueue MapBlock cache erased blocks", num_blocks_erased);
 }
 
 /*
@@ -255,13 +302,11 @@ MeshUpdateThread::MeshUpdateThread(Client *client):
 	m_generation_interval = rangelim(m_generation_interval, 0, 50);
 }
 
-void MeshUpdateThread::updateBlock(MapBlock *b, bool ack_block_to_server, bool urgent)
+void MeshUpdateThread::updateBlock(Map *map, v3s16 p, bool ack_block_to_server,
+		bool urgent)
 {
-	// Don't make MeshMakeData here but instead make a copy of the updated
-	// MapBlock data and pass it to the mesh generator thread along with the
-	// parameters
-
-	m_queue_in.addBlock(b, ack_block_to_server, urgent);
+	// Allow the MeshUpdateQueue to do whatever it wants
+	m_queue_in.addBlock(map, p, ack_block_to_server, urgent);
 	deferUpdate();
 }
 

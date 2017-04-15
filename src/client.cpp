@@ -1539,11 +1539,14 @@ void Client::typeChatMessage(const std::wstring &message)
 void Client::addUpdateMeshTask(v3s16 p, bool ack_to_server, bool urgent)
 {
 	PROF_START
+	// Check if the block exists to begin with. In the case when a non-existing
+	// neighbor is automatically added, it may not. In that case we don't want
+	// to tell the mesh update thread about it.
 	MapBlock *b = m_env.getMap().getBlockNoCreateNoEx(p);
-	if (b == NULL) // Occurs when non-existing neighbors are automatically added
+	if (b == NULL)
 		return;
 
-	m_mesh_update_thread.updateBlock(b, ack_to_server, urgent);
+	m_mesh_update_thread.updateBlock(&m_env.getMap(), p, ack_to_server, urgent);
 	PROF_ADD("Client::addUpdateMeshTask")
 }
 
