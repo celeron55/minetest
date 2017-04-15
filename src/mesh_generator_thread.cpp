@@ -202,8 +202,10 @@ CachedMapBlockData* MeshUpdateQueue::cacheBlock(Map *map, v3s16 p, UpdateMode mo
 	if (it != m_cache.end()) {
 		// Already in cache
 		CachedMapBlockData *cached_block = it->second;
-		if (mode == SKIP_UPDATE_IF_ALREADY_CACHED)
+		if (mode == SKIP_UPDATE_IF_ALREADY_CACHED) {
+			g_profiler->add("MeshUpdateQueue MapBlocks taken from cache", 1);
 			return cached_block;
+		}
 		MapBlock *b = map->getBlockNoCreateNoEx(p);
 		if (b) {
 			if (cached_block->data == NULL)
