@@ -79,7 +79,7 @@ Client::Client(
 	m_nodedef(nodedef),
 	m_sound(sound),
 	m_event(event),
-	m_mesh_update_thread(),
+	m_mesh_update_thread(this),
 	m_env(
 		new ClientMap(this, control,
 			device->getSceneManager()->getRootSceneNode(),
@@ -127,12 +127,6 @@ Client::Client(
 
 	m_minimap = new Minimap(device, this);
 	m_cache_save_interval = g_settings->getU16("server_map_save_interval");
-
-	m_cache_smooth_lighting = g_settings->getBool("smooth_lighting");
-	m_cache_enable_shaders  = g_settings->getBool("enable_shaders");
-	m_cache_use_tangent_vertices = m_cache_enable_shaders && (
-		g_settings->getBool("enable_bumpmapping") ||
-		g_settings->getBool("enable_parallax_occlusion"));
 
 	m_modding_enabled = g_settings->getBool("enable_client_modding");
 	m_script = new ClientScripting(this);
@@ -1464,6 +1458,11 @@ int Client::getCrackLevel()
 	return m_crack_level;
 }
 
+v3s16 Client::getCrackPos()
+{
+	return m_crack_pos;
+}
+
 void Client::setCrack(int level, v3s16 pos)
 {
 	int old_crack_level = m_crack_level;
@@ -1527,42 +1526,13 @@ void Client::typeChatMessage(const std::wstring &message)
 	}
 }
 
-#include "porting.h"
-#include "profiler.h"
-#define PROF_START \
-		{ \
-			u32 t0 = porting::getTime(PRECISION_MICRO);
-#define PROF_ADD(desc) \
-			u32 t1 = porting::getTime(PRECISION_MICRO); \
-			g_profiler->graphAdd(desc " (s)", (t1 - t0) / 1000000.0); \
-		}
-
 void Client::addUpdateMeshTask(v3s16 p, bool ack_to_server, bool urgent)
 {
 	MapBlock *b = m_env.getMap().getBlockNoCreateNoEx(p);
-	if(b == NULL)
+	if (b == NULL) // Occurs when non-existing neighbors are automatically added
 		return;
 
-	/*
-		Create a task to update the mesh of the block
-	*/
-
-	MeshMakeData *data = new MeshMakeData(this, m_cache_enable_shaders,
-		m_cache_use_tangent_vertices);
-
-	{
-		PROF_START
-		//TimeTaker timer("data fill");
-		// Release: ~0ms
-		// Debug: 1-6ms, avg=2ms
-		data->fill(b);
-		data->setCrack(m_crack_level, m_crack_pos);
-		data->setSmoothLighting(m_cache_smooth_lighting);
-		PROF_ADD("MeshMakeData::fill")
-	}
-
-	// Add task to queue
-	m_mesh_update_thread.enqueueUpdate(p, data, ack_to_server, urgent);
+	m_mesh_update_thread.updateBlock(b, ack_to_server, urgent);
 }
 
 void Client::addUpdateMeshTaskWithEdge(v3s16 blockpos, bool ack_to_server, bool urgent)

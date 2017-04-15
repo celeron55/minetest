@@ -396,6 +396,7 @@ public:
 	float getAnimationTime();
 
 	int getCrackLevel();
+	v3s16 getCrackPos();
 	void setCrack(int level, v3s16 pos);
 
 	u16 getHP();
@@ -650,11 +651,6 @@ private:
 	Database *m_localdb;
 	IntervalLimiter m_localdb_save_interval;
 	u16 m_cache_save_interval;
-
-	// TODO: Add callback to update these when g_settings changes
-	bool m_cache_smooth_lighting;
-	bool m_cache_enable_shaders;
-	bool m_cache_use_tangent_vertices;
 
 	ClientScripting *m_script;
 	bool m_modding_enabled;

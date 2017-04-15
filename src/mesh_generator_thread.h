@@ -44,9 +44,6 @@ public:
 
 	~MeshUpdateQueue();
 
-	/*
-		peer_id=0 adds with nobody to send to
-	*/
 	void addBlock(v3s16 p, MeshMakeData *data,
 			bool ack_block_to_server, bool urgent);
 
@@ -82,22 +79,28 @@ struct MeshUpdateResult
 
 class MeshUpdateThread : public UpdateThread
 {
-private:
-	MeshUpdateQueue m_queue_in;
-	int m_generation_interval;
-
-protected:
-	virtual void doUpdate();
-
 public:
+	MeshUpdateThread(Client *client);
 
-	MeshUpdateThread();
+	void updateBlock(MapBlock *b, bool ack_block_to_server, bool urgent);
 
 	void enqueueUpdate(v3s16 p, MeshMakeData *data,
 			bool ack_block_to_server, bool urgent);
-	MutexedQueue<MeshUpdateResult> m_queue_out;
 
 	v3s16 m_camera_offset;
+	MutexedQueue<MeshUpdateResult> m_queue_out;
+
+private:
+	Client *m_client;
+	MeshUpdateQueue m_queue_in;
+	int m_generation_interval;
+	// TODO: Add callback to update these when g_settings changes
+	bool m_cache_enable_shaders;
+	bool m_cache_use_tangent_vertices;
+	bool m_cache_smooth_lighting;
+
+protected:
+	virtual void doUpdate();
 };
 
 #endif

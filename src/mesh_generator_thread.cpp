@@ -20,6 +20,18 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "mesh_generator_thread.h"
 #include "settings.h"
 #include "profiler.h"
+#include "client.h"
+#include "mapblock.h"
+
+#include "porting.h"
+#include "profiler.h"
+#define PROF_START \
+		{ \
+			u32 t0 = porting::getTime(PRECISION_MICRO);
+#define PROF_ADD(desc) \
+			u32 t1 = porting::getTime(PRECISION_MICRO); \
+			g_profiler->graphAdd(desc " (s)", (t1 - t0) / 1000000.0); \
+		}
 
 /*
 	QueuedMeshUpdate
@@ -128,10 +140,33 @@ QueuedMeshUpdate *MeshUpdateQueue::pop()
 	MeshUpdateThread
 */
 
-MeshUpdateThread::MeshUpdateThread() : UpdateThread("Mesh")
+MeshUpdateThread::MeshUpdateThread(Client *client):
+	UpdateThread("Mesh"),
+	m_client(client)
 {
 	m_generation_interval = g_settings->getU16("mesh_generation_interval");
 	m_generation_interval = rangelim(m_generation_interval, 0, 50);
+	m_cache_enable_shaders = g_settings->getBool("enable_shaders");
+	m_cache_use_tangent_vertices = m_cache_enable_shaders && (
+		g_settings->getBool("enable_bumpmapping") ||
+		g_settings->getBool("enable_parallax_occlusion"));
+	m_cache_smooth_lighting = g_settings->getBool("smooth_lighting");
+}
+
+void MeshUpdateThread::updateBlock(MapBlock *b, bool ack_block_to_server, bool urgent)
+{
+	MeshMakeData *data = new MeshMakeData(m_client, m_cache_enable_shaders,
+		m_cache_use_tangent_vertices);
+
+	{
+		PROF_START
+		data->fill(b);
+		data->setCrack(m_client->getCrackLevel(), m_client->getCrackPos());
+		data->setSmoothLighting(m_cache_smooth_lighting);
+		PROF_ADD("MeshMakeData::fill")
+	}
+
+	enqueueUpdate(b->getPos(), data, ack_block_to_server, urgent);
 }
 
 void MeshUpdateThread::enqueueUpdate(v3s16 p, MeshMakeData *data,
