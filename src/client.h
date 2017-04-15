@@ -36,6 +36,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "particles.h"
 #include "mapnode.h"
 #include "tileanimation.h"
+#include "mesh_generator_thread.h"
 
 struct MeshMakeData;
 class MapBlockMesh;
@@ -54,86 +55,10 @@ struct MinimapMapblock;
 class Camera;
 class NetworkPacket;
 
-struct QueuedMeshUpdate
-{
-	v3s16 p;
-	MeshMakeData *data;
-	bool ack_block_to_server;
-
-	QueuedMeshUpdate();
-	~QueuedMeshUpdate();
-};
-
 enum LocalClientState {
 	LC_Created,
 	LC_Init,
 	LC_Ready
-};
-
-/*
-	A thread-safe queue of mesh update tasks
-*/
-class MeshUpdateQueue
-{
-public:
-	MeshUpdateQueue();
-
-	~MeshUpdateQueue();
-
-	/*
-		peer_id=0 adds with nobody to send to
-	*/
-	void addBlock(v3s16 p, MeshMakeData *data,
-			bool ack_block_to_server, bool urgent);
-
-	// Returned pointer must be deleted
-	// Returns NULL if queue is empty
-	QueuedMeshUpdate * pop();
-
-	u32 size()
-	{
-		MutexAutoLock lock(m_mutex);
-		return m_queue.size();
-	}
-
-private:
-	std::vector<QueuedMeshUpdate*> m_queue;
-	std::set<v3s16> m_urgents;
-	Mutex m_mutex;
-};
-
-struct MeshUpdateResult
-{
-	v3s16 p;
-	MapBlockMesh *mesh;
-	bool ack_block_to_server;
-
-	MeshUpdateResult():
-		p(-1338,-1338,-1338),
-		mesh(NULL),
-		ack_block_to_server(false)
-	{
-	}
-};
-
-class MeshUpdateThread : public UpdateThread
-{
-private:
-	MeshUpdateQueue m_queue_in;
-	int m_generation_interval;
-
-protected:
-	virtual void doUpdate();
-
-public:
-
-	MeshUpdateThread();
-
-	void enqueueUpdate(v3s16 p, MeshMakeData *data,
-			bool ack_block_to_server, bool urgent);
-	MutexedQueue<MeshUpdateResult> m_queue_out;
-
-	v3s16 m_camera_offset;
 };
 
 enum ClientEventType
