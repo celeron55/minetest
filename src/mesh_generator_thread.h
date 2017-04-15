@@ -23,7 +23,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "mapblock_mesh.h"
 #include "threading/mutex_auto_lock.h"
 #include "util/thread.h"
-#include "util/cpp11_container.h"
 
 struct CachedMapBlockData
 {
@@ -81,7 +80,7 @@ private:
 	Client *m_client;
 	std::vector<QueuedMeshUpdate*> m_queue;
 	std::set<v3s16> m_urgents;
-	UNORDERED_MAP<v3s16, CachedMapBlockData*> m_cache;
+	std::map<v3s16, CachedMapBlockData*> m_cache;
 	Mutex m_mutex;
 
 	// TODO: Add callback to update these when g_settings changes

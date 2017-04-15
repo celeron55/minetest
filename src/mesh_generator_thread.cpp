@@ -197,7 +197,7 @@ QueuedMeshUpdate *MeshUpdateQueue::pop()
 
 CachedMapBlockData* MeshUpdateQueue::cacheBlock(Map *map, v3s16 p, UpdateMode mode)
 {
-	UNORDERED_MAP<v3s16, CachedMapBlockData*>::iterator it =
+	std::map<v3s16, CachedMapBlockData*>::iterator it =
 			m_cache.find(p);
 	if (it != m_cache.end()) {
 		// Already in cache
@@ -233,7 +233,7 @@ CachedMapBlockData* MeshUpdateQueue::cacheBlock(Map *map, v3s16 p, UpdateMode mo
 
 CachedMapBlockData* MeshUpdateQueue::getCachedBlock(const v3s16 &p)
 {
-	UNORDERED_MAP<v3s16, CachedMapBlockData*>::iterator it = m_cache.find(p);
+	std::map<v3s16, CachedMapBlockData*>::iterator it = m_cache.find(p);
 	if (it != m_cache.end()) {
 		return it->second;
 	}
@@ -280,7 +280,7 @@ void MeshUpdateQueue::cleanupCache()
 	int t_now = time(0);
 
 	size_t num_blocks_erased = 0;
-	for (UNORDERED_MAP<v3s16, CachedMapBlockData*>::iterator it = m_cache.begin();
+	for (std::map<v3s16, CachedMapBlockData*>::iterator it = m_cache.begin();
 			it != m_cache.end(); ) {
 		CachedMapBlockData *cached_block = it->second;
 		if (cached_block->refcount_from_queue == 0 &&
