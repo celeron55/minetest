@@ -250,6 +250,8 @@ void MeshUpdateQueue::fillDataFromMapBlockCache(QueuedMeshUpdate *q)
 
 	data->fillBlockDataBegin(q->p);
 
+	int t_now = time(0);
+
 	// Collect data for 3*3*3 blocks from cache
 	v3s16 dp;
 	for (dp.X = -1; dp.X <= 1; dp.X++) {
@@ -259,6 +261,7 @@ void MeshUpdateQueue::fillDataFromMapBlockCache(QueuedMeshUpdate *q)
 				CachedMapBlockData *cached_block = getCachedBlock(p);
 				if (cached_block) {
 					cached_block->refcount_from_queue--;
+					cached_block->last_used_timestamp = t_now;
 					if (cached_block->data)
 						data->fillBlockData(dp, cached_block->data);
 				}
