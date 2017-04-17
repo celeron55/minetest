@@ -423,6 +423,20 @@ bool Map::getDayNightDiff(v3s16 blockpos)
 	return false;
 }
 
+// blockp: MapBlock position in blocks
+// sphere_p, sphere_r: Sphere position and radius in nodes
+static bool blockInsideSphere(const v3s16 &blockp, const v3f &sphere_p, float sphere_r)
+{
+	if (sphere_r <= 0.0f)
+		return false;
+	v3f block_center_p(
+			blockp.X * MAP_BLOCKSIZE + MAP_BLOCKSIZE/2 * MAP_BLOCKSIZE,
+			blockp.Y * MAP_BLOCKSIZE + MAP_BLOCKSIZE/2 * MAP_BLOCKSIZE,
+			blockp.Z * MAP_BLOCKSIZE + MAP_BLOCKSIZE/2 * MAP_BLOCKSIZE);
+	float d = (block_center_p - sphere_p).getLength();
+	return d <= sphere_r;
+};
+
 struct TimeOrderedMapBlock {
 	MapSector *sect;
 	MapBlock *block;
@@ -442,6 +456,7 @@ struct TimeOrderedMapBlock {
 	Updates usage timers
 */
 void Map::timerUpdate(float dtime, float unload_timeout, u32 max_loaded_blocks,
+		const v3f &retain_sphere_p, float retain_sphere_r,
 		std::vector<v3s16> *unloaded_blocks)
 {
 	bool save_before_unloading = (mapType() == MAPTYPE_SERVER);
@@ -478,6 +493,9 @@ void Map::timerUpdate(float dtime, float unload_timeout, u32 max_loaded_blocks,
 				if (block->refGet() == 0
 						&& block->getUsageTimer() > unload_timeout) {
 					v3s16 p = block->getPos();
+
+					if (blockInsideSphere(p, retain_sphere_p, retain_sphere_r))
+						continue;
 
 					// Save if modified
 					if (block->getModified() != MOD_STATE_CLEAN
@@ -535,10 +553,17 @@ void Map::timerUpdate(float dtime, float unload_timeout, u32 max_loaded_blocks,
 
 			MapBlock *block = b.block;
 
+			// FIXME: This is a bit wasteful; we could put only those to queue
+			//        that pass this check and maintain a separate counter
 			if (block->refGet() != 0)
 				continue;
 
 			v3s16 p = block->getPos();
+
+			// FIXME: This is a bit wasteful; we could put only those to queue
+			//        that pass this check and maintain a separate counter
+			if (blockInsideSphere(p, retain_sphere_p, retain_sphere_r))
+				continue;
 
 			// Save if modified
 			if (block->getModified() != MOD_STATE_CLEAN && save_before_unloading) {
@@ -593,7 +618,7 @@ void Map::timerUpdate(float dtime, float unload_timeout, u32 max_loaded_blocks,
 
 void Map::unloadUnreferencedBlocks(std::vector<v3s16> *unloaded_blocks)
 {
-	timerUpdate(0.0, -1.0, 0, unloaded_blocks);
+	timerUpdate(0.0, -1.0, 0, v3f(), -1.0f, unloaded_blocks);
 }
 
 void Map::deleteSectors(std::vector<v2s16> &sectorList)

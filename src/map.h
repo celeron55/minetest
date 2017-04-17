@@ -248,8 +248,12 @@ public:
 	/*
 		Updates usage timers and unloads unused blocks and sectors.
 		Saves modified blocks before unloading on MAPTYPE_SERVER.
+
+		Does not unload blocks inside the sphere centered at retain_sphere_p,
+		radius retain_sphere_r (nodes). (Check disabled if r<=1.0f)
 	*/
 	void timerUpdate(float dtime, float unload_timeout, u32 max_loaded_blocks,
+			const v3f &retain_sphere_p, float retain_sphere_r,
 			std::vector<v3s16> *unloaded_blocks=NULL);
 
 	/*

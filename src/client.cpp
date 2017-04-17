@@ -361,9 +361,12 @@ void Client::step(float dtime)
 	if(m_map_timer_and_unload_interval.step(dtime, map_timer_and_unload_dtime)) {
 		ScopeProfiler sp(g_profiler, "Client: Unloading blocks (time)");
 		std::vector<v3s16> deleted_blocks;
+		LocalPlayer *player = m_env.getLocalPlayer();
 		m_env.getMap().timerUpdate(map_timer_and_unload_dtime,
 			g_settings->getFloat("client_unload_unused_data_timeout"),
 			calculateReasonableMapblockLimit(),
+			player->getEyePosition() / BS,
+			getEnv().getClientMap().getMapDrawControl().wanted_range,
 			&deleted_blocks);
 
 		g_profiler->add("Client: Blocks: Unloaded (avg #)", deleted_blocks.size());
