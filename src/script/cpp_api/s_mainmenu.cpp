@@ -25,7 +25,7 @@ void ScriptApiMainMenu::setMainMenuData(MainMenuDataForScript *data)
 {
 	SCRIPTAPI_PRECHECKHEADER
 
-	lua_getglobal(L, "gamedata");
+			lua_getglobal(L, "gamedata");
 	int gamedata_idx = lua_gettop(L);
 	lua_pushstring(L, "errormessage");
 	if (!data->errormessage.empty()) {
@@ -42,7 +42,7 @@ void ScriptApiMainMenu::handleMainMenuEvent(std::string text)
 {
 	SCRIPTAPI_PRECHECKHEADER
 
-	int error_handler = PUSH_ERROR_HANDLER(L);
+			int error_handler = PUSH_ERROR_HANDLER(L);
 
 	// Get handler function
 	lua_getglobal(L, "core");
@@ -64,7 +64,7 @@ void ScriptApiMainMenu::handleMainMenuButtons(const StringMap &fields)
 {
 	SCRIPTAPI_PRECHECKHEADER
 
-	int error_handler = PUSH_ERROR_HANDLER(L);
+			int error_handler = PUSH_ERROR_HANDLER(L);
 
 	// Get handler function
 	lua_getglobal(L, "core");

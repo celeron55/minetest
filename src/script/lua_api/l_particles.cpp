@@ -56,7 +56,8 @@ int ModApiParticles::l_add_particle(lua_State *L)
 
 	if (lua_gettop(L) > 1) // deprecated
 	{
-		log_deprecated(L, "Deprecated add_particle call with individual parameters instead of definition");
+		log_deprecated(L,
+				"Deprecated add_particle call with individual parameters instead of definition");
 		pos = check_v3f(L, 1);
 		vel = check_v3f(L, 2);
 		acc = check_v3f(L, 3);
@@ -77,7 +78,7 @@ int ModApiParticles::l_add_particle(lua_State *L)
 		if (lua_istable(L, -1)) {
 			vel = check_v3f(L, -1);
 			log_deprecated(L, "The use of vel is deprecated. "
-				"Use velocity instead");
+					"Use velocity instead");
 		}
 		lua_pop(L, 1);
 
@@ -89,7 +90,7 @@ int ModApiParticles::l_add_particle(lua_State *L)
 		if (lua_istable(L, -1)) {
 			acc = check_v3f(L, -1);
 			log_deprecated(L, "The use of acc is deprecated. "
-				"Use acceleration instead");
+					"Use acceleration instead");
 		}
 		lua_pop(L, 1);
 
@@ -100,11 +101,11 @@ int ModApiParticles::l_add_particle(lua_State *L)
 		expirationtime = getfloatfield_default(L, 1, "expirationtime", 1);
 		size = getfloatfield_default(L, 1, "size", 1);
 		collisiondetection = getboolfield_default(L, 1,
-			"collisiondetection", collisiondetection);
+				"collisiondetection", collisiondetection);
 		collision_removal = getboolfield_default(L, 1,
-			"collision_removal", collision_removal);
+				"collision_removal", collision_removal);
 		object_collision = getboolfield_default(L, 1,
-			"object_collision", object_collision);
+				"object_collision", object_collision);
 		vertical = getboolfield_default(L, 1, "vertical", vertical);
 
 		lua_getfield(L, 1, "animation");
@@ -164,7 +165,8 @@ int ModApiParticles::l_add_particlespawner(lua_State *L)
 
 	if (lua_gettop(L) > 1) //deprecated
 	{
-		log_deprecated(L,"Deprecated add_particlespawner call with individual parameters instead of definition");
+		log_deprecated(L,
+				"Deprecated add_particlespawner call with individual parameters instead of definition");
 		amount = luaL_checknumber(L, 1);
 		time = luaL_checknumber(L, 2);
 		minpos = check_v3f(L, 3);
@@ -216,11 +218,11 @@ int ModApiParticles::l_add_particlespawner(lua_State *L)
 		minsize = getfloatfield_default(L, 1, "minsize", minsize);
 		maxsize = getfloatfield_default(L, 1, "maxsize", maxsize);
 		collisiondetection = getboolfield_default(L, 1,
-			"collisiondetection", collisiondetection);
+				"collisiondetection", collisiondetection);
 		collision_removal = getboolfield_default(L, 1,
-			"collision_removal", collision_removal);
+				"collision_removal", collision_removal);
 		object_collision = getboolfield_default(L, 1,
-			"object_collision", object_collision);
+				"object_collision", object_collision);
 
 		lua_getfield(L, 1, "animation");
 		animation = read_animation_definition(L, -1);

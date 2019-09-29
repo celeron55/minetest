@@ -37,13 +37,13 @@ enum ModChannelState : u8
 class ModChannel
 {
 public:
-	ModChannel(const std::string &name) : m_name(name) {}
+	ModChannel(const std::string &name) : m_name(name){}
 	~ModChannel() = default;
 
-	const std::string &getName() const { return m_name; }
+	const std::string& getName() const { return m_name; }
 	bool registerConsumer(session_t peer_id);
 	bool removeConsumer(session_t peer_id);
-	const std::vector<u16> &getChannelPeers() const { return m_client_consumers; }
+	const std::vector<u16>& getChannelPeers() const { return m_client_consumers; }
 	bool canWrite() const;
 	void setState(ModChannelState state);
 
@@ -74,7 +74,7 @@ public:
 	bool joinChannel(const std::string &channel, session_t peer_id);
 	bool leaveChannel(const std::string &channel, session_t peer_id);
 	bool channelRegistered(const std::string &channel) const;
-	ModChannel *getModChannel(const std::string &channel);
+	ModChannel* getModChannel(const std::string &channel);
 	/**
 	 * This function check if a local mod can write on the channel
 	 *
@@ -83,11 +83,11 @@ public:
 	 */
 	bool canWriteOnChannel(const std::string &channel) const;
 	void leaveAllChannels(session_t peer_id);
-	const std::vector<u16> &getChannelPeers(const std::string &channel) const;
+	const std::vector<u16>& getChannelPeers(const std::string &channel) const;
 
 private:
 	bool removeChannel(const std::string &channel);
 
-	std::unordered_map<std::string, std::unique_ptr<ModChannel>>
+	std::unordered_map<std::string, std::unique_ptr<ModChannel> >
 			m_registered_channels;
 };

@@ -26,10 +26,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "map_settings_manager.h"
 
 MapSettingsManager::MapSettingsManager(Settings *user_settings,
-		const std::string &map_meta_path):
-	m_map_meta_path(map_meta_path),
-	m_map_settings(new Settings()),
-	m_user_settings(user_settings)
+		const std::string &map_meta_path) :
+m_map_meta_path(map_meta_path),
+m_map_settings(new Settings()),
+m_user_settings(user_settings)
 {
 	assert(m_user_settings != NULL);
 }
@@ -43,7 +43,7 @@ MapSettingsManager::~MapSettingsManager()
 
 
 bool MapSettingsManager::getMapSetting(
-	const std::string &name, std::string *value_out)
+		const std::string &name, std::string *value_out)
 {
 	if (m_map_settings->getNoEx(name, *value_out))
 		return true;
@@ -57,15 +57,15 @@ bool MapSettingsManager::getMapSetting(
 
 
 bool MapSettingsManager::getMapSettingNoiseParams(
-	const std::string &name, NoiseParams *value_out)
+		const std::string &name, NoiseParams *value_out)
 {
 	return m_map_settings->getNoiseParams(name, *value_out) ||
-		m_user_settings->getNoiseParams(name, *value_out);
+			m_user_settings->getNoiseParams(name, *value_out);
 }
 
 
 bool MapSettingsManager::setMapSetting(
-	const std::string &name, const std::string &value, bool override_meta)
+		const std::string &name, const std::string &value, bool override_meta)
 {
 	if (mapgen_params)
 		return false;
@@ -80,7 +80,7 @@ bool MapSettingsManager::setMapSetting(
 
 
 bool MapSettingsManager::setMapSettingNoiseParams(
-	const std::string &name, const NoiseParams *value, bool override_meta)
+		const std::string &name, const NoiseParams *value, bool override_meta)
 {
 	if (mapgen_params)
 		return false;
@@ -96,7 +96,7 @@ bool MapSettingsManager::loadMapMeta()
 
 	if (!is.good()) {
 		errorstream << "loadMapMeta: could not open "
-			<< m_map_meta_path << std::endl;
+				<< m_map_meta_path << std::endl;
 		return false;
 	}
 
@@ -117,7 +117,7 @@ bool MapSettingsManager::saveMapMeta()
 
 	if (!fs::CreateAllDirs(fs::RemoveLastPathComponent(m_map_meta_path))) {
 		errorstream << "saveMapMeta: could not create dirs to "
-			<< m_map_meta_path;
+				<< m_map_meta_path;
 		return false;
 	}
 
@@ -135,7 +135,7 @@ bool MapSettingsManager::saveMapMeta()
 
 	if (!fs::safeWriteToFile(m_map_meta_path, oss.str())) {
 		errorstream << "saveMapMeta: could not write "
-			<< m_map_meta_path << std::endl;
+				<< m_map_meta_path << std::endl;
 		return false;
 	}
 
@@ -143,7 +143,7 @@ bool MapSettingsManager::saveMapMeta()
 }
 
 
-MapgenParams *MapSettingsManager::makeMapgenParams()
+MapgenParams* MapSettingsManager::makeMapgenParams()
 {
 	if (mapgen_params)
 		return mapgen_params;
@@ -164,11 +164,11 @@ MapgenParams *MapSettingsManager::makeMapgenParams()
 	// Now, get the mapgen type so we can create the appropriate MapgenParams
 	std::string mg_name;
 	MapgenType mgtype = getMapSetting("mg_name", &mg_name) ?
-		Mapgen::getMapgenType(mg_name) : MAPGEN_DEFAULT;
+			Mapgen::getMapgenType(mg_name) : MAPGEN_DEFAULT;
 	if (mgtype == MAPGEN_INVALID) {
 		errorstream << "EmergeManager: mapgen '" << mg_name <<
-			"' not valid; falling back to " <<
-			Mapgen::getMapgenName(MAPGEN_DEFAULT) << std::endl;
+				"' not valid; falling back to " <<
+				Mapgen::getMapgenName(MAPGEN_DEFAULT) << std::endl;
 		mgtype = MAPGEN_DEFAULT;
 	}
 

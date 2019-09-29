@@ -46,10 +46,10 @@ extern "C" {
 #define BUILTIN_MOD_NAME "*builtin*"
 
 #define PCALL_RES(RES) {                    \
-	int result_ = (RES);                    \
-	if (result_ != 0) {                     \
-		scriptError(result_, __FUNCTION__); \
-	}                                       \
+		int result_ = (RES);                    \
+		if (result_ != 0) {                     \
+			scriptError(result_, __FUNCTION__); \
+		}                                       \
 }
 
 #define runCallbacks(nargs, mode) \
@@ -58,7 +58,7 @@ extern "C" {
 #define setOriginFromTable(index) \
 	setOriginFromTableRaw(index, __FUNCTION__)
 
-enum class ScriptingType: u8 {
+enum class ScriptingType : u8 {
 	Async,
 	Client,
 	MainMenu,
@@ -95,20 +95,20 @@ public:
 #endif
 
 	void runCallbacksRaw(int nargs,
-		RunCallbacksMode mode, const char *fxn);
+			RunCallbacksMode mode, const char *fxn);
 
 	/* object */
 	void addObjectReference(ServerActiveObject *cobj);
 	void removeObjectReference(ServerActiveObject *cobj);
 
-	IGameDef *getGameDef() { return m_gamedef; }
+	IGameDef* getGameDef(){ return m_gamedef; }
 	Server* getServer();
-	ScriptingType getType() { return m_type; }
+	ScriptingType getType(){ return m_type; }
 #ifndef SERVER
 	Client* getClient();
 #endif
 
-	std::string getOrigin() { return m_last_run_mod; }
+	std::string getOrigin(){ return m_last_run_mod; }
 	void setOriginDirect(const char *origin);
 	void setOriginFromTableRaw(int index, const char *fxn);
 
@@ -125,29 +125,29 @@ protected:
 	friend class LuaVoxelManip;
 
 	lua_State* getStack()
-		{ return m_luastack; }
+	{ return m_luastack; }
 
 	void realityCheck();
 	void scriptError(int result, const char *fxn);
 	void stackDump(std::ostream &o);
 
-	void setGameDef(IGameDef* gamedef) { m_gamedef = gamedef; }
+	void setGameDef(IGameDef *gamedef){ m_gamedef = gamedef; }
 
-	Environment* getEnv() { return m_environment; }
-	void setEnv(Environment* env) { m_environment = env; }
+	Environment* getEnv(){ return m_environment; }
+	void setEnv(Environment *env){ m_environment = env; }
 
-	GUIEngine* getGuiEngine() { return m_guiengine; }
-	void setGuiEngine(GUIEngine* guiengine) { m_guiengine = guiengine; }
+	GUIEngine* getGuiEngine(){ return m_guiengine; }
+	void setGuiEngine(GUIEngine *guiengine){ m_guiengine = guiengine; }
 
 	void objectrefGetOrCreate(lua_State *L, ServerActiveObject *cobj);
 
-	void pushPlayerHPChangeReason(lua_State *L, const PlayerHPChangeReason& reason);
+	void pushPlayerHPChangeReason(lua_State *L, const PlayerHPChangeReason &reason);
 
 	std::recursive_mutex m_luastackmutex;
-	std::string     m_last_run_mod;
-	bool            m_secure = false;
+	std::string m_last_run_mod;
+	bool m_secure = false;
 #ifdef SCRIPTAPI_LOCK_DEBUG
-	int             m_lock_recursion_count{};
+	int m_lock_recursion_count {};
 	std::thread::id m_owning_thread;
 #endif
 
@@ -159,5 +159,5 @@ private:
 	IGameDef       *m_gamedef = nullptr;
 	Environment    *m_environment = nullptr;
 	GUIEngine      *m_guiengine = nullptr;
-	ScriptingType  m_type;
+	ScriptingType m_type;
 };

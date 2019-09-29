@@ -27,12 +27,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "server.h"
 
 void ScriptApiEnv::environment_OnGenerated(v3s16 minp, v3s16 maxp,
-	u32 blockseed)
+		u32 blockseed)
 {
 	SCRIPTAPI_PRECHECKHEADER
 
 	// Get core.registered_on_generateds
-	lua_getglobal(L, "core");
+			lua_getglobal(L, "core");
 	lua_getfield(L, -1, "registered_on_generateds");
 	// Call callbacks
 	push_v3s16(L, minp);
@@ -47,13 +47,13 @@ void ScriptApiEnv::environment_Step(float dtime)
 	//infostream << "scriptapi_environment_step" << std::endl;
 
 	// Get core.registered_globalsteps
-	lua_getglobal(L, "core");
+			lua_getglobal(L, "core");
 	lua_getfield(L, -1, "registered_globalsteps");
 	// Call callbacks
 	lua_pushnumber(L, dtime);
 	try {
 		runCallbacks(1, RUN_CALLBACKS_MODE_FIRST);
-	} catch (LuaError &e) {
+	} catch(LuaError &e) {
 		getServer()->setAsyncFatalError(
 				std::string("environment_Step: ") + e.what() + "\n"
 				+ script_get_backtrace(L));
@@ -64,7 +64,7 @@ void ScriptApiEnv::player_event(ServerActiveObject *player, const std::string &t
 {
 	SCRIPTAPI_PRECHECKHEADER
 
-	if (player == NULL)
+			if (player == NULL)
 		return;
 
 	// Get minetest.registered_playerevents
@@ -72,21 +72,21 @@ void ScriptApiEnv::player_event(ServerActiveObject *player, const std::string &t
 	lua_getfield(L, -1, "registered_playerevents");
 
 	// Call callbacks
-	objectrefGetOrCreate(L, player);   // player
-	lua_pushstring(L,type.c_str()); // event type
+	objectrefGetOrCreate(L, player); // player
+	lua_pushstring(L, type.c_str()); // event type
 	try {
 		runCallbacks(2, RUN_CALLBACKS_MODE_FIRST);
-	} catch (LuaError &e) {
+	} catch(LuaError &e) {
 		getServer()->setAsyncFatalError(
 				std::string("player_event: ") + e.what() + "\n"
-				+ script_get_backtrace(L) );
+				+ script_get_backtrace(L));
 	}
 }
 
 void ScriptApiEnv::initializeEnvironment(ServerEnvironment *env)
 {
 	SCRIPTAPI_PRECHECKHEADER
-	verbosestream << "scriptapi_add_environment" << std::endl;
+			verbosestream << "scriptapi_add_environment" << std::endl;
 	setEnv(env);
 
 	/*
@@ -156,7 +156,7 @@ void ScriptApiEnv::initializeEnvironment(ServerEnvironment *env)
 		lua_pop(L, 1);
 
 		LuaABM *abm = new LuaABM(L, id, trigger_contents, required_neighbors,
-			trigger_interval, trigger_chance, simple_catch_up);
+				trigger_interval, trigger_chance, simple_catch_up);
 
 		env->addActiveBlockModifier(abm);
 
@@ -202,14 +202,14 @@ void ScriptApiEnv::initializeEnvironment(ServerEnvironment *env)
 		getstringfield(L, current_lbm, "name", name);
 
 		bool run_at_every_load = getboolfield_default(L, current_lbm,
-			"run_at_every_load", false);
+				"run_at_every_load", false);
 
 		lua_getfield(L, current_lbm, "action");
 		luaL_checktype(L, current_lbm + 1, LUA_TFUNCTION);
 		lua_pop(L, 1);
 
 		LuaLBM *lbm = new LuaLBM(L, id, trigger_contents, name,
-			run_at_every_load);
+				run_at_every_load);
 
 		env->addLoadingBlockModifierDef(lbm);
 
@@ -220,7 +220,7 @@ void ScriptApiEnv::initializeEnvironment(ServerEnvironment *env)
 }
 
 void ScriptApiEnv::on_emerge_area_completion(
-	v3s16 blockpos, int action, ScriptCallbackState *state)
+		v3s16 blockpos, int action, ScriptCallbackState *state)
 {
 	Server *server = getServer();
 
@@ -234,7 +234,7 @@ void ScriptApiEnv::on_emerge_area_completion(
 
 	SCRIPTAPI_PRECHECKHEADER
 
-	int error_handler = PUSH_ERROR_HANDLER(L);
+			int error_handler = PUSH_ERROR_HANDLER(L);
 
 	lua_rawgeti(L, LUA_REGISTRYINDEX, state->callback_ref);
 	luaL_checktype(L, -1, LUA_TFUNCTION);
@@ -248,7 +248,7 @@ void ScriptApiEnv::on_emerge_area_completion(
 
 	try {
 		PCALL_RES(lua_pcall(L, 4, 0, error_handler));
-	} catch (LuaError &e) {
+	} catch(LuaError &e) {
 		server->setAsyncFatalError(
 				std::string("on_emerge_area_completion: ") + e.what() + "\n"
 				+ script_get_backtrace(L));

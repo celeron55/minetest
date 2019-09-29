@@ -28,7 +28,7 @@ struct ItemStack;
 
 class ScriptApiNodemeta
 		: virtual public ScriptApiBase,
-		  public ScriptApiItem
+		public ScriptApiItem
 {
 public:
 	ScriptApiNodemeta() = default;

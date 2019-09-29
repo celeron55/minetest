@@ -31,5 +31,5 @@ public:
 	ClientSimpleObject() = default;
 	virtual ~ClientSimpleObject() = default;
 
-	virtual void step(float dtime) {}
+	virtual void step(float dtime){}
 };

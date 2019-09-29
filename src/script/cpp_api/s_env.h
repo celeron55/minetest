@@ -39,7 +39,7 @@ public:
 
 	// Called after emerge of a block queued from core.emerge_area()
 	void on_emerge_area_completion(v3s16 blockpos, int action,
-		ScriptCallbackState *state);
+			ScriptCallbackState *state);
 
 	void initializeEnvironment(ServerEnvironment *env);
 };

@@ -34,9 +34,9 @@ private:
 	static const char className[];
 	static const luaL_Reg methods[];
 
-	static PlayerMetaRef *checkobject(lua_State *L, int narg);
+	static PlayerMetaRef* checkobject(lua_State *L, int narg);
 
-	virtual Metadata *getmeta(bool auto_create);
+	virtual Metadata* getmeta(bool auto_create);
 
 	virtual void clearMeta();
 
@@ -46,7 +46,7 @@ private:
 	static int gc_object(lua_State *L);
 
 public:
-	PlayerMetaRef(Metadata *metadata) : metadata(metadata) {}
+	PlayerMetaRef(Metadata *metadata) : metadata(metadata){}
 	~PlayerMetaRef() = default;
 
 	// Creates an ItemStackMetaRef and leaves it on top of stack

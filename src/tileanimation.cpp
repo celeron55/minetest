@@ -35,7 +35,7 @@ void TileAnimationParams::serialize(std::ostream &os, u8 tiledef_version) const
 
 void TileAnimationParams::deSerialize(std::istream &is, u8 tiledef_version)
 {
-	type = (TileAnimationType) readU8(is);
+	type = (TileAnimationType)readU8(is);
 
 	if (type == TAT_VERTICAL_FRAMES) {
 		vertical_frames.aspect_w = readU16(is);
@@ -68,12 +68,14 @@ void TileAnimationParams::determineParams(v2u32 texture_size, int *frame_count,
 		if (frame_length_ms)
 			*frame_length_ms = 1000 * sheet_2d.frame_length;
 		if (frame_size)
-			*frame_size = v2u32(texture_size.X / sheet_2d.frames_w, texture_size.Y / sheet_2d.frames_h);
+			*frame_size = v2u32(texture_size.X / sheet_2d.frames_w,
+					texture_size.Y / sheet_2d.frames_h);
 	}
 	// caller should check for TAT_NONE
 }
 
-void TileAnimationParams::getTextureModifer(std::ostream &os, v2u32 texture_size, int frame) const
+void TileAnimationParams::getTextureModifer(std::ostream &os, v2u32 texture_size,
+		int frame) const
 {
 	if (type == TAT_NONE)
 		return;
@@ -86,7 +88,7 @@ void TileAnimationParams::getTextureModifer(std::ostream &os, v2u32 texture_size
 		q = frame / sheet_2d.frames_w;
 		r = frame % sheet_2d.frames_w;
 		os << "^[sheet:" << sheet_2d.frames_w << "x" << sheet_2d.frames_h
-			<< ":" << r << "," << q;
+				<< ":" << r << "," << q;
 	}
 }
 
@@ -106,5 +108,5 @@ v2f TileAnimationParams::getTextureCoords(v2u32 texture_size, int frame) const
 		r = frame % sheet_2d.frames_w;
 		ret = v2u32(r * frame_size.X, q * frame_size.Y);
 	}
-	return v2f(ret.X / (float) texture_size.X, ret.Y / (float) texture_size.Y);
+	return v2f(ret.X / (float)texture_size.X, ret.Y / (float)texture_size.Y);
 }

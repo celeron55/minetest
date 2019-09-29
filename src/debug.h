@@ -36,7 +36,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 	#define NORETURN __declspec(noreturn)
 	#define FUNCTION_NAME __FUNCTION__
 #else
-	#define NORETURN __attribute__ ((__noreturn__))
+	#define NORETURN __attribute__((__noreturn__))
 	#define FUNCTION_NAME __PRETTY_FUNCTION__
 #endif
 
@@ -90,13 +90,13 @@ void debug_set_exception_handler();
 #if CATCH_UNHANDLED_EXCEPTIONS == 1
 	#define BEGIN_DEBUG_EXCEPTION_HANDLER try {
 	#define END_DEBUG_EXCEPTION_HANDLER                        \
-		} catch (std::exception &e) {                          \
-			errorstream << "An unhandled exception occurred: " \
-				<< e.what() << std::endl;                      \
-			FATAL_ERROR(e.what());                             \
-		}
+	} catch(std::exception &e) {                          \
+		errorstream << "An unhandled exception occurred: " \
+					<< e.what() << std::endl;                      \
+		FATAL_ERROR(e.what());                             \
+	}
 #else
-	// Dummy ones
+// Dummy ones
 	#define BEGIN_DEBUG_EXCEPTION_HANDLER
 	#define END_DEBUG_EXCEPTION_HANDLER
 #endif

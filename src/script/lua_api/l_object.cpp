@@ -44,7 +44,7 @@ ObjectRef* ObjectRef::checkobject(lua_State *L, int narg)
 	luaL_checktype(L, narg, LUA_TUSERDATA);
 	void *ud = luaL_checkudata(L, narg, className);
 	if (!ud) luaL_typerror(L, narg, className);
-	return *(ObjectRef**)ud;  // unbox pointer
+	return *(ObjectRef**)ud; // unbox pointer
 }
 
 ServerActiveObject* ObjectRef::getobject(ObjectRef *ref)
@@ -73,7 +73,7 @@ PlayerSAO* ObjectRef::getplayersao(ObjectRef *ref)
 	return (PlayerSAO*)obj;
 }
 
-RemotePlayer *ObjectRef::getplayer(ObjectRef *ref)
+RemotePlayer* ObjectRef::getplayer(ObjectRef *ref)
 {
 	PlayerSAO *playersao = getplayersao(ref);
 	if (playersao == NULL)
@@ -84,8 +84,8 @@ RemotePlayer *ObjectRef::getplayer(ObjectRef *ref)
 // Exported functions
 
 // garbage collector
-int ObjectRef::gc_object(lua_State *L) {
-	ObjectRef *o = *(ObjectRef **)(lua_touserdata(L, 1));
+int ObjectRef::gc_object(lua_State *L){
+	ObjectRef *o = *(ObjectRef**)(lua_touserdata(L, 1));
 	//infostream<<"ObjectRef::gc_object: o="<<o<<std::endl;
 	delete o;
 	return 0;
@@ -193,14 +193,14 @@ int ObjectRef::l_punch(lua_State *L)
 	// If the punched is a player, and its HP changed
 	if (src_original_hp != co->getHP() &&
 			co->getType() == ACTIVEOBJECT_TYPE_PLAYER) {
-		getServer(L)->SendPlayerHPOrDie((PlayerSAO *)co,
+		getServer(L)->SendPlayerHPOrDie((PlayerSAO*)co,
 				PlayerHPChangeReason(PlayerHPChangeReason::PLAYER_PUNCH, puncher));
 	}
 
 	// If the puncher is a player, and its HP changed
 	if (dst_origin_hp != puncher->getHP() &&
 			puncher->getType() == ACTIVEOBJECT_TYPE_PLAYER) {
-		getServer(L)->SendPlayerHPOrDie((PlayerSAO *)puncher,
+		getServer(L)->SendPlayerHPOrDie((PlayerSAO*)puncher,
 				PlayerHPChangeReason(PlayerHPChangeReason::PLAYER_PUNCH, co));
 	}
 	return 1;
@@ -257,7 +257,7 @@ int ObjectRef::l_set_hp(lua_State *L)
 	// Do it
 	co->setHP(hp, reason);
 	if (co->getType() == ACTIVEOBJECT_TYPE_PLAYER)
-		getServer(L)->SendPlayerHPOrDie((PlayerSAO *)co, reason);
+		getServer(L)->SendPlayerHPOrDie((PlayerSAO*)co, reason);
 
 	if (reason.hasLuaReference())
 		luaL_unref(L, LUA_REGISTRYINDEX, reason.lua_reference);
@@ -358,7 +358,7 @@ int ObjectRef::l_set_wielded_item(lua_State *L)
 	ItemStack item = read_item(L, 2, getServer(L)->idef());
 	bool success = co->setWieldedItem(item);
 	if (success && co->getType() == ACTIVEOBJECT_TYPE_PLAYER) {
-		getServer(L)->SendInventory((PlayerSAO *)co, true);
+		getServer(L)->SendInventory((PlayerSAO*)co, true);
 	}
 	lua_pushboolean(L, success);
 	return 1;
@@ -397,7 +397,7 @@ int ObjectRef::l_set_physics_override(lua_State *L)
 {
 	NO_MAP_LOCK_REQUIRED;
 	ObjectRef *ref = checkobject(L, 1);
-	PlayerSAO *co = (PlayerSAO *) getobject(ref);
+	PlayerSAO *co = (PlayerSAO*)getobject(ref);
 	if (co == NULL) return 0;
 	// Do it
 	if (lua_istable(L, 2)) {
@@ -437,7 +437,7 @@ int ObjectRef::l_get_physics_override(lua_State *L)
 {
 	NO_MAP_LOCK_REQUIRED;
 	ObjectRef *ref = checkobject(L, 1);
-	PlayerSAO *co = (PlayerSAO *)getobject(ref);
+	PlayerSAO *co = (PlayerSAO*)getobject(ref);
 	if (co == NULL)
 		return 0;
 	// Do it
@@ -490,7 +490,7 @@ int ObjectRef::l_get_animation(lua_State *L)
 	if (co == NULL)
 		return 0;
 	// Do it
-	v2f frames = v2f(1,1);
+	v2f frames = v2f(1, 1);
 	float frame_speed = 15;
 	float frame_blend = 0;
 	bool frame_loop = true;
@@ -513,7 +513,7 @@ int ObjectRef::l_set_local_animation(lua_State *L)
 		return 0;
 	// Do it
 	v2s32 frames[4];
-	for (int i=0;i<4;i++) {
+	for (int i = 0; i<4; i++) {
 		if (!lua_isnil(L, 2+1))
 			frames[i] = read_v2s32(L, 2+i);
 	}
@@ -530,7 +530,7 @@ int ObjectRef::l_set_local_animation(lua_State *L)
 int ObjectRef::l_get_local_animation(lua_State *L)
 {
 	NO_MAP_LOCK_REQUIRED
-	ObjectRef *ref = checkobject(L, 1);
+			ObjectRef *ref = checkobject(L, 1);
 	RemotePlayer *player = getplayer(ref);
 	if (player == NULL)
 		return 0;
@@ -565,10 +565,10 @@ int ObjectRef::l_set_eye_offset(lua_State *L)
 		offset_third = read_v3f(L, 3);
 
 	// Prevent abuse of offset values (keep player always visible)
-	offset_third.X = rangelim(offset_third.X,-10,10);
-	offset_third.Z = rangelim(offset_third.Z,-5,5);
+	offset_third.X = rangelim(offset_third.X, -10, 10);
+	offset_third.Z = rangelim(offset_third.Z, -5, 5);
 	/* TODO: if possible: improve the camera colision detetion to allow Y <= -1.5) */
-	offset_third.Y = rangelim(offset_third.Y,-10,15); //1.5*BS
+	offset_third.Y = rangelim(offset_third.Y, -10, 15); //1.5*BS
 
 	getServer(L)->setPlayerEyeOffset(player, offset_first, offset_third);
 	lua_pushboolean(L, true);
@@ -1010,7 +1010,7 @@ int ObjectRef::l_set_sprite(lua_State *L)
 	LuaEntitySAO *co = getluaobject(ref);
 	if (co == NULL) return 0;
 	// Do it
-	v2s16 p(0,0);
+	v2s16 p(0, 0);
 	if (!lua_isnil(L, 2))
 		p = readParam<v2s16>(L, 2);
 	int num_frames = 1;
@@ -1033,7 +1033,7 @@ int ObjectRef::l_get_entity_name(lua_State *L)
 	NO_MAP_LOCK_REQUIRED;
 	ObjectRef *ref = checkobject(L, 1);
 	LuaEntitySAO *co = getluaobject(ref);
-	log_deprecated(L,"Deprecated call to \"get_entity_name");
+	log_deprecated(L, "Deprecated call to \"get_entity_name");
 	if (co == NULL) return 0;
 	// Do it
 	std::string name = co->getName();
@@ -1061,7 +1061,8 @@ int ObjectRef::l_is_player_connected(lua_State *L)
 	NO_MAP_LOCK_REQUIRED;
 	ObjectRef *ref = checkobject(L, 1);
 	RemotePlayer *player = getplayer(ref);
-	lua_pushboolean(L, (player != NULL && player->getPeerId() != PEER_ID_INEXISTENT));
+	lua_pushboolean(L,
+			(player != NULL && player->getPeerId() != PEER_ID_INEXISTENT));
 	return 1;
 }
 
@@ -1121,13 +1122,13 @@ int ObjectRef::l_get_look_dir(lua_State *L)
 {
 	NO_MAP_LOCK_REQUIRED;
 	ObjectRef *ref = checkobject(L, 1);
-	PlayerSAO* co = getplayersao(ref);
+	PlayerSAO *co = getplayersao(ref);
 	if (co == NULL) return 0;
 	// Do it
 	float pitch = co->getRadLookPitchDep();
 	float yaw = co->getRadYawDep();
 	v3f v(std::cos(pitch) * std::cos(yaw), std::sin(pitch), std::cos(pitch) *
-		std::sin(yaw));
+			std::sin(yaw));
 	push_v3f(L, v);
 	return 1;
 }
@@ -1139,10 +1140,10 @@ int ObjectRef::l_get_look_pitch(lua_State *L)
 	NO_MAP_LOCK_REQUIRED;
 
 	log_deprecated(L,
-		"Deprecated call to get_look_pitch, use get_look_vertical instead");
+			"Deprecated call to get_look_pitch, use get_look_vertical instead");
 
 	ObjectRef *ref = checkobject(L, 1);
-	PlayerSAO* co = getplayersao(ref);
+	PlayerSAO *co = getplayersao(ref);
 	if (co == NULL) return 0;
 	// Do it
 	lua_pushnumber(L, co->getRadLookPitchDep());
@@ -1156,10 +1157,10 @@ int ObjectRef::l_get_look_yaw(lua_State *L)
 	NO_MAP_LOCK_REQUIRED;
 
 	log_deprecated(L,
-		"Deprecated call to get_look_yaw, use get_look_horizontal instead");
+			"Deprecated call to get_look_yaw, use get_look_horizontal instead");
 
 	ObjectRef *ref = checkobject(L, 1);
-	PlayerSAO* co = getplayersao(ref);
+	PlayerSAO *co = getplayersao(ref);
 	if (co == NULL) return 0;
 	// Do it
 	lua_pushnumber(L, co->getRadYawDep());
@@ -1171,7 +1172,7 @@ int ObjectRef::l_get_look_vertical(lua_State *L)
 {
 	NO_MAP_LOCK_REQUIRED;
 	ObjectRef *ref = checkobject(L, 1);
-	PlayerSAO* co = getplayersao(ref);
+	PlayerSAO *co = getplayersao(ref);
 	if (co == NULL) return 0;
 	// Do it
 	lua_pushnumber(L, co->getRadLookPitch());
@@ -1183,7 +1184,7 @@ int ObjectRef::l_get_look_horizontal(lua_State *L)
 {
 	NO_MAP_LOCK_REQUIRED;
 	ObjectRef *ref = checkobject(L, 1);
-	PlayerSAO* co = getplayersao(ref);
+	PlayerSAO *co = getplayersao(ref);
 	if (co == NULL) return 0;
 	// Do it
 	lua_pushnumber(L, co->getRadRotation().Y);
@@ -1195,7 +1196,7 @@ int ObjectRef::l_set_look_vertical(lua_State *L)
 {
 	NO_MAP_LOCK_REQUIRED;
 	ObjectRef *ref = checkobject(L, 1);
-	PlayerSAO* co = getplayersao(ref);
+	PlayerSAO *co = getplayersao(ref);
 	if (co == NULL) return 0;
 	float pitch = readParam<float>(L, 2) * core::RADTODEG;
 	// Do it
@@ -1208,7 +1209,7 @@ int ObjectRef::l_set_look_horizontal(lua_State *L)
 {
 	NO_MAP_LOCK_REQUIRED;
 	ObjectRef *ref = checkobject(L, 1);
-	PlayerSAO* co = getplayersao(ref);
+	PlayerSAO *co = getplayersao(ref);
 	if (co == NULL) return 0;
 	float yaw = readParam<float>(L, 2) * core::RADTODEG;
 	// Do it
@@ -1223,10 +1224,10 @@ int ObjectRef::l_set_look_pitch(lua_State *L)
 	NO_MAP_LOCK_REQUIRED;
 
 	log_deprecated(L,
-		"Deprecated call to set_look_pitch, use set_look_vertical instead.");
+			"Deprecated call to set_look_pitch, use set_look_vertical instead.");
 
 	ObjectRef *ref = checkobject(L, 1);
-	PlayerSAO* co = getplayersao(ref);
+	PlayerSAO *co = getplayersao(ref);
 	if (co == NULL) return 0;
 	float pitch = readParam<float>(L, 2) * core::RADTODEG;
 	// Do it
@@ -1241,10 +1242,10 @@ int ObjectRef::l_set_look_yaw(lua_State *L)
 	NO_MAP_LOCK_REQUIRED;
 
 	log_deprecated(L,
-		"Deprecated call to set_look_yaw, use set_look_horizontal instead.");
+			"Deprecated call to set_look_yaw, use set_look_horizontal instead.");
 
 	ObjectRef *ref = checkobject(L, 1);
-	PlayerSAO* co = getplayersao(ref);
+	PlayerSAO *co = getplayersao(ref);
 	if (co == NULL) return 0;
 	float yaw = readParam<float>(L, 2) * core::RADTODEG;
 	// Do it
@@ -1261,7 +1262,8 @@ int ObjectRef::l_set_fov(lua_State *L)
 	if (!player)
 		return 0;
 
-	player->setFov({ static_cast<f32>(luaL_checknumber(L, 2)), readParam<bool>(L, 3) });
+	player->setFov({ static_cast<f32>(luaL_checknumber(L, 2)),
+				readParam<bool>(L, 3) });
 	getServer(L)->SendPlayerFov(player->getPeerId());
 
 	return 0;
@@ -1288,7 +1290,7 @@ int ObjectRef::l_set_breath(lua_State *L)
 {
 	NO_MAP_LOCK_REQUIRED;
 	ObjectRef *ref = checkobject(L, 1);
-	PlayerSAO* co = getplayersao(ref);
+	PlayerSAO *co = getplayersao(ref);
 	if (co == NULL) return 0;
 	u16 breath = luaL_checknumber(L, 2);
 	co->setBreath(breath);
@@ -1301,11 +1303,11 @@ int ObjectRef::l_get_breath(lua_State *L)
 {
 	NO_MAP_LOCK_REQUIRED;
 	ObjectRef *ref = checkobject(L, 1);
-	PlayerSAO* co = getplayersao(ref);
+	PlayerSAO *co = getplayersao(ref);
 	if (co == NULL) return 0;
 	// Do it
 	u16 breath = co->getBreath();
-	lua_pushinteger (L, breath);
+	lua_pushinteger(L, breath);
 	return 1;
 }
 
@@ -1313,10 +1315,10 @@ int ObjectRef::l_get_breath(lua_State *L)
 int ObjectRef::l_set_attribute(lua_State *L)
 {
 	log_deprecated(L,
-		"Deprecated call to set_attribute, use MetaDataRef methods instead.");
+			"Deprecated call to set_attribute, use MetaDataRef methods instead.");
 
 	ObjectRef *ref = checkobject(L, 1);
-	PlayerSAO* co = getplayersao(ref);
+	PlayerSAO *co = getplayersao(ref);
 	if (co == NULL)
 		return 0;
 
@@ -1334,10 +1336,10 @@ int ObjectRef::l_set_attribute(lua_State *L)
 int ObjectRef::l_get_attribute(lua_State *L)
 {
 	log_deprecated(L,
-		"Deprecated call to get_attribute, use MetaDataRef methods instead.");
+			"Deprecated call to get_attribute, use MetaDataRef methods instead.");
 
 	ObjectRef *ref = checkobject(L, 1);
-	PlayerSAO* co = getplayersao(ref);
+	PlayerSAO *co = getplayersao(ref);
 	if (co == NULL)
 		return 0;
 
@@ -1418,7 +1420,7 @@ int ObjectRef::l_get_formspec_prepend(lua_State *L)
 	ObjectRef *ref = checkobject(L, 1);
 	RemotePlayer *player = getplayer(ref);
 	if (player == NULL)
-		 return 0;
+		return 0;
 
 	std::string formspec = player->formspec_prepend;
 	lua_pushlstring(L, formspec.c_str(), formspec.size());
@@ -1568,14 +1570,14 @@ int ObjectRef::l_hud_set_flags(lua_State *L)
 		return 0;
 
 	u32 flags = 0;
-	u32 mask  = 0;
+	u32 mask = 0;
 	bool flag;
 
 	const EnumString *esp = es_HudBuiltinElement;
 	for (int i = 0; esp[i].str; i++) {
 		if (getboolfield(L, 2, esp[i].str, flag)) {
 			flags |= esp[i].num * flag;
-			mask  |= esp[i].num;
+			mask |= esp[i].num;
 		}
 	}
 	if (!getServer(L)->hudSetFlags(player, flags, mask))
@@ -1710,7 +1712,7 @@ int ObjectRef::l_set_sky(lua_State *L)
 	if (player == NULL)
 		return 0;
 
-	video::SColor bgcolor(255,255,255,255);
+	video::SColor bgcolor(255, 255, 255, 255);
 	read_color(L, 2, &bgcolor);
 
 	std::string type = luaL_checkstring(L, 3);
@@ -1782,7 +1784,8 @@ int ObjectRef::l_set_clouds(lua_State *L)
 
 	CloudParams cloud_params = player->getCloudParams();
 
-	cloud_params.density = getfloatfield_default(L, 2, "density", cloud_params.density);
+	cloud_params.density = getfloatfield_default(L, 2, "density",
+			cloud_params.density);
 
 	lua_getfield(L, 2, "color");
 	if (!lua_isnil(L, -1))
@@ -1793,8 +1796,9 @@ int ObjectRef::l_set_clouds(lua_State *L)
 		read_color(L, -1, &cloud_params.color_ambient);
 	lua_pop(L, 1);
 
-	cloud_params.height    = getfloatfield_default(L, 2, "height",    cloud_params.height   );
-	cloud_params.thickness = getfloatfield_default(L, 2, "thickness", cloud_params.thickness);
+	cloud_params.height = getfloatfield_default(L, 2, "height", cloud_params.height);
+	cloud_params.thickness = getfloatfield_default(L, 2, "thickness",
+			cloud_params.thickness);
 
 	lua_getfield(L, 2, "speed");
 	if (lua_istable(L, -1)) {
@@ -1885,8 +1889,8 @@ int ObjectRef::l_get_day_night_ratio(lua_State *L)
 	return 1;
 }
 
-ObjectRef::ObjectRef(ServerActiveObject *object):
-	m_object(object)
+ObjectRef::ObjectRef(ServerActiveObject *object) :
+m_object(object)
 {
 	//infostream<<"ObjectRef created for id="<<m_object->getId()<<std::endl;
 }
@@ -1897,7 +1901,7 @@ void ObjectRef::create(lua_State *L, ServerActiveObject *object)
 {
 	ObjectRef *o = new ObjectRef(object);
 	//infostream<<"ObjectRef::create: o="<<o<<std::endl;
-	*(void **)(lua_newuserdata(L, sizeof(void *))) = o;
+	*(void**)(lua_newuserdata(L, sizeof(void*))) = o;
 	luaL_getmetatable(L, className);
 	lua_setmetatable(L, -2);
 }
@@ -1917,7 +1921,7 @@ void ObjectRef::Register(lua_State *L)
 
 	lua_pushliteral(L, "__metatable");
 	lua_pushvalue(L, methodtable);
-	lua_settable(L, metatable);  // hide metatable from Lua getmetatable()
+	lua_settable(L, metatable); // hide metatable from Lua getmetatable()
 
 	lua_pushliteral(L, "__index");
 	lua_pushvalue(L, methodtable);
@@ -1927,11 +1931,11 @@ void ObjectRef::Register(lua_State *L)
 	lua_pushcfunction(L, gc_object);
 	lua_settable(L, metatable);
 
-	lua_pop(L, 1);  // drop metatable
+	lua_pop(L, 1); // drop metatable
 
 	markAliasDeprecated(methods);
-	luaL_openlib(L, 0, methods, 0);  // fill methodtable
-	lua_pop(L, 1);  // drop methodtable
+	luaL_openlib(L, 0, methods, 0); // fill methodtable
+	lua_pop(L, 1); // drop methodtable
 
 	// Cannot be created from Lua
 	//lua_register(L, className, create_object);
@@ -2034,5 +2038,5 @@ luaL_Reg ObjectRef::methods[] = {
 	luamethod(ObjectRef, set_eye_offset),
 	luamethod(ObjectRef, get_eye_offset),
 	luamethod(ObjectRef, send_mapblock),
-	{0,0}
+	{ 0, 0 }
 };

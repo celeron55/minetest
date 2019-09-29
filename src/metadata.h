@@ -45,19 +45,21 @@ public:
 
 	size_t size() const;
 	bool contains(const std::string &name) const;
-	const std::string &getString(const std::string &name, u16 recursion = 0) const;
-	bool getStringToRef(const std::string &name, std::string &str, u16 recursion = 0) const;
+	const std::string& getString(const std::string &name, u16 recursion = 0) const;
+	bool getStringToRef(const std::string &name, std::string &str,
+			u16 recursion = 0) const;
 	virtual bool setString(const std::string &name, const std::string &var);
-	inline bool removeString(const std::string &name) { return setString(name, ""); }
-	const StringMap &getStrings() const
+	inline bool removeString(const std::string &name){ return setString(name, ""); }
+	const StringMap& getStrings() const
 	{
 		return m_stringvars;
 	}
 	// Add support for variable names in values
-	const std::string &resolveString(const std::string &str, u16 recursion = 0) const;
+	const std::string& resolveString(const std::string &str,
+			u16 recursion = 0) const;
 
-	inline bool isModified() const  { return m_modified; }
-	inline void setModified(bool v) { m_modified = v; }
+	inline bool isModified() const { return m_modified; }
+	inline void setModified(bool v){ m_modified = v; }
 protected:
 	StringMap m_stringvars;
 };

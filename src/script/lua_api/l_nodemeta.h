@@ -42,7 +42,7 @@ private:
 	static const luaL_Reg methodsServer[];
 	static const luaL_Reg methodsClient[];
 
-	static NodeMetaRef *checkobject(lua_State *L, int narg);
+	static NodeMetaRef* checkobject(lua_State *L, int narg);
 
 	/**
 	 * Retrieve metadata for a node.

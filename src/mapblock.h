@@ -73,7 +73,7 @@ class VoxelManipulator;
 class MapBlock
 {
 public:
-	MapBlock(Map *parent, v3s16 pos, IGameDef *gamedef, bool dummy=false);
+	MapBlock(Map *parent, v3s16 pos, IGameDef *gamedef, bool dummy = false);
 	~MapBlock();
 
 	/*virtual u16 nodeContainerId() const
@@ -81,7 +81,7 @@ public:
 		return NODECONTAINER_ID_MAPBLOCK;
 	}*/
 
-	Map * getParent()
+	Map* getParent()
 	{
 		return m_parent;
 	}
@@ -104,7 +104,7 @@ public:
 	////
 	//// Modification tracking methods
 	////
-	void raiseModified(u32 mod, u32 reason=MOD_REASON_UNKNOWN)
+	void raiseModified(u32 mod, u32 reason = MOD_REASON_UNKNOWN)
 	{
 		if (mod > m_modified) {
 			m_modified = mod;
@@ -177,7 +177,7 @@ public:
 	}
 
 	inline void setLightingComplete(LightBank bank, u8 direction,
-		bool is_complete)
+			bool is_complete)
 	{
 		assert(direction >= 0 && direction <= 5);
 		if (bank == LIGHTBANK_NIGHT) {
@@ -233,7 +233,7 @@ public:
 		return core::aabbox3d<s16>(getPosRelative(),
 				getPosRelative()
 				+ v3s16(MAP_BLOCKSIZE, MAP_BLOCKSIZE, MAP_BLOCKSIZE)
-				- v3s16(1,1,1));
+				- v3s16(1, 1, 1));
 	}
 
 	////
@@ -243,9 +243,9 @@ public:
 	inline bool isValidPosition(s16 x, s16 y, s16 z)
 	{
 		return data
-			&& x >= 0 && x < MAP_BLOCKSIZE
-			&& y >= 0 && y < MAP_BLOCKSIZE
-			&& z >= 0 && z < MAP_BLOCKSIZE;
+				&& x >= 0 && x < MAP_BLOCKSIZE
+					&& y >= 0 && y < MAP_BLOCKSIZE
+					&& z >= 0 && z < MAP_BLOCKSIZE;
 	}
 
 	inline bool isValidPosition(v3s16 p)
@@ -258,7 +258,7 @@ public:
 		*valid_position = isValidPosition(x, y, z);
 
 		if (!*valid_position)
-			return {CONTENT_IGNORE};
+			return { CONTENT_IGNORE };
 
 		return data[z * zstride + y * ystride + x];
 	}
@@ -274,7 +274,7 @@ public:
 		return getNode(p.X, p.Y, p.Z, &is_valid);
 	}
 
-	inline void setNode(s16 x, s16 y, s16 z, MapNode & n)
+	inline void setNode(s16 x, s16 y, s16 z, MapNode &n)
 	{
 		if (!isValidPosition(x, y, z))
 			throw InvalidPositionException();
@@ -283,7 +283,7 @@ public:
 		raiseModified(MOD_STATE_WRITE_NEEDED, MOD_REASON_SET_NODE);
 	}
 
-	inline void setNode(v3s16 p, MapNode & n)
+	inline void setNode(v3s16 p, MapNode &n)
 	{
 		setNode(p.X, p.Y, p.Z, n);
 	}
@@ -296,7 +296,7 @@ public:
 	{
 		*valid_position = data != nullptr;
 		if (!*valid_position)
-			return {CONTENT_IGNORE};
+			return { CONTENT_IGNORE };
 
 		return data[z * zstride + y * ystride + x];
 	}
@@ -312,17 +312,17 @@ public:
 	//// Caller must ensure that this is not a dummy block (by calling isDummy())
 	////
 
-	inline const MapNode &getNodeUnsafe(s16 x, s16 y, s16 z)
+	inline const MapNode& getNodeUnsafe(s16 x, s16 y, s16 z)
 	{
 		return data[z * zstride + y * ystride + x];
 	}
 
-	inline const MapNode &getNodeUnsafe(v3s16 &p)
+	inline const MapNode& getNodeUnsafe(v3s16 &p)
 	{
 		return getNodeUnsafe(p.X, p.Y, p.Z);
 	}
 
-	inline void setNodeNoCheck(s16 x, s16 y, s16 z, MapNode & n)
+	inline void setNodeNoCheck(s16 x, s16 y, s16 z, MapNode &n)
 	{
 		if (!data)
 			throw InvalidPositionException();
@@ -331,7 +331,7 @@ public:
 		raiseModified(MOD_STATE_WRITE_NEEDED, MOD_REASON_SET_NODE_NO_CHECK);
 	}
 
-	inline void setNodeNoCheck(v3s16 p, MapNode & n)
+	inline void setNodeNoCheck(v3s16 p, MapNode &n)
 	{
 		setNodeNoCheck(p.X, p.Y, p.Z, n);
 	}
@@ -340,7 +340,7 @@ public:
 	// is not valid on this MapBlock.
 	bool isValidPositionParent(v3s16 p);
 	MapNode getNodeParent(v3s16 p, bool *is_valid_position = NULL);
-	void setNodeParent(v3s16 p, MapNode & n);
+	void setNodeParent(v3s16 p, MapNode &n);
 
 	inline void drawbox(s16 x0, s16 y0, s16 z0, s16 w, s16 h, s16 d, MapNode node)
 	{
@@ -500,7 +500,7 @@ private:
 		Used only internally, because changes can't be tracked
 	*/
 
-	inline MapNode &getNodeRef(s16 x, s16 y, s16 z)
+	inline MapNode& getNodeRef(s16 x, s16 y, s16 z)
 	{
 		if (!isValidPosition(x, y, z))
 			throw InvalidPositionException();
@@ -508,7 +508,7 @@ private:
 		return data[z * zstride + y * ystride + x];
 	}
 
-	inline MapNode &getNodeRef(v3s16 &p)
+	inline MapNode& getNodeRef(v3s16 &p)
 	{
 		return getNodeRef(p.X, p.Y, p.Z);
 	}
@@ -620,28 +620,28 @@ private:
 	int m_refcount = 0;
 };
 
-typedef std::vector<MapBlock*> MapBlockVect;
+typedef std::vector<MapBlock* > MapBlockVect;
 
 inline bool objectpos_over_limit(v3f p)
 {
 	const float max_limit_bs = MAX_MAP_GENERATION_LIMIT * BS;
 	return p.X < -max_limit_bs ||
-		p.X >  max_limit_bs ||
-		p.Y < -max_limit_bs ||
-		p.Y >  max_limit_bs ||
-		p.Z < -max_limit_bs ||
-		p.Z >  max_limit_bs;
+			p.X >  max_limit_bs ||
+			p.Y < -max_limit_bs ||
+			p.Y >  max_limit_bs ||
+			p.Z < -max_limit_bs ||
+			p.Z >  max_limit_bs;
 }
 
 inline bool blockpos_over_max_limit(v3s16 p)
 {
 	const s16 max_limit_bp = MAX_MAP_GENERATION_LIMIT / MAP_BLOCKSIZE;
 	return p.X < -max_limit_bp ||
-		p.X >  max_limit_bp ||
-		p.Y < -max_limit_bp ||
-		p.Y >  max_limit_bp ||
-		p.Z < -max_limit_bp ||
-		p.Z >  max_limit_bp;
+			p.X >  max_limit_bp ||
+			p.Y < -max_limit_bp ||
+			p.Y >  max_limit_bp ||
+			p.Z < -max_limit_bp ||
+			p.Z >  max_limit_bp;
 }
 
 /*

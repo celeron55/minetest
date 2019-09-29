@@ -50,13 +50,13 @@ public:
 	*/
 	void insert(u16 id, const StaticObject &obj)
 	{
-		if(id == 0)
+		if (id == 0)
 		{
 			m_stored.push_back(obj);
 		}
 		else
 		{
-			if(m_active.find(id) != m_active.end())
+			if (m_active.find(id) != m_active.end())
 			{
 				dstream<<"ERROR: StaticObjectList::insert(): "
 						<<"id already exists"<<std::endl;
@@ -69,7 +69,7 @@ public:
 	void remove(u16 id)
 	{
 		assert(id != 0); // Pre-condition
-		if(m_active.find(id) == m_active.end())
+		if (m_active.find(id) == m_active.end())
 		{
 			warningstream<<"StaticObjectList::remove(): id="<<id
 					<<" not found"<<std::endl;

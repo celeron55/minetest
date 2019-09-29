@@ -45,7 +45,7 @@ public:
 
 	static void Register(lua_State *L);
 
-	static ObjectRef *checkobject(lua_State *L, int narg);
+	static ObjectRef* checkobject(lua_State *L, int narg);
 
 	static ServerActiveObject* getobject(ObjectRef *ref);
 private:
@@ -58,7 +58,7 @@ private:
 
 	static PlayerSAO* getplayersao(ObjectRef *ref);
 
-	static RemotePlayer *getplayer(ObjectRef *ref);
+	static RemotePlayer* getplayer(ObjectRef *ref);
 
 	// Exported functions
 

@@ -33,7 +33,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // garbage collector
 int LuaVoxelManip::gc_object(lua_State *L)
 {
-	LuaVoxelManip *o = *(LuaVoxelManip **)(lua_touserdata(L, 1));
+	LuaVoxelManip *o = *(LuaVoxelManip**)(lua_touserdata(L, 1));
 	delete o;
 
 	return 0;
@@ -63,7 +63,7 @@ int LuaVoxelManip::l_get_data(lua_State *L)
 	NO_MAP_LOCK_REQUIRED;
 
 	LuaVoxelManip *o = checkobject(L, 1);
-	bool use_buffer  = lua_istable(L, 2);
+	bool use_buffer = lua_istable(L, 2);
 
 	MMVManip *vm = o->vm;
 
@@ -118,7 +118,7 @@ int LuaVoxelManip::l_write_to_map(lua_State *L)
 		o->vm->blitBackAll(&(o->modified_blocks));
 	} else {
 		voxalgo::blit_back_with_light(map, o->vm,
-			&(o->modified_blocks));
+				&(o->modified_blocks));
 	}
 
 	MapEditEvent event;
@@ -139,7 +139,7 @@ int LuaVoxelManip::l_get_node_at(lua_State *L)
 	const NodeDefManager *ndef = getServer(L)->getNodeDefManager();
 
 	LuaVoxelManip *o = checkobject(L, 1);
-	v3s16 pos        = check_v3s16(L, 2);
+	v3s16 pos = check_v3s16(L, 2);
 
 	pushnode(L, o->vm->getNodeNoExNoEmerge(pos), ndef);
 	return 1;
@@ -152,8 +152,8 @@ int LuaVoxelManip::l_set_node_at(lua_State *L)
 	const NodeDefManager *ndef = getServer(L)->getNodeDefManager();
 
 	LuaVoxelManip *o = checkobject(L, 1);
-	v3s16 pos        = check_v3s16(L, 2);
-	MapNode n        = readnode(L, 3, ndef);
+	v3s16 pos = check_v3s16(L, 2);
+	MapNode n = readnode(L, 3, ndef);
 
 	o->vm->setNodeNoEmerge(pos, n);
 
@@ -171,7 +171,7 @@ int LuaVoxelManip::l_update_liquids(lua_State *L)
 	MMVManip *vm = o->vm;
 
 	Mapgen mg;
-	mg.vm   = vm;
+	mg.vm = vm;
 	mg.ndef = ndef;
 
 	mg.updateLiquid(&map->m_transforming_liquid,
@@ -187,7 +187,7 @@ int LuaVoxelManip::l_calc_lighting(lua_State *L)
 	LuaVoxelManip *o = checkobject(L, 1);
 	if (!o->is_mapgen_vm) {
 		warningstream << "VoxelManip:calc_lighting called for a non-mapgen "
-			"VoxelManip object" << std::endl;
+				"VoxelManip object" << std::endl;
 		return 0;
 	}
 
@@ -196,10 +196,10 @@ int LuaVoxelManip::l_calc_lighting(lua_State *L)
 	MMVManip *vm = o->vm;
 
 	v3s16 yblock = v3s16(0, 1, 0) * MAP_BLOCKSIZE;
-	v3s16 fpmin  = vm->m_area.MinEdge;
-	v3s16 fpmax  = vm->m_area.MaxEdge;
-	v3s16 pmin   = lua_istable(L, 2) ? check_v3s16(L, 2) : fpmin + yblock;
-	v3s16 pmax   = lua_istable(L, 3) ? check_v3s16(L, 3) : fpmax - yblock;
+	v3s16 fpmin = vm->m_area.MinEdge;
+	v3s16 fpmax = vm->m_area.MaxEdge;
+	v3s16 pmin = lua_istable(L, 2) ? check_v3s16(L, 2) : fpmin + yblock;
+	v3s16 pmax = lua_istable(L, 3) ? check_v3s16(L, 3) : fpmax - yblock;
 	bool propagate_shadow = !lua_isboolean(L, 4) || readParam<bool>(L, 4);
 
 	sortBoxVerticies(pmin, pmax);
@@ -207,8 +207,8 @@ int LuaVoxelManip::l_calc_lighting(lua_State *L)
 		throw LuaError("Specified voxel area out of VoxelManipulator bounds");
 
 	Mapgen mg;
-	mg.vm          = vm;
-	mg.ndef        = ndef;
+	mg.vm = vm;
+	mg.ndef = ndef;
 	mg.water_level = emerge->mgparams->water_level;
 
 	mg.calcLighting(pmin, pmax, fpmin, fpmax, propagate_shadow);
@@ -223,7 +223,7 @@ int LuaVoxelManip::l_set_lighting(lua_State *L)
 	LuaVoxelManip *o = checkobject(L, 1);
 	if (!o->is_mapgen_vm) {
 		warningstream << "VoxelManip:set_lighting called for a non-mapgen "
-			"VoxelManip object" << std::endl;
+				"VoxelManip object" << std::endl;
 		return 0;
 	}
 
@@ -231,7 +231,7 @@ int LuaVoxelManip::l_set_lighting(lua_State *L)
 		throw LuaError("VoxelManip:set_lighting called with missing parameter");
 
 	u8 light;
-	light  = (getintfield_default(L, 2, "day",   0) & 0x0F);
+	light = (getintfield_default(L, 2, "day", 0) & 0x0F);
 	light |= (getintfield_default(L, 2, "night", 0) & 0x0F) << 4;
 
 	MMVManip *vm = o->vm;
@@ -300,7 +300,7 @@ int LuaVoxelManip::l_get_param2_data(lua_State *L)
 	NO_MAP_LOCK_REQUIRED;
 
 	LuaVoxelManip *o = checkobject(L, 1);
-	bool use_buffer  = lua_istable(L, 2);
+	bool use_buffer = lua_istable(L, 2);
 
 	MMVManip *vm = o->vm;
 
@@ -374,8 +374,8 @@ int LuaVoxelManip::l_get_emerged_area(lua_State *L)
 }
 
 LuaVoxelManip::LuaVoxelManip(MMVManip *mmvm, bool is_mg_vm) :
-	is_mapgen_vm(is_mg_vm),
-	vm(mmvm)
+is_mapgen_vm(is_mg_vm),
+vm(mmvm)
 {
 }
 
@@ -407,16 +407,16 @@ int LuaVoxelManip::create_object(lua_State *L)
 
 	Map *map = &(env->getMap());
 	LuaVoxelManip *o = (lua_istable(L, 1) && lua_istable(L, 2)) ?
-		new LuaVoxelManip(map, check_v3s16(L, 1), check_v3s16(L, 2)) :
-		new LuaVoxelManip(map);
+			new LuaVoxelManip(map, check_v3s16(L, 1), check_v3s16(L, 2)) :
+	new LuaVoxelManip(map);
 
-	*(void **)(lua_newuserdata(L, sizeof(void *))) = o;
+	*(void**)(lua_newuserdata(L, sizeof(void*))) = o;
 	luaL_getmetatable(L, className);
 	lua_setmetatable(L, -2);
 	return 1;
 }
 
-LuaVoxelManip *LuaVoxelManip::checkobject(lua_State *L, int narg)
+LuaVoxelManip* LuaVoxelManip::checkobject(lua_State *L, int narg)
 {
 	NO_MAP_LOCK_REQUIRED;
 
@@ -426,7 +426,7 @@ LuaVoxelManip *LuaVoxelManip::checkobject(lua_State *L, int narg)
 	if (!ud)
 		luaL_typerror(L, narg, className);
 
-	return *(LuaVoxelManip **)ud;  // unbox pointer
+	return *(LuaVoxelManip**)ud; // unbox pointer
 }
 
 void LuaVoxelManip::Register(lua_State *L)
@@ -438,7 +438,7 @@ void LuaVoxelManip::Register(lua_State *L)
 
 	lua_pushliteral(L, "__metatable");
 	lua_pushvalue(L, methodtable);
-	lua_settable(L, metatable);  // hide metatable from Lua getmetatable()
+	lua_settable(L, metatable); // hide metatable from Lua getmetatable()
 
 	lua_pushliteral(L, "__index");
 	lua_pushvalue(L, methodtable);
@@ -448,10 +448,10 @@ void LuaVoxelManip::Register(lua_State *L)
 	lua_pushcfunction(L, gc_object);
 	lua_settable(L, metatable);
 
-	lua_pop(L, 1);  // drop metatable
+	lua_pop(L, 1); // drop metatable
 
-	luaL_openlib(L, 0, methods, 0);  // fill methodtable
-	lua_pop(L, 1);  // drop methodtable
+	luaL_openlib(L, 0, methods, 0); // fill methodtable
+	lua_pop(L, 1); // drop methodtable
 
 	// Can be created from Lua (VoxelManip())
 	lua_register(L, className, create_object);
@@ -475,5 +475,5 @@ const luaL_Reg LuaVoxelManip::methods[] = {
 	luamethod(LuaVoxelManip, set_param2_data),
 	luamethod(LuaVoxelManip, was_modified),
 	luamethod(LuaVoxelManip, get_emerged_area),
-	{0,0}
+	{ 0, 0 }
 };

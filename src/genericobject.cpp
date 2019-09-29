@@ -37,14 +37,14 @@ ObjectProperties gob_read_set_properties(std::istream &is)
 }
 
 std::string gob_cmd_update_position(
-	v3f position,
-	v3f velocity,
-	v3f acceleration,
-	v3f rotation,
-	bool do_interpolate,
-	bool is_movement_end,
-	f32 update_interval
-){
+		v3f position,
+		v3f velocity,
+		v3f acceleration,
+		v3f rotation,
+		bool do_interpolate,
+		bool is_movement_end,
+		f32 update_interval
+		){
 	std::ostringstream os(std::ios::binary);
 	// command
 	writeU8(os, GENERIC_CMD_UPDATE_POSITION);
@@ -76,11 +76,11 @@ std::string gob_cmd_set_texture_mod(const std::string &mod)
 }
 
 std::string gob_cmd_set_sprite(
-	v2s16 p,
-	u16 num_frames,
-	f32 framelength,
-	bool select_horiz_by_yawpitch
-){
+		v2s16 p,
+		u16 num_frames,
+		f32 framelength,
+		bool select_horiz_by_yawpitch
+		){
 	std::ostringstream os(std::ios::binary);
 	// command
 	writeU8(os, GENERIC_CMD_SET_SPRITE);
@@ -114,7 +114,8 @@ std::string gob_cmd_update_armor_groups(const ItemGroupList &armor_groups)
 	return os.str();
 }
 
-std::string gob_cmd_update_physics_override(float physics_override_speed, float physics_override_jump,
+std::string gob_cmd_update_physics_override(float physics_override_speed,
+		float physics_override_jump,
 		float physics_override_gravity, bool sneak, bool sneak_glitch, bool new_move)
 {
 	std::ostringstream os(std::ios::binary);
@@ -131,7 +132,8 @@ std::string gob_cmd_update_physics_override(float physics_override_speed, float 
 	return os.str();
 }
 
-std::string gob_cmd_update_animation(v2f frames, float frame_speed, float frame_blend, bool frame_loop)
+std::string gob_cmd_update_animation(v2f frames, float frame_speed,
+		float frame_blend, bool frame_loop)
 {
 	std::ostringstream os(std::ios::binary);
 	// command

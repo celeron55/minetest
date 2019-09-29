@@ -36,15 +36,15 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "lua_api/l_localplayer.h"
 #include "lua_api/l_camera.h"
 
-ClientScripting::ClientScripting(Client *client):
-	ScriptApiBase(ScriptingType::Client)
+ClientScripting::ClientScripting(Client *client) :
+ScriptApiBase(ScriptingType::Client)
 {
 	setGameDef(client);
 
 	SCRIPTAPI_PRECHECKHEADER
 
 	// Security is mandatory client side
-	initializeSecurityClient();
+			initializeSecurityClient();
 
 	lua_getglobal(L, "core");
 	int top = lua_gettop(L);

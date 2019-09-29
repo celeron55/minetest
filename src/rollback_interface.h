@@ -38,12 +38,12 @@ struct RollbackNode
 	int param2 = 0;
 	std::string meta;
 
-	bool operator == (const RollbackNode &other)
+	bool operator==(const RollbackNode &other)
 	{
 		return (name == other.name && param1 == other.param1 &&
 				param2 == other.param2 && meta == other.meta);
 	}
-	bool operator != (const RollbackNode &other) { return !(*this == other); }
+	bool operator!=(const RollbackNode &other){ return !(*this == other); }
 
 	RollbackNode() = default;
 
@@ -53,7 +53,7 @@ struct RollbackNode
 
 struct RollbackAction
 {
-	enum Type{
+	enum Type {
 		TYPE_NOTHING,
 		TYPE_SET_NODE,
 		TYPE_MODIFY_INVENTORY_STACK,
@@ -116,26 +116,26 @@ public:
 	virtual bool isActorGuess() = 0;
 	virtual void setActor(const std::string &actor, bool is_guess) = 0;
 	virtual std::string getSuspect(v3s16 p, float nearness_shortcut,
-	                               float min_nearness) = 0;
+			float min_nearness) = 0;
 
-	virtual ~IRollbackManager() = default;;
+	virtual ~IRollbackManager() = default;
 	virtual void flush() = 0;
 	// Get all actors that did something to position p, but not further than
 	// <seconds> in history
 	virtual std::list<RollbackAction> getNodeActors(v3s16 pos, int range,
-	                time_t seconds, int limit) = 0;
+			time_t seconds, int limit) = 0;
 	// Get actions to revert <seconds> of history made by <actor>
 	virtual std::list<RollbackAction> getRevertActions(const std::string &actor,
-	                time_t seconds) = 0;
+			time_t seconds) = 0;
 };
 
 
 class RollbackScopeActor
 {
 public:
-	RollbackScopeActor(IRollbackManager * rollback_,
-			const std::string & actor, bool is_guess = false) :
-		rollback(rollback_)
+	RollbackScopeActor(IRollbackManager *rollback_,
+			const std::string &actor, bool is_guess = false) :
+	rollback(rollback_)
 	{
 		if (rollback) {
 			old_actor = rollback->getActor();
@@ -151,7 +151,7 @@ public:
 	}
 
 private:
-	IRollbackManager * rollback;
+	IRollbackManager *rollback;
 	std::string old_actor;
 	bool old_actor_guess;
 };

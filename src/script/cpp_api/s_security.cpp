@@ -35,13 +35,14 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 	lua_setfield(L, -2, #name);
 
 
-static inline void copy_safe(lua_State *L, const char *list[], unsigned len, int from=-2, int to=-1)
+static inline void copy_safe(lua_State *L, const char *list[], unsigned len,
+		int from = -2, int to = -1)
 {
 	if (from < 0) from = lua_gettop(L) + from + 1;
-	if (to   < 0) to   = lua_gettop(L) + to   + 1;
+	if (to   < 0) to = lua_gettop(L) + to   + 1;
 	for (unsigned i = 0; i < (len / sizeof(list[0])); i++) {
 		lua_getfield(L, from, list[i]);
-		lua_setfield(L, to,   list[i]);
+		lua_setfield(L, to, list[i]);
 	}
 }
 
@@ -50,9 +51,9 @@ static inline void push_original(lua_State *L, const char *lib, const char *func
 {
 	lua_rawgeti(L, LUA_REGISTRYINDEX, CUSTOM_RIDX_GLOBALS_BACKUP);
 	lua_getfield(L, -1, lib);
-	lua_remove(L, -2);  // Remove globals_backup
+	lua_remove(L, -2); // Remove globals_backup
 	lua_getfield(L, -1, func);
-	lua_remove(L, -2);  // Remove lib
+	lua_remove(L, -2); // Remove lib
 }
 
 
@@ -179,7 +180,7 @@ void ScriptApiSecurity::initializeSecurity()
 	SECURE_API(io, lines);
 
 	lua_setglobal(L, "io");
-	lua_pop(L, 1);  // Pop old IO
+	lua_pop(L, 1); // Pop old IO
 
 
 	// Copy safe OS functions
@@ -192,7 +193,7 @@ void ScriptApiSecurity::initializeSecurity()
 	SECURE_API(os, rename);
 
 	lua_setglobal(L, "os");
-	lua_pop(L, 1);  // Pop old OS
+	lua_pop(L, 1); // Pop old OS
 
 
 	// Copy safe debug functions
@@ -200,7 +201,7 @@ void ScriptApiSecurity::initializeSecurity()
 	lua_newtable(L);
 	copy_safe(L, debug_whitelist, sizeof(debug_whitelist));
 	lua_setglobal(L, "debug");
-	lua_pop(L, 1);  // Pop old debug
+	lua_pop(L, 1); // Pop old debug
 
 
 	// Copy safe package fields
@@ -208,7 +209,7 @@ void ScriptApiSecurity::initializeSecurity()
 	lua_newtable(L);
 	copy_safe(L, package_whitelist, sizeof(package_whitelist));
 	lua_setglobal(L, "package");
-	lua_pop(L, 1);  // Pop old package
+	lua_pop(L, 1); // Pop old package
 
 #if USE_LUAJIT
 	// Copy safe jit functions, if they exist
@@ -218,7 +219,7 @@ void ScriptApiSecurity::initializeSecurity()
 		copy_safe(L, jit_whitelist, sizeof(jit_whitelist));
 		lua_setglobal(L, "jit");
 	}
-	lua_pop(L, 1);  // Pop old jit
+	lua_pop(L, 1); // Pop old jit
 #endif
 
 	lua_pop(L, 1); // Pop globals_backup
@@ -310,7 +311,7 @@ void ScriptApiSecurity::initializeSecurityClient()
 	lua_newtable(L);
 	copy_safe(L, os_whitelist, sizeof(os_whitelist));
 	lua_setfield(L, -3, "os");
-	lua_pop(L, 1);  // Pop old OS
+	lua_pop(L, 1); // Pop old OS
 
 
 	// Copy safe debug functions
@@ -318,7 +319,7 @@ void ScriptApiSecurity::initializeSecurityClient()
 	lua_newtable(L);
 	copy_safe(L, debug_whitelist, sizeof(debug_whitelist));
 	lua_setfield(L, -3, "debug");
-	lua_pop(L, 1);  // Pop old debug
+	lua_pop(L, 1); // Pop old debug
 
 #if USE_LUAJIT
 	// Copy safe jit functions, if they exist
@@ -326,7 +327,7 @@ void ScriptApiSecurity::initializeSecurityClient()
 	lua_newtable(L);
 	copy_safe(L, jit_whitelist, sizeof(jit_whitelist));
 	lua_setfield(L, -3, "jit");
-	lua_pop(L, 1);  // Pop old jit
+	lua_pop(L, 1); // Pop old jit
 #endif
 
 	// Set the environment to the one we created earlier
@@ -336,9 +337,9 @@ void ScriptApiSecurity::initializeSecurityClient()
 int ScriptApiSecurity::getThread(lua_State *L)
 {
 #if LUA_VERSION_NUM <= 501
-	int is_main = lua_pushthread(L);  // Push the main thread
+	int is_main = lua_pushthread(L); // Push the main thread
 	FATAL_ERROR_IF(!is_main, "Security: ScriptApi's Lua state "
-		"isn't the main Lua thread!");
+			"isn't the main Lua thread!");
 	return lua_gettop(L);
 #endif
 	return 0;
@@ -346,21 +347,21 @@ int ScriptApiSecurity::getThread(lua_State *L)
 
 void ScriptApiSecurity::createEmptyEnv(lua_State *L)
 {
-	lua_newtable(L);  // Create new environment
+	lua_newtable(L); // Create new environment
 	lua_pushvalue(L, -1);
-	lua_setfield(L, -2, "_G");  // Create the _G loop
+	lua_setfield(L, -2, "_G"); // Create the _G loop
 }
 
 void ScriptApiSecurity::setLuaEnv(lua_State *L, int thread)
 {
-#if LUA_VERSION_NUM >= 502  // Lua >= 5.2
+#if LUA_VERSION_NUM >= 502 // Lua >= 5.2
 	// Set the global environment
 	lua_rawseti(L, LUA_REGISTRYINDEX, LUA_RIDX_GLOBALS);
-#else  // Lua <= 5.1
+#else // Lua <= 5.1
 	// Set the environment of the main thread
 	FATAL_ERROR_IF(!lua_setfenv(L, thread), "Security: Unable to set "
-		"environment of the main Lua thread!");
-	lua_pop(L, 1);  // Pop thread
+			"environment of the main Lua thread!");
+	lua_pop(L, 1); // Pop thread
 #endif
 }
 
@@ -381,7 +382,8 @@ bool ScriptApiSecurity::isSecure(lua_State *L)
 	}
 
 
-bool ScriptApiSecurity::safeLoadFile(lua_State *L, const char *path, const char *display_name)
+bool ScriptApiSecurity::safeLoadFile(lua_State *L, const char *path,
+		const char *display_name)
 {
 	FILE *fp;
 	char *chunk_name;
@@ -389,7 +391,7 @@ bool ScriptApiSecurity::safeLoadFile(lua_State *L, const char *path, const char 
 		display_name = path;
 	if (!path) {
 		fp = stdin;
-		chunk_name = const_cast<char *>("=stdin");
+		chunk_name = const_cast<char*>("=stdin");
 	} else {
 		fp = fopen(path, "rb");
 		if (!fp) {
@@ -477,7 +479,7 @@ bool ScriptApiSecurity::checkPath(lua_State *L, const char *path,
 	if (write_allowed)
 		*write_allowed = false;
 
-	std::string str;  // Transient
+	std::string str; // Transient
 
 	std::string abs_path = fs::AbsolutePath(path);
 
@@ -516,7 +518,7 @@ bool ScriptApiSecurity::checkPath(lua_State *L, const char *path,
 
 	// Get server from registry
 	lua_rawgeti(L, LUA_REGISTRYINDEX, CUSTOM_RIDX_SCRIPTAPI);
-	ScriptApiBase *script = (ScriptApiBase *) lua_touserdata(L, -1);
+	ScriptApiBase *script = (ScriptApiBase*)lua_touserdata(L, -1);
 	lua_pop(L, 1);
 	const IGameDef *gamedef = script->getGameDef();
 	if (!gamedef)
@@ -546,7 +548,7 @@ bool ScriptApiSecurity::checkPath(lua_State *L, const char *path,
 			}
 		}
 	}
-	lua_pop(L, 1);  // Pop mod name
+	lua_pop(L, 1); // Pop mod name
 
 	// Allow read-only access to all mod directories
 	if (!write_required) {
@@ -646,7 +648,7 @@ int ScriptApiSecurity::sl_g_loadfile(lua_State *L)
 {
 #ifndef SERVER
 	lua_rawgeti(L, LUA_REGISTRYINDEX, CUSTOM_RIDX_SCRIPTAPI);
-	ScriptApiBase *script = (ScriptApiBase *) lua_touserdata(L, -1);
+	ScriptApiBase *script = (ScriptApiBase*)lua_touserdata(L, -1);
 	lua_pop(L, 1);
 
 	if (script->getType() == ScriptingType::Client) {
@@ -728,8 +730,8 @@ int ScriptApiSecurity::sl_io_open(lua_State *L)
 		luaL_checktype(L, 2, LUA_TSTRING);
 		const char *mode = lua_tostring(L, 2);
 		write_requested = strchr(mode, 'w') != NULL ||
-			strchr(mode, '+') != NULL ||
-			strchr(mode, 'a') != NULL;
+				strchr(mode, '+') != NULL ||
+				strchr(mode, 'a') != NULL;
 	}
 	CHECK_SECURE_PATH_INTERNAL(L, path, write_requested, NULL);
 

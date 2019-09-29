@@ -26,8 +26,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "mapnode.h"
 #include "nameidmapping.h"
 #ifndef SERVER
-#include "client/tile.h"
-#include <IMeshManipulator.h>
+	#include "client/tile.h"
+	#include <IMeshManipulator.h>
 class Client;
 #endif
 #include "itemgroup.h"
@@ -213,9 +213,9 @@ enum NodeDrawType
 };
 
 // Mesh options for NDT_PLANTLIKE with CPT2_MESHOPTIONS
-static const u8 MO_MASK_STYLE          = 0x07;
-static const u8 MO_BIT_RANDOM_OFFSET   = 0x08;
-static const u8 MO_BIT_SCALE_SQRT2     = 0x10;
+static const u8 MO_MASK_STYLE = 0x07;
+static const u8 MO_BIT_RANDOM_OFFSET = 0x08;
+static const u8 MO_BIT_SCALE_SQRT2 = 0x10;
 static const u8 MO_BIT_RANDOM_OFFSET_Y = 0x20;
 enum PlantlikeStyle {
 	PLANT_STYLE_CROSS,
@@ -257,7 +257,7 @@ struct TileDef
 
 	void serialize(std::ostream &os, u16 protocol_version) const;
 	void deSerialize(std::istream &is, u8 contentfeatures_version,
-		NodeDrawType drawtype);
+			NodeDrawType drawtype);
 };
 
 #define CF_SPECIAL_COUNT 6
@@ -420,11 +420,11 @@ struct ContentFeatures
 	/*
 		Some handy methods
 	*/
-	bool isLiquid() const{
+	bool isLiquid() const {
 		return (liquid_type != LIQUID_NONE);
 	}
-	bool sameLiquid(const ContentFeatures &f) const{
-		if(!isLiquid() || !f.isLiquid()) return false;
+	bool sameLiquid(const ContentFeatures &f) const {
+		if (!isLiquid() || !f.isLiquid()) return false;
 		return (liquid_alternative_flowing == f.liquid_alternative_flowing);
 	}
 
@@ -435,7 +435,8 @@ struct ContentFeatures
 
 #ifndef SERVER
 	void updateTextures(ITextureSource *tsrc, IShaderSource *shdsrc,
-		scene::IMeshManipulator *meshmanip, Client *client, const TextureSettings &tsettings);
+			scene::IMeshManipulator *meshmanip, Client *client,
+			const TextureSettings &tsettings);
 #endif
 };
 
@@ -468,7 +469,7 @@ public:
 	 */
 	inline const ContentFeatures& get(content_t c) const {
 		return
-			c < m_content_features.size() ?
+				c < m_content_features.size() ?
 				m_content_features[c] : m_content_features[CONTENT_UNKNOWN];
 	}
 
@@ -603,8 +604,8 @@ public:
 	 * @param progress_cbk_args passed to the callback function
 	 */
 	void updateTextures(IGameDef *gamedef,
-		void (*progress_cbk)(void *progress_args, u32 progress, u32 max_progress),
-		void *progress_cbk_args);
+			void (*progress_cbk)(void *progress_args, u32 progress, u32 max_progress),
+			void *progress_cbk_args);
 
 	/*!
 	 * Writes the content of this manager to the given output stream.
@@ -623,7 +624,7 @@ public:
 	 * Used to indicate that node registration has finished.
 	 * @param completed tells whether registration is complete
 	 */
-	inline void setNodeRegistrationStatus(bool completed) {
+	inline void setNodeRegistrationStatus(bool completed){
 		m_node_registration_complete = completed;
 	}
 
@@ -700,7 +701,7 @@ private:
 	 * to it. Necessary for a direct lookup in \ref getIds().
 	 * Note: Not serialized.
 	 */
-	std::unordered_map<std::string, std::vector<content_t>> m_group_to_items;
+	std::unordered_map<std::string, std::vector<content_t> > m_group_to_items;
 
 	/*!
 	 * The next ID that might be free to allocate.
@@ -730,10 +731,10 @@ private:
 	 * NodeResolver instances to notify once node registration has finished.
 	 * Even constant NodeDefManager instances can register listeners.
 	 */
-	mutable std::vector<NodeResolver *> m_pending_resolve_callbacks;
+	mutable std::vector<NodeResolver*> m_pending_resolve_callbacks;
 };
 
-NodeDefManager *createNodeDefManager();
+NodeDefManager* createNodeDefManager();
 
 class NodeResolver {
 public:
@@ -742,10 +743,10 @@ public:
 	virtual void resolveNodeNames() = 0;
 
 	bool getIdFromNrBacklog(content_t *result_out,
-		const std::string &node_alt, content_t c_fallback,
-		bool error_on_fallback = true);
+			const std::string &node_alt, content_t c_fallback,
+			bool error_on_fallback = true);
 	bool getIdsFromNrBacklog(std::vector<content_t> *result_out,
-		bool all_required = false, content_t c_fallback = CONTENT_IGNORE);
+			bool all_required = false, content_t c_fallback = CONTENT_IGNORE);
 
 	void nodeResolveInternal();
 

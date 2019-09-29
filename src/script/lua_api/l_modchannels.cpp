@@ -51,7 +51,7 @@ void ModApiChannels::Initialize(lua_State *L, int top)
  */
 
 ModChannelRef::ModChannelRef(const std::string &modchannel) :
-		m_modchannel_name(modchannel)
+m_modchannel_name(modchannel)
 {
 }
 
@@ -108,25 +108,25 @@ void ModChannelRef::Register(lua_State *L)
 	lua_pop(L, 1); // Drop metatable
 
 	luaL_openlib(L, 0, methods, 0); // fill methodtable
-	lua_pop(L, 1);			// Drop methodtable
+	lua_pop(L, 1); // Drop methodtable
 }
 
 void ModChannelRef::create(lua_State *L, const std::string &channel)
 {
 	ModChannelRef *o = new ModChannelRef(channel);
-	*(void **)(lua_newuserdata(L, sizeof(void *))) = o;
+	*(void**)(lua_newuserdata(L, sizeof(void*))) = o;
 	luaL_getmetatable(L, className);
 	lua_setmetatable(L, -2);
 }
 
 int ModChannelRef::gc_object(lua_State *L)
 {
-	ModChannelRef *o = *(ModChannelRef **)(lua_touserdata(L, 1));
+	ModChannelRef *o = *(ModChannelRef**)(lua_touserdata(L, 1));
 	delete o;
 	return 0;
 }
 
-ModChannelRef *ModChannelRef::checkobject(lua_State *L, int narg)
+ModChannelRef* ModChannelRef::checkobject(lua_State *L, int narg)
 {
 	luaL_checktype(L, narg, LUA_TUSERDATA);
 
@@ -134,10 +134,10 @@ ModChannelRef *ModChannelRef::checkobject(lua_State *L, int narg)
 	if (!ud)
 		luaL_typerror(L, narg, className);
 
-	return *(ModChannelRef **)ud; // unbox pointer
+	return *(ModChannelRef**)ud; // unbox pointer
 }
 
-ModChannel *ModChannelRef::getobject(lua_State *L, ModChannelRef *ref)
+ModChannel* ModChannelRef::getobject(lua_State *L, ModChannelRef *ref)
 {
 	return getGameDef(L)->getModChannel(ref->m_modchannel_name);
 }
@@ -148,6 +148,6 @@ const luaL_Reg ModChannelRef::methods[] = {
 	luamethod(ModChannelRef, leave),
 	luamethod(ModChannelRef, is_writeable),
 	luamethod(ModChannelRef, send_all),
-	{0, 0},
+	{ 0, 0 },
 };
 // clang-format on

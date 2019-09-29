@@ -20,7 +20,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #pragma once
 
 #ifndef __ANDROID__
-#error this include has to be included on android port only!
+	#error this include has to be included on android port only!
 #endif
 
 #include <jni.h>
@@ -30,55 +30,55 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <string>
 
 namespace porting {
-/** java app **/
-extern android_app *app_global;
+	/** java app **/
+	extern android_app *app_global;
 
-/** java <-> c++ interaction interface **/
-extern JNIEnv *jnienv;
+	/** java <-> c++ interaction interface **/
+	extern JNIEnv *jnienv;
 
-/**
- * do initialization required on android only
- */
-void initAndroid();
-void cleanupAndroid();
+	/**
+	 * do initialization required on android only
+	 */
+	void initAndroid();
+	void cleanupAndroid();
 
-/**
- * Initializes path_* variables for Android
- * @param env Android JNI environment
- */
-void initializePathsAndroid();
+	/**
+	 * Initializes path_* variables for Android
+	 * @param env Android JNI environment
+	 */
+	void initializePathsAndroid();
 
-/**
- * use java function to copy media from assets to external storage
- */
-void copyAssets();
+	/**
+	 * use java function to copy media from assets to external storage
+	 */
+	void copyAssets();
 
-/**
- * show text input dialog in java
- * @param acceptButton text to display on accept button
- * @param hint hint to show
- * @param current initial value to display
- * @param editType type of texfield
- * (1==multiline text input; 2==single line text input; 3=password field)
- */
-void showInputDialog(const std::string& acceptButton,
-		const  std::string& hint, const std::string& current, int editType);
+	/**
+	 * show text input dialog in java
+	 * @param acceptButton text to display on accept button
+	 * @param hint hint to show
+	 * @param current initial value to display
+	 * @param editType type of texfield
+	 * (1==multiline text input; 2==single line text input; 3=password field)
+	 */
+	void showInputDialog(const std::string &acceptButton,
+			const std::string &hint, const std::string &current, int editType);
 
-/**
- * WORKAROUND for not working callbacks from java -> c++
- * get current state of input dialog
- */
-int getInputDialogState();
+	/**
+	 * WORKAROUND for not working callbacks from java -> c++
+	 * get current state of input dialog
+	 */
+	int getInputDialogState();
 
-/**
- * WORKAROUND for not working callbacks from java -> c++
- * get text in current input dialog
- */
-std::string getInputDialogValue();
+	/**
+	 * WORKAROUND for not working callbacks from java -> c++
+	 * get text in current input dialog
+	 */
+	std::string getInputDialogValue();
 
 #ifndef SERVER
-float getDisplayDensity();
-v2u32 getDisplaySize();
+	float getDisplayDensity();
+	v2u32 getDisplaySize();
 #endif
 
 }

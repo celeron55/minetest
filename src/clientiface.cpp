@@ -27,12 +27,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "serverenvironment.h"
 #include "map.h"
 #include "emerge.h"
-#include "content_sao.h"              // TODO this is used for cleanup of only
+#include "content_sao.h" // TODO this is used for cleanup of only
 #include "log.h"
 #include "util/srp.h"
 #include "face_position_cache.h"
 
-const char *ClientInterface::statenames[] = {
+const char*ClientInterface::statenames[] = {
 	"Invalid",
 	"Disconnecting",
 	"Denied",
@@ -53,13 +53,13 @@ std::string ClientInterface::state2Name(ClientState state)
 }
 
 RemoteClient::RemoteClient() :
-	m_max_simul_sends(g_settings->getU16("max_simultaneous_block_sends_per_client")),
-	m_min_time_from_building(
+m_max_simul_sends(g_settings->getU16("max_simultaneous_block_sends_per_client")),
+m_min_time_from_building(
 		g_settings->getFloat("full_block_send_enable_min_time_from_building")),
-	m_max_send_distance(g_settings->getS16("max_block_send_distance")),
-	m_block_optimize_distance(g_settings->getS16("block_send_optimize_distance")),
-	m_max_gen_distance(g_settings->getS16("max_block_generate_distance")),
-	m_occ_cull(g_settings->getBool("server_side_occlusion_culling"))
+m_max_send_distance(g_settings->getS16("max_block_send_distance")),
+m_block_optimize_distance(g_settings->getS16("block_send_optimize_distance")),
+m_max_gen_distance(g_settings->getS16("max_block_generate_distance")),
+m_occ_cull(g_settings->getBool("server_side_occlusion_culling"))
 {
 }
 
@@ -71,7 +71,7 @@ void RemoteClient::ResendBlockIfOnWire(v3s16 p)
 	}
 }
 
-LuaEntitySAO *getAttachedObject(PlayerSAO *sao, ServerEnvironment *env)
+LuaEntitySAO* getAttachedObject(PlayerSAO *sao, ServerEnvironment *env)
 {
 	if (!sao->isAttached())
 		return nullptr;
@@ -86,12 +86,12 @@ LuaEntitySAO *getAttachedObject(PlayerSAO *sao, ServerEnvironment *env)
 		if (id)
 			ao = env->getActiveObject(id);
 	}
-	return dynamic_cast<LuaEntitySAO *>(ao);
+	return dynamic_cast<LuaEntitySAO*>(ao);
 }
 
-void RemoteClient::GetNextBlocks (
+void RemoteClient::GetNextBlocks(
 		ServerEnvironment *env,
-		EmergeManager * emerge,
+		EmergeManager *emerge,
 		float dtime,
 		std::vector<PrioritySortedBlockTransfer> &dest)
 {
@@ -120,8 +120,8 @@ void RemoteClient::GetNextBlocks (
 	v3f playerpos = sao->getBasePosition();
 	// if the player is attached, get the velocity from the attached object
 	LuaEntitySAO *lsao = getAttachedObject(sao, env);
-	const v3f &playerspeed = lsao? lsao->getVelocity() : player->getSpeed();
-	v3f playerspeeddir(0,0,0);
+	const v3f &playerspeed = lsao ? lsao->getVelocity() : player->getSpeed();
+	v3f playerspeeddir(0, 0, 0);
 	if (playerspeed.getLength() > 1.0f * BS)
 		playerspeeddir = playerspeed / playerspeed.getLength();
 	// Predict to next block
@@ -133,7 +133,7 @@ void RemoteClient::GetNextBlocks (
 
 	// Camera position and direction
 	v3f camera_pos = sao->getEyePosition();
-	v3f camera_dir = v3f(0,0,1);
+	v3f camera_dir = v3f(0, 0, 1);
 	camera_dir.rotateYZBy(sao->getLookPitch());
 	camera_dir.rotateXZBy(sao->getRotation().Y);
 
@@ -175,7 +175,7 @@ void RemoteClient::GetNextBlocks (
 	m_time_from_building += dtime;
 	if (m_time_from_building < m_min_time_from_building) {
 		max_simul_sends_usually
-			= LIMITED_MAX_SIMULTANEOUS_BLOCK_SENDS;
+				= LIMITED_MAX_SIMULTANEOUS_BLOCK_SENDS;
 	}
 
 	/*
@@ -201,18 +201,18 @@ void RemoteClient::GetNextBlocks (
 	// distant world.
 	// (zoom is disabled by value 0)
 	float prop_zoom_fov = sao->getZoomFOV() < 0.001f ?
-		0.0f :
+				0.0f :
 		std::max(camera_fov, sao->getZoomFOV() * core::DEGTORAD);
 
 	const s16 full_d_max = std::min(adjustDist(m_max_send_distance, prop_zoom_fov),
-		wanted_range);
+			wanted_range);
 	const s16 d_opt = std::min(adjustDist(m_block_optimize_distance, prop_zoom_fov),
-		wanted_range);
+			wanted_range);
 	const s16 d_blocks_in_sight = full_d_max * BS * MAP_BLOCKSIZE;
 
 	s16 d_max = full_d_max;
 	s16 d_max_gen = std::min(adjustDist(m_max_gen_distance, prop_zoom_fov),
-		wanted_range);
+			wanted_range);
 
 	// Don't loop very much at a time, adjust with distance,
 	// do more work per RTT with greater distances.
@@ -291,10 +291,10 @@ void RemoteClient::GetNextBlocks (
 			*/
 			f32 dist;
 			if (!(isBlockInSight(p, camera_pos, camera_dir, camera_fov,
-						d_blocks_in_sight, &dist) ||
+					d_blocks_in_sight, &dist) ||
 					(playerspeed.getLength() > 1.0f * BS &&
 					isBlockInSight(p, camera_pos, playerspeeddir, 0.1f,
-						d_blocks_in_sight)))) {
+					d_blocks_in_sight)))) {
 				continue;
 			}
 
@@ -479,7 +479,7 @@ void RemoteClient::notifyEvent(ClientStateEvent event)
 		case CSE_SetDenied:
 			m_state = CS_Denied;
 			break;
-		/* GotInit2 SetDefinitionsSent SetMediaSent */
+			/* GotInit2 SetDefinitionsSent SetMediaSent */
 		default:
 			myerror << "Created: Invalid client state transition! " << event;
 			throw ClientStateError(myerror.str());
@@ -489,13 +489,13 @@ void RemoteClient::notifyEvent(ClientStateEvent event)
 		/* don't do anything if in denied state */
 		break;
 	case CS_HelloSent:
-		switch(event)
+		switch (event)
 		{
 		case CSE_AuthAccept:
 			m_state = CS_AwaitingInit2;
 			if (chosen_mech == AUTH_MECHANISM_SRP ||
 					chosen_mech == AUTH_MECHANISM_LEGACY_PASSWORD)
-				srp_verifier_delete((SRPVerifier *) auth_data);
+				srp_verifier_delete((SRPVerifier*)auth_data);
 			chosen_mech = AUTH_MECHANISM_NONE;
 			break;
 		case CSE_Disconnect:
@@ -505,7 +505,7 @@ void RemoteClient::notifyEvent(ClientStateEvent event)
 			m_state = CS_Denied;
 			if (chosen_mech == AUTH_MECHANISM_SRP ||
 					chosen_mech == AUTH_MECHANISM_LEGACY_PASSWORD)
-				srp_verifier_delete((SRPVerifier *) auth_data);
+				srp_verifier_delete((SRPVerifier*)auth_data);
 			chosen_mech = AUTH_MECHANISM_NONE;
 			break;
 		default:
@@ -514,7 +514,7 @@ void RemoteClient::notifyEvent(ClientStateEvent event)
 		}
 		break;
 	case CS_AwaitingInit2:
-		switch(event)
+		switch (event)
 		{
 		case CSE_GotInit2:
 			confirmSerializationVersion();
@@ -527,7 +527,7 @@ void RemoteClient::notifyEvent(ClientStateEvent event)
 			m_state = CS_Denied;
 			break;
 
-		/* Init SetDefinitionsSent SetMediaSent */
+			/* Init SetDefinitionsSent SetMediaSent */
 		default:
 			myerror << "InitSent: Invalid client state transition! " << event;
 			throw ClientStateError(myerror.str());
@@ -535,7 +535,7 @@ void RemoteClient::notifyEvent(ClientStateEvent event)
 		break;
 
 	case CS_InitDone:
-		switch(event)
+		switch (event)
 		{
 		case CSE_SetDefinitionsSent:
 			m_state = CS_DefinitionsSent;
@@ -547,14 +547,14 @@ void RemoteClient::notifyEvent(ClientStateEvent event)
 			m_state = CS_Denied;
 			break;
 
-		/* Init GotInit2 SetMediaSent */
+			/* Init GotInit2 SetMediaSent */
 		default:
 			myerror << "InitDone: Invalid client state transition! " << event;
 			throw ClientStateError(myerror.str());
 		}
 		break;
 	case CS_DefinitionsSent:
-		switch(event)
+		switch (event)
 		{
 		case CSE_SetClientReady:
 			m_state = CS_Active;
@@ -565,14 +565,15 @@ void RemoteClient::notifyEvent(ClientStateEvent event)
 		case CSE_SetDenied:
 			m_state = CS_Denied;
 			break;
-		/* Init GotInit2 SetDefinitionsSent */
+			/* Init GotInit2 SetDefinitionsSent */
 		default:
-			myerror << "DefinitionsSent: Invalid client state transition! " << event;
+			myerror << "DefinitionsSent: Invalid client state transition! " <<
+					event;
 			throw ClientStateError(myerror.str());
 		}
 		break;
 	case CS_Active:
-		switch(event)
+		switch (event)
 		{
 		case CSE_SetDenied:
 			m_state = CS_Denied;
@@ -583,10 +584,10 @@ void RemoteClient::notifyEvent(ClientStateEvent event)
 		case CSE_SudoSuccess:
 			m_state = CS_SudoMode;
 			if (chosen_mech == AUTH_MECHANISM_SRP)
-				srp_verifier_delete((SRPVerifier *) auth_data);
+				srp_verifier_delete((SRPVerifier*)auth_data);
 			chosen_mech = AUTH_MECHANISM_NONE;
 			break;
-		/* Init GotInit2 SetDefinitionsSent SetMediaSent SetDenied */
+			/* Init GotInit2 SetDefinitionsSent SetMediaSent SetDenied */
 		default:
 			myerror << "Active: Invalid client state transition! " << event;
 			throw ClientStateError(myerror.str());
@@ -594,7 +595,7 @@ void RemoteClient::notifyEvent(ClientStateEvent event)
 		}
 		break;
 	case CS_SudoMode:
-		switch(event)
+		switch (event)
 		{
 		case CSE_SetDenied:
 			m_state = CS_Denied;
@@ -622,11 +623,11 @@ u64 RemoteClient::uptime() const
 	return porting::getTimeS() - m_connection_time;
 }
 
-ClientInterface::ClientInterface(const std::shared_ptr<con::Connection> & con)
-:
-	m_con(con),
-	m_env(NULL),
-	m_print_info_timer(0.0f)
+ClientInterface::ClientInterface(const std::shared_ptr<con::Connection> &con)
+	:
+m_con(con),
+m_env(NULL),
+m_print_info_timer(0.0f)
 {
 
 }
@@ -706,7 +707,7 @@ void ClientInterface::UpdatePlayerList()
 
 			{
 				RecursiveMutexAutoLock clientslock(m_clients_mutex);
-				RemoteClient* client = lockedGetClientNoEx(i);
+				RemoteClient *client = lockedGetClientNoEx(i);
 				if (client)
 					client->PrintInfo(infostream);
 			}
@@ -750,18 +751,19 @@ void ClientInterface::sendToAllCompat(NetworkPacket *pkt, NetworkPacket *legacyp
 			pkt_to_send = legacypkt;
 		} else {
 			warningstream << "Client with unhandled version to handle: '"
-				<< client->net_proto_version << "'";
+					<< client->net_proto_version << "'";
 			continue;
 		}
 
 		m_con->Send(client->peer_id,
-			clientCommandFactoryTable[pkt_to_send->getCommand()].channel,
-			pkt_to_send,
-			clientCommandFactoryTable[pkt_to_send->getCommand()].reliable);
+				clientCommandFactoryTable[pkt_to_send->getCommand()].channel,
+				pkt_to_send,
+				clientCommandFactoryTable[pkt_to_send->getCommand()].reliable);
 	}
 }
 
-RemoteClient* ClientInterface::getClientNoEx(session_t peer_id, ClientState state_min)
+RemoteClient* ClientInterface::getClientNoEx(session_t peer_id,
+		ClientState state_min)
 {
 	RecursiveMutexAutoLock clientslock(m_clients_mutex);
 	RemoteClientMap::const_iterator n = m_clients.find(peer_id);
@@ -776,7 +778,8 @@ RemoteClient* ClientInterface::getClientNoEx(session_t peer_id, ClientState stat
 	return NULL;
 }
 
-RemoteClient* ClientInterface::lockedGetClientNoEx(session_t peer_id, ClientState state_min)
+RemoteClient* ClientInterface::lockedGetClientNoEx(session_t peer_id,
+		ClientState state_min)
 {
 	RemoteClientMap::const_iterator n = m_clients.find(peer_id);
 	// The client may not exist; clients are immediately removed if their
@@ -831,9 +834,9 @@ void ClientInterface::DeleteClient(session_t peer_id)
 	// Handle objects
 	for (u16 id : client->m_known_objects) {
 		// Get object
-		ServerActiveObject* obj = m_env->getActiveObject(id);
+		ServerActiveObject *obj = m_env->getActiveObject(id);
 
-		if(obj && obj->m_known_by_count > 0)
+		if (obj && obj->m_known_by_count > 0)
 			obj->m_known_by_count--;
 	}
 
@@ -872,8 +875,8 @@ void ClientInterface::event(session_t peer_id, ClientStateEvent event)
 	}
 
 	if ((event == CSE_SetClientReady) ||
-		(event == CSE_Disconnect)     ||
-		(event == CSE_SetDenied))
+			(event == CSE_Disconnect)     ||
+			(event == CSE_SetDenied))
 	{
 		UpdatePlayerList();
 	}
@@ -893,7 +896,8 @@ u16 ClientInterface::getProtocolVersion(session_t peer_id)
 	return n->second->net_proto_version;
 }
 
-void ClientInterface::setClientVersion(session_t peer_id, u8 major, u8 minor, u8 patch,
+void ClientInterface::setClientVersion(session_t peer_id, u8 major, u8 minor,
+		u8 patch,
 		const std::string &full)
 {
 	RecursiveMutexAutoLock conlock(m_clients_mutex);

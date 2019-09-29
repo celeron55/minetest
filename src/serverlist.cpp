@@ -73,8 +73,8 @@ std::vector<ServerListSpec> getOnline()
 	u16 proto_version_min = CLIENT_PROTOCOL_VERSION_MIN;
 
 	geturl << g_settings->get("serverlist_url") <<
-		"/list?proto_version_min=" << proto_version_min <<
-		"&proto_version_max=" << CLIENT_PROTOCOL_VERSION_MAX;
+			"/list?proto_version_min=" << proto_version_min <<
+			"&proto_version_max=" << CLIENT_PROTOCOL_VERSION_MAX;
 	Json::Value root = fetchJsonValue(geturl.str(), NULL);
 
 	std::vector<ServerListSpec> server_list;
@@ -103,7 +103,7 @@ bool deleteEntry(const ServerListSpec &server)
 {
 	std::vector<ServerListSpec> serverlist = ServerList::getLocal();
 	for (std::vector<ServerListSpec>::iterator it = serverlist.begin();
-			it != serverlist.end();) {
+	it != serverlist.end();) {
 		if ((*it)["address"] == server["address"] &&
 				(*it)["port"] == server["port"]) {
 			it = serverlist.erase(it);
@@ -202,7 +202,7 @@ void sendAnnounce(AnnounceAction action,
 		const std::vector<ModSpec> &mods,
 		bool dedicated)
 {
-	static const char *aa_names[] = {"start", "update", "delete"};
+	static const char *aa_names[] = { "start", "update", "delete" };
 	Json::Value server;
 	server["action"] = aa_names[action];
 	server["port"] = port;
@@ -210,21 +210,24 @@ void sendAnnounce(AnnounceAction action,
 		server["address"] = g_settings->get("server_address");
 	}
 	if (action != AA_DELETE) {
-		bool strict_checking = g_settings->getBool("strict_protocol_version_checking");
-		server["name"]         = g_settings->get("server_name");
-		server["description"]  = g_settings->get("server_description");
-		server["version"]      = g_version_string;
-		server["proto_min"]    = strict_checking ? LATEST_PROTOCOL_VERSION : SERVER_PROTOCOL_VERSION_MIN;
-		server["proto_max"]    = strict_checking ? LATEST_PROTOCOL_VERSION : SERVER_PROTOCOL_VERSION_MAX;
-		server["url"]          = g_settings->get("server_url");
-		server["creative"]     = g_settings->getBool("creative_mode");
-		server["damage"]       = g_settings->getBool("enable_damage");
-		server["password"]     = g_settings->getBool("disallow_empty_password");
-		server["pvp"]          = g_settings->getBool("enable_pvp");
-		server["uptime"]       = (int) uptime;
-		server["game_time"]    = game_time;
-		server["clients"]      = (int) clients_names.size();
-		server["clients_max"]  = g_settings->getU16("max_users");
+		bool strict_checking =
+				g_settings->getBool("strict_protocol_version_checking");
+		server["name"] = g_settings->get("server_name");
+		server["description"] = g_settings->get("server_description");
+		server["version"] = g_version_string;
+		server["proto_min"] =
+				strict_checking ? LATEST_PROTOCOL_VERSION : SERVER_PROTOCOL_VERSION_MIN;
+		server["proto_max"] =
+				strict_checking ? LATEST_PROTOCOL_VERSION : SERVER_PROTOCOL_VERSION_MAX;
+		server["url"] = g_settings->get("server_url");
+		server["creative"] = g_settings->getBool("creative_mode");
+		server["damage"] = g_settings->getBool("enable_damage");
+		server["password"] = g_settings->getBool("disallow_empty_password");
+		server["pvp"] = g_settings->getBool("enable_pvp");
+		server["uptime"] = (int)uptime;
+		server["game_time"] = game_time;
+		server["clients"] = (int)clients_names.size();
+		server["clients_max"] = g_settings->getU16("max_users");
 		server["clients_list"] = Json::Value(Json::arrayValue);
 		for (const std::string &clients_name : clients_names) {
 			server["clients_list"].append(clients_name);
@@ -234,16 +237,18 @@ void sendAnnounce(AnnounceAction action,
 	}
 
 	if (action == AA_START) {
-		server["dedicated"]         = dedicated;
-		server["rollback"]          = g_settings->getBool("enable_rollback_recording");
-		server["mapgen"]            = mg_name;
-		server["privs"]             = g_settings->get("default_privs");
-		server["can_see_far_names"] = g_settings->getS16("player_transfer_distance") <= 0;
-		server["mods"]              = Json::Value(Json::arrayValue);
+		server["dedicated"] = dedicated;
+		server["rollback"] = g_settings->getBool("enable_rollback_recording");
+		server["mapgen"] = mg_name;
+		server["privs"] = g_settings->get("default_privs");
+		server["can_see_far_names"] =
+				g_settings->getS16("player_transfer_distance") <= 0;
+		server["mods"] = Json::Value(Json::arrayValue);
 		for (const ModSpec &mod : mods) {
 			server["mods"].append(mod.name);
 		}
-		actionstream << "Announcing to " << g_settings->get("serverlist_url") << std::endl;
+		actionstream << "Announcing to " << g_settings->get("serverlist_url") <<
+				std::endl;
 	} else if (action == AA_UPDATE) {
 		if (lag)
 			server["lag"] = lag;

@@ -28,8 +28,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "log.h"
 #include "filesys.h"
 
-BanManager::BanManager(const std::string &banfilepath):
-		m_banfilepath(banfilepath)
+BanManager::BanManager(const std::string &banfilepath) :
+m_banfilepath(banfilepath)
 {
 	try {
 		load();
@@ -60,7 +60,7 @@ void BanManager::load()
 		Strfnd f(line);
 		std::string ip = trim(f.next("|"));
 		std::string name = trim(f.next("|"));
-		if(!ip.empty()) {
+		if (!ip.empty()) {
 			m_ips[ip] = name;
 		}
 	}

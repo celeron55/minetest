@@ -2,20 +2,26 @@
 // It conatins a bunch of fake gettext calls, to tell xgettext about the strings in config files
 // To update it, refer to the bottom of builtin/mainmenu/dlg_settings_advanced.lua
 
-fake_function() {
+fake_function(){
 	gettext("Controls");
 	gettext("Build inside player");
-	gettext("If enabled, you can place blocks at the position (feet + eye level) where you stand.\nThis is helpful when working with nodeboxes in small areas.");
+	gettext(
+			"If enabled, you can place blocks at the position (feet + eye level) where you stand.\nThis is helpful when working with nodeboxes in small areas.");
 	gettext("Flying");
-	gettext("Player is able to fly without being affected by gravity.\nThis requires the \"fly\" privilege on the server.");
+	gettext(
+			"Player is able to fly without being affected by gravity.\nThis requires the \"fly\" privilege on the server.");
 	gettext("Pitch move mode");
-	gettext("If enabled, makes move directions relative to the player's pitch when flying or swimming.");
+	gettext(
+			"If enabled, makes move directions relative to the player's pitch when flying or swimming.");
 	gettext("Fast movement");
-	gettext("Fast movement (via the \"special\" key).\nThis requires the \"fast\" privilege on the server.");
+	gettext(
+			"Fast movement (via the \"special\" key).\nThis requires the \"fast\" privilege on the server.");
 	gettext("Noclip");
-	gettext("If enabled together with fly mode, player is able to fly through solid nodes.\nThis requires the \"noclip\" privilege on the server.");
+	gettext(
+			"If enabled together with fly mode, player is able to fly through solid nodes.\nThis requires the \"noclip\" privilege on the server.");
 	gettext("Cinematic mode");
-	gettext("Smooths camera when looking around. Also called look or mouse smoothing.\nUseful for recording videos.");
+	gettext(
+			"Smooths camera when looking around. Also called look or mouse smoothing.\nUseful for recording videos.");
 	gettext("Camera smoothing");
 	gettext("Smooths rotation of camera. 0 to disable.");
 	gettext("Camera smoothing in cinematic mode");
@@ -25,27 +31,34 @@ fake_function() {
 	gettext("Mouse sensitivity");
 	gettext("Mouse sensitivity multiplier.");
 	gettext("Special key for climbing/descending");
-	gettext("If enabled, \"special\" key instead of \"sneak\" key is used for climbing down and\ndescending.");
+	gettext(
+			"If enabled, \"special\" key instead of \"sneak\" key is used for climbing down and\ndescending.");
 	gettext("Double tap jump for fly");
 	gettext("Double-tapping the jump key toggles fly mode.");
 	gettext("Always fly and fast");
-	gettext("If disabled, \"special\" key is used to fly fast if both fly and fast mode are\nenabled.");
+	gettext(
+			"If disabled, \"special\" key is used to fly fast if both fly and fast mode are\nenabled.");
 	gettext("Rightclick repetition interval");
-	gettext("The time in seconds it takes between repeated right clicks when holding the right\nmouse button.");
+	gettext(
+			"The time in seconds it takes between repeated right clicks when holding the right\nmouse button.");
 	gettext("Automatic jumping");
 	gettext("Automatically jump up single-node obstacles.");
 	gettext("Safe digging and placing");
-	gettext("Prevent digging and placing from repeating when holding the mouse buttons.\nEnable this when you dig or place too often by accident.");
+	gettext(
+			"Prevent digging and placing from repeating when holding the mouse buttons.\nEnable this when you dig or place too often by accident.");
 	gettext("Random input");
 	gettext("Enable random user input (only used for testing).");
 	gettext("Continuous forward");
-	gettext("Continuous forward movement, toggled by autoforward key.\nPress the autoforward key again or the backwards movement to disable.");
+	gettext(
+			"Continuous forward movement, toggled by autoforward key.\nPress the autoforward key again or the backwards movement to disable.");
 	gettext("Touch screen threshold");
 	gettext("The length in pixels it takes for touch screen interaction to start.");
 	gettext("Fixed virtual joystick");
-	gettext("(Android) Fixes the position of virtual joystick.\nIf disabled, virtual joystick will center to first-touch's position.");
+	gettext(
+			"(Android) Fixes the position of virtual joystick.\nIf disabled, virtual joystick will center to first-touch's position.");
 	gettext("Virtual joystick triggers aux button");
-	gettext("(Android) Use virtual joystick to trigger \"aux\" button.\nIf enabled, virtual joystick will also tap \"aux\" button when out of main circle.");
+	gettext(
+			"(Android) Use virtual joystick to trigger \"aux\" button.\nIf enabled, virtual joystick will also tap \"aux\" button when out of main circle.");
 	gettext("Enable joysticks");
 	gettext("Enable joysticks");
 	gettext("Joystick ID");
@@ -53,147 +66,218 @@ fake_function() {
 	gettext("Joystick type");
 	gettext("The type of joystick");
 	gettext("Joystick button repetition interval");
-	gettext("The time in seconds it takes between repeated events\nwhen holding down a joystick button combination.");
+	gettext(
+			"The time in seconds it takes between repeated events\nwhen holding down a joystick button combination.");
 	gettext("Joystick frustum sensitivity");
-	gettext("The sensitivity of the joystick axes for moving the\ningame view frustum around.");
+	gettext(
+			"The sensitivity of the joystick axes for moving the\ningame view frustum around.");
 	gettext("Forward key");
-	gettext("Key for moving the player forward.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for moving the player forward.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Backward key");
-	gettext("Key for moving the player backward.\nWill also disable autoforward, when active.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for moving the player backward.\nWill also disable autoforward, when active.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Left key");
-	gettext("Key for moving the player left.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for moving the player left.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Right key");
-	gettext("Key for moving the player right.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for moving the player right.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Jump key");
-	gettext("Key for jumping.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for jumping.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Sneak key");
-	gettext("Key for sneaking.\nAlso used for climbing down and descending in water if aux1_descends is disabled.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for sneaking.\nAlso used for climbing down and descending in water if aux1_descends is disabled.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Inventory key");
-	gettext("Key for opening the inventory.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for opening the inventory.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Special key");
-	gettext("Key for moving fast in fast mode.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for moving fast in fast mode.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Chat key");
-	gettext("Key for opening the chat window.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for opening the chat window.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Command key");
-	gettext("Key for opening the chat window to type commands.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for opening the chat window to type commands.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Command key");
-	gettext("Key for opening the chat window to type local commands.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for opening the chat window to type local commands.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Range select key");
-	gettext("Key for toggling unlimited view range.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for toggling unlimited view range.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Fly key");
-	gettext("Key for toggling flying.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for toggling flying.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Pitch move key");
-	gettext("Key for toggling pitch move mode.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for toggling pitch move mode.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Fast key");
-	gettext("Key for toggling fast mode.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for toggling fast mode.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Noclip key");
-	gettext("Key for toggling noclip mode.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for toggling noclip mode.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Hotbar next key");
-	gettext("Key for selecting the next item in the hotbar.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for selecting the next item in the hotbar.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Hotbar previous key");
-	gettext("Key for selecting the previous item in the hotbar.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for selecting the previous item in the hotbar.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Mute key");
-	gettext("Key for muting the game.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for muting the game.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Inc. volume key");
-	gettext("Key for increasing the volume.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for increasing the volume.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Dec. volume key");
-	gettext("Key for decreasing the volume.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for decreasing the volume.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Automatic forward key");
-	gettext("Key for toggling autoforward.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for toggling autoforward.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Cinematic mode key");
-	gettext("Key for toggling cinematic mode.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for toggling cinematic mode.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Minimap key");
-	gettext("Key for toggling display of minimap.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for toggling display of minimap.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Screenshot");
-	gettext("Key for taking screenshots.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for taking screenshots.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Drop item key");
-	gettext("Key for dropping the currently selected item.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for dropping the currently selected item.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("View zoom key");
-	gettext("Key to use view zoom when possible.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key to use view zoom when possible.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Hotbar slot 1 key");
-	gettext("Key for selecting the first hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for selecting the first hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Hotbar slot 2 key");
-	gettext("Key for selecting the second hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for selecting the second hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Hotbar slot 3 key");
-	gettext("Key for selecting the third hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for selecting the third hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Hotbar slot 4 key");
-	gettext("Key for selecting the fourth hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for selecting the fourth hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Hotbar slot 5 key");
-	gettext("Key for selecting the fifth hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for selecting the fifth hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Hotbar slot 6 key");
-	gettext("Key for selecting the sixth hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for selecting the sixth hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Hotbar slot 7 key");
-	gettext("Key for selecting the seventh hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for selecting the seventh hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Hotbar slot 8 key");
-	gettext("Key for selecting the eighth hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for selecting the eighth hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Hotbar slot 9 key");
-	gettext("Key for selecting the ninth hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for selecting the ninth hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Hotbar slot 10 key");
-	gettext("Key for selecting the tenth hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for selecting the tenth hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Hotbar slot 11 key");
-	gettext("Key for selecting the 11th hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for selecting the 11th hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Hotbar slot 12 key");
-	gettext("Key for selecting the 12th hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for selecting the 12th hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Hotbar slot 13 key");
-	gettext("Key for selecting the 13th hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for selecting the 13th hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Hotbar slot 14 key");
-	gettext("Key for selecting the 14th hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for selecting the 14th hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Hotbar slot 15 key");
-	gettext("Key for selecting the 15th hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for selecting the 15th hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Hotbar slot 16 key");
-	gettext("Key for selecting the 16th hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for selecting the 16th hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Hotbar slot 17 key");
-	gettext("Key for selecting the 17th hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for selecting the 17th hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Hotbar slot 18 key");
-	gettext("Key for selecting the 18th hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for selecting the 18th hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Hotbar slot 19 key");
-	gettext("Key for selecting the 19th hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for selecting the 19th hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Hotbar slot 20 key");
-	gettext("Key for selecting the 20th hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for selecting the 20th hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Hotbar slot 21 key");
-	gettext("Key for selecting the 21st hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for selecting the 21st hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Hotbar slot 22 key");
-	gettext("Key for selecting the 22nd hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for selecting the 22nd hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Hotbar slot 23 key");
-	gettext("Key for selecting the 23rd hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for selecting the 23rd hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Hotbar slot 24 key");
-	gettext("Key for selecting the 24th hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for selecting the 24th hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Hotbar slot 25 key");
-	gettext("Key for selecting the 25th hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for selecting the 25th hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Hotbar slot 26 key");
-	gettext("Key for selecting the 26th hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for selecting the 26th hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Hotbar slot 27 key");
-	gettext("Key for selecting the 27th hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for selecting the 27th hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Hotbar slot 28 key");
-	gettext("Key for selecting the 28th hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for selecting the 28th hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Hotbar slot 29 key");
-	gettext("Key for selecting the 29th hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for selecting the 29th hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Hotbar slot 30 key");
-	gettext("Key for selecting the 30th hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for selecting the 30th hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Hotbar slot 31 key");
-	gettext("Key for selecting the 31st hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for selecting the 31st hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Hotbar slot 32 key");
-	gettext("Key for selecting the 32nd hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for selecting the 32nd hotbar slot.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("HUD toggle key");
-	gettext("Key for toggling the display of the HUD.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for toggling the display of the HUD.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Chat toggle key");
-	gettext("Key for toggling the display of chat.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for toggling the display of chat.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Large chat console key");
-	gettext("Key for toggling the display of the large chat console.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for toggling the display of the large chat console.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Fog toggle key");
-	gettext("Key for toggling the display of fog.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for toggling the display of fog.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Camera update toggle key");
-	gettext("Key for toggling the camera update. Only used for development\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for toggling the camera update. Only used for development\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Debug info toggle key");
-	gettext("Key for toggling the display of debug info.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for toggling the display of debug info.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Profiler toggle key");
-	gettext("Key for toggling the display of the profiler. Used for development.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for toggling the display of the profiler. Used for development.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Toggle camera mode key");
-	gettext("Key for switching between first- and third-person camera.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for switching between first- and third-person camera.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("View range increase key");
-	gettext("Key for increasing the viewing range.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for increasing the viewing range.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("View range decrease key");
-	gettext("Key for decreasing the viewing range.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
+	gettext(
+			"Key for decreasing the viewing range.\nSee http://irrlicht.sourceforge.net/docu/namespaceirr.html#a54da2a0e231901735e3da1b0edf72eb3");
 	gettext("Graphics");
 	gettext("In-Game");
 	gettext("Basic");
@@ -202,11 +286,13 @@ fake_function() {
 	gettext("Fog");
 	gettext("Whether to fog out the end of the visible area.");
 	gettext("Leaves style");
-	gettext("Leaves style:\n-   Fancy:  all faces visible\n-   Simple: only outer faces, if defined special_tiles are used\n-   Opaque: disable transparency");
+	gettext(
+			"Leaves style:\n-   Fancy:  all faces visible\n-   Simple: only outer faces, if defined special_tiles are used\n-   Opaque: disable transparency");
 	gettext("Connect glass");
 	gettext("Connects glass if supported by node.");
 	gettext("Smooth lighting");
-	gettext("Enable smooth lighting with simple ambient occlusion.\nDisable for speed or for different looks.");
+	gettext(
+			"Enable smooth lighting with simple ambient occlusion.\nDisable for speed or for different looks.");
 	gettext("Clouds");
 	gettext("Clouds are a client side effect.");
 	gettext("3D clouds");
@@ -217,7 +303,8 @@ fake_function() {
 	gettext("Adds particles when digging a node.");
 	gettext("Filtering");
 	gettext("Mipmapping");
-	gettext("Use mip mapping to scale textures. May slightly increase performance,\nespecially when using a high resolution texture pack.\nGamma correct downscaling is not supported.");
+	gettext(
+			"Use mip mapping to scale textures. May slightly increase performance,\nespecially when using a high resolution texture pack.\nGamma correct downscaling is not supported.");
 	gettext("Anisotropic filtering");
 	gettext("Use anisotropic filtering when viewing at textures from an angle.");
 	gettext("Bilinear filtering");
@@ -225,35 +312,45 @@ fake_function() {
 	gettext("Trilinear filtering");
 	gettext("Use trilinear filtering when scaling textures.");
 	gettext("Clean transparent textures");
-	gettext("Filtered textures can blend RGB values with fully-transparent neighbors,\nwhich PNG optimizers usually discard, sometimes resulting in a dark or\nlight edge to transparent textures. Apply this filter to clean that up\nat texture load time.");
+	gettext(
+			"Filtered textures can blend RGB values with fully-transparent neighbors,\nwhich PNG optimizers usually discard, sometimes resulting in a dark or\nlight edge to transparent textures. Apply this filter to clean that up\nat texture load time.");
 	gettext("Minimum texture size");
-	gettext("When using bilinear/trilinear/anisotropic filters, low-resolution textures\ncan be blurred, so automatically upscale them with nearest-neighbor\ninterpolation to preserve crisp pixels. This sets the minimum texture size\nfor the upscaled textures; higher values look sharper, but require more\nmemory.  Powers of 2 are recommended. Setting this higher than 1 may not\nhave a visible effect unless bilinear/trilinear/anisotropic filtering is\nenabled.\nThis is also used as the base node texture size for world-aligned\ntexture autoscaling.");
+	gettext(
+			"When using bilinear/trilinear/anisotropic filters, low-resolution textures\ncan be blurred, so automatically upscale them with nearest-neighbor\ninterpolation to preserve crisp pixels. This sets the minimum texture size\nfor the upscaled textures; higher values look sharper, but require more\nmemory.  Powers of 2 are recommended. Setting this higher than 1 may not\nhave a visible effect unless bilinear/trilinear/anisotropic filtering is\nenabled.\nThis is also used as the base node texture size for world-aligned\ntexture autoscaling.");
 	gettext("FSAA");
-	gettext("Experimental option, might cause visible spaces between blocks\nwhen set to higher number than 0.");
+	gettext(
+			"Experimental option, might cause visible spaces between blocks\nwhen set to higher number than 0.");
 	gettext("Undersampling");
-	gettext("Undersampling is similar to using lower screen resolution, but it applies\nto the game world only, keeping the GUI intact.\nIt should give significant performance boost at the cost of less detailed image.");
+	gettext(
+			"Undersampling is similar to using lower screen resolution, but it applies\nto the game world only, keeping the GUI intact.\nIt should give significant performance boost at the cost of less detailed image.");
 	gettext("Shaders");
 	gettext("Shaders");
-	gettext("Shaders allow advanced visual effects and may increase performance on some video\ncards.\nThis only works with the OpenGL video backend.");
+	gettext(
+			"Shaders allow advanced visual effects and may increase performance on some video\ncards.\nThis only works with the OpenGL video backend.");
 	gettext("Shader path");
-	gettext("Path to shader directory. If no path is defined, default location will be used.");
+	gettext(
+			"Path to shader directory. If no path is defined, default location will be used.");
 	gettext("Tone Mapping");
 	gettext("Filmic tone mapping");
 	gettext("Enables filmic tone mapping");
 	gettext("Bumpmapping");
 	gettext("Bumpmapping");
-	gettext("Enables bumpmapping for textures. Normalmaps need to be supplied by the texture pack\nor need to be auto-generated.\nRequires shaders to be enabled.");
+	gettext(
+			"Enables bumpmapping for textures. Normalmaps need to be supplied by the texture pack\nor need to be auto-generated.\nRequires shaders to be enabled.");
 	gettext("Generate normalmaps");
-	gettext("Enables on the fly normalmap generation (Emboss effect).\nRequires bumpmapping to be enabled.");
+	gettext(
+			"Enables on the fly normalmap generation (Emboss effect).\nRequires bumpmapping to be enabled.");
 	gettext("Normalmaps strength");
 	gettext("Strength of generated normalmaps.");
 	gettext("Normalmaps sampling");
-	gettext("Defines sampling step of texture.\nA higher value results in smoother normal maps.");
+	gettext(
+			"Defines sampling step of texture.\nA higher value results in smoother normal maps.");
 	gettext("Parallax Occlusion");
 	gettext("Parallax occlusion");
 	gettext("Enables parallax occlusion mapping.\nRequires shaders to be enabled.");
 	gettext("Parallax occlusion mode");
-	gettext("0 = parallax occlusion with slope information (faster).\n1 = relief mapping (slower, more accurate).");
+	gettext(
+			"0 = parallax occlusion with slope information (faster).\n1 = relief mapping (slower, more accurate).");
 	gettext("Parallax occlusion strength");
 	gettext("Strength of parallax.");
 	gettext("Parallax occlusion iterations");
@@ -274,17 +371,21 @@ fake_function() {
 	gettext("Set to true enables waving plants.\nRequires shaders to be enabled.");
 	gettext("Advanced");
 	gettext("Arm inertia");
-	gettext("Arm inertia, gives a more realistic movement of\nthe arm when the camera moves.");
+	gettext(
+			"Arm inertia, gives a more realistic movement of\nthe arm when the camera moves.");
 	gettext("Maximum FPS");
-	gettext("If FPS would go higher than this, limit it by sleeping\nto not waste CPU power for no benefit.");
+	gettext(
+			"If FPS would go higher than this, limit it by sleeping\nto not waste CPU power for no benefit.");
 	gettext("FPS in pause menu");
 	gettext("Maximum FPS when game is paused.");
 	gettext("Pause on lost window focus");
-	gettext("Open the pause menu when the window's focus is lost. Does not pause if a formspec is\nopen.");
+	gettext(
+			"Open the pause menu when the window's focus is lost. Does not pause if a formspec is\nopen.");
 	gettext("Viewing range");
 	gettext("View distance in nodes.");
 	gettext("Near clipping plane");
-	gettext("Camera 'near clipping plane' distance in nodes, between 0 and 0.5.\nMost users will not need to change this.\nIncreasing can reduce artifacting on weaker GPUs.\n0.1 = Default, 0.25 = Good value for weaker tablets.");
+	gettext(
+			"Camera 'near clipping plane' distance in nodes, between 0 and 0.5.\nMost users will not need to change this.\nIncreasing can reduce artifacting on weaker GPUs.\n0.1 = Default, 0.25 = Good value for weaker tablets.");
 	gettext("Screen width");
 	gettext("Width component of the initial window size.");
 	gettext("Screen height");
@@ -300,7 +401,8 @@ fake_function() {
 	gettext("Field of view");
 	gettext("Field of view in degrees.");
 	gettext("Gamma");
-	gettext("Adjust the gamma encoding for the light tables. Higher numbers are brighter.\nThis setting is for the client only and is ignored by the server.");
+	gettext(
+			"Adjust the gamma encoding for the light tables. Higher numbers are brighter.\nThis setting is for the client only and is ignored by the server.");
 	gettext("Darkness sharpness");
 	gettext("Gradient of light curve at minimum light level.");
 	gettext("Lightness sharpness");
@@ -310,19 +412,25 @@ fake_function() {
 	gettext("Light curve mid boost center");
 	gettext("Center of light curve mid-boost.");
 	gettext("Light curve mid boost spread");
-	gettext("Spread of light curve mid-boost.\nStandard deviation of the mid-boost gaussian.");
+	gettext(
+			"Spread of light curve mid-boost.\nStandard deviation of the mid-boost gaussian.");
 	gettext("Texture path");
 	gettext("Path to texture directory. All textures are first searched from here.");
 	gettext("Video driver");
-	gettext("The rendering back-end for Irrlicht.\nA restart is required after changing this.\nNote: On Android, stick with OGLES1 if unsure! App may fail to start otherwise.\nOn other platforms, OpenGL is recommended, and it’s the only driver with\nshader support currently.");
+	gettext(
+			"The rendering back-end for Irrlicht.\nA restart is required after changing this.\nNote: On Android, stick with OGLES1 if unsure! App may fail to start otherwise.\nOn other platforms, OpenGL is recommended, and it’s the only driver with\nshader support currently.");
 	gettext("Cloud radius");
-	gettext("Radius of cloud area stated in number of 64 node cloud squares.\nValues larger than 26 will start to produce sharp cutoffs at cloud area corners.");
+	gettext(
+			"Radius of cloud area stated in number of 64 node cloud squares.\nValues larger than 26 will start to produce sharp cutoffs at cloud area corners.");
 	gettext("View bobbing factor");
-	gettext("Enable view bobbing and amount of view bobbing.\nFor example: 0 for no view bobbing; 1.0 for normal; 2.0 for double.");
+	gettext(
+			"Enable view bobbing and amount of view bobbing.\nFor example: 0 for no view bobbing; 1.0 for normal; 2.0 for double.");
 	gettext("Fall bobbing factor");
-	gettext("Multiplier for fall bobbing.\nFor example: 0 for no view bobbing; 1.0 for normal; 2.0 for double.");
+	gettext(
+			"Multiplier for fall bobbing.\nFor example: 0 for no view bobbing; 1.0 for normal; 2.0 for double.");
 	gettext("3D mode");
-	gettext("3D support.\nCurrently supported:\n-    none: no 3d output.\n-    anaglyph: cyan/magenta color 3d.\n-    interlaced: odd/even line based polarisation screen support.\n-    topbottom: split screen top/bottom.\n-    sidebyside: split screen side by side.\n-    crossview: Cross-eyed 3d\n-    pageflip: quadbuffer based 3d.\nNote that the interlaced mode requires shaders to be enabled.");
+	gettext(
+			"3D support.\nCurrently supported:\n-    none: no 3d output.\n-    anaglyph: cyan/magenta color 3d.\n-    interlaced: odd/even line based polarisation screen support.\n-    topbottom: split screen top/bottom.\n-    sidebyside: split screen side by side.\n-    crossview: Cross-eyed 3d\n-    pageflip: quadbuffer based 3d.\nNote that the interlaced mode requires shaders to be enabled.");
 	gettext("Console height");
 	gettext("In-game chat console height, between 0.1 (10%) and 1.0 (100%).");
 	gettext("Console color");
@@ -350,25 +458,31 @@ fake_function() {
 	gettext("Desynchronize block animation");
 	gettext("Whether node texture animations should be desynchronized per mapblock.");
 	gettext("Maximum hotbar width");
-	gettext("Maximum proportion of current window to be used for hotbar.\nUseful if there's something to be displayed right or left of hotbar.");
+	gettext(
+			"Maximum proportion of current window to be used for hotbar.\nUseful if there's something to be displayed right or left of hotbar.");
 	gettext("HUD scale factor");
 	gettext("Modifies the size of the hudbar elements.");
 	gettext("Mesh cache");
 	gettext("Enables caching of facedir rotated meshes.");
 	gettext("Mapblock mesh generation delay");
-	gettext("Delay between mesh updates on the client in ms. Increasing this will slow\ndown the rate of mesh updates, thus reducing jitter on slower clients.");
+	gettext(
+			"Delay between mesh updates on the client in ms. Increasing this will slow\ndown the rate of mesh updates, thus reducing jitter on slower clients.");
 	gettext("Mapblock mesh generator's MapBlock cache size in MB");
-	gettext("Size of the MapBlock cache of the mesh generator. Increasing this will\nincrease the cache hit %, reducing the data being copied from the main\nthread, thus reducing jitter.");
+	gettext(
+			"Size of the MapBlock cache of the mesh generator. Increasing this will\nincrease the cache hit %, reducing the data being copied from the main\nthread, thus reducing jitter.");
 	gettext("Minimap");
 	gettext("Enables minimap.");
 	gettext("Round minimap");
 	gettext("Shape of the minimap. Enabled = round, disabled = square.");
 	gettext("Minimap scan height");
-	gettext("True = 256\nFalse = 128\nUseable to make minimap smoother on slower machines.");
+	gettext(
+			"True = 256\nFalse = 128\nUseable to make minimap smoother on slower machines.");
 	gettext("Colored fog");
-	gettext("Make fog and sky colors depend on daytime (dawn/sunset) and view direction.");
+	gettext(
+			"Make fog and sky colors depend on daytime (dawn/sunset) and view direction.");
 	gettext("Ambient occlusion gamma");
-	gettext("The strength (darkness) of node ambient-occlusion shading.\nLower is darker, Higher is lighter. The valid range of values for this\nsetting is 0.25 to 4.0 inclusive. If the value is out of range it will be\nset to the nearest valid value.");
+	gettext(
+			"The strength (darkness) of node ambient-occlusion shading.\nLower is darker, Higher is lighter. The valid range of values for this\nsetting is 0.25 to 4.0 inclusive. If the value is out of range it will be\nset to the nearest valid value.");
 	gettext("Inventory items animations");
 	gettext("Enables animation of inventory items.");
 	gettext("Fog start");
@@ -376,26 +490,32 @@ fake_function() {
 	gettext("Opaque liquids");
 	gettext("Makes all liquids opaque");
 	gettext("World-aligned textures mode");
-	gettext("Textures on a node may be aligned either to the node or to the world.\nThe former mode suits better things like machines, furniture, etc., while\nthe latter makes stairs and microblocks fit surroundings better.\nHowever, as this possibility is new, thus may not be used by older servers,\nthis option allows enforcing it for certain node types. Note though that\nthat is considered EXPERIMENTAL and may not work properly.");
+	gettext(
+			"Textures on a node may be aligned either to the node or to the world.\nThe former mode suits better things like machines, furniture, etc., while\nthe latter makes stairs and microblocks fit surroundings better.\nHowever, as this possibility is new, thus may not be used by older servers,\nthis option allows enforcing it for certain node types. Note though that\nthat is considered EXPERIMENTAL and may not work properly.");
 	gettext("Autoscaling mode");
-	gettext("World-aligned textures may be scaled to span several nodes. However,\nthe server may not send the scale you want, especially if you use\na specially-designed texture pack; with this option, the client tries\nto determine the scale automatically basing on the texture size.\nSee also texture_min_size.\nWarning: This option is EXPERIMENTAL!");
+	gettext(
+			"World-aligned textures may be scaled to span several nodes. However,\nthe server may not send the scale you want, especially if you use\na specially-designed texture pack; with this option, the client tries\nto determine the scale automatically basing on the texture size.\nSee also texture_min_size.\nWarning: This option is EXPERIMENTAL!");
 	gettext("Show entity selection boxes");
 	gettext("Show entity selection boxes");
 	gettext("Menus");
 	gettext("Clouds in menu");
 	gettext("Use a cloud animation for the main menu background.");
 	gettext("GUI scaling");
-	gettext("Scale GUI by a user specified value.\nUse a nearest-neighbor-anti-alias filter to scale the GUI.\nThis will smooth over some of the rough edges, and blend\npixels when scaling down, at the cost of blurring some\nedge pixels when images are scaled by non-integer sizes.");
+	gettext(
+			"Scale GUI by a user specified value.\nUse a nearest-neighbor-anti-alias filter to scale the GUI.\nThis will smooth over some of the rough edges, and blend\npixels when scaling down, at the cost of blurring some\nedge pixels when images are scaled by non-integer sizes.");
 	gettext("GUI scaling filter");
-	gettext("When gui_scaling_filter is true, all GUI images need to be\nfiltered in software, but some images are generated directly\nto hardware (e.g. render-to-texture for nodes in inventory).");
+	gettext(
+			"When gui_scaling_filter is true, all GUI images need to be\nfiltered in software, but some images are generated directly\nto hardware (e.g. render-to-texture for nodes in inventory).");
 	gettext("GUI scaling filter txr2img");
-	gettext("When gui_scaling_filter_txr2img is true, copy those images\nfrom hardware to software for scaling.  When false, fall back\nto the old scaling method, for video drivers that don't\nproperly support downloading textures back from hardware.");
+	gettext(
+			"When gui_scaling_filter_txr2img is true, copy those images\nfrom hardware to software for scaling.  When false, fall back\nto the old scaling method, for video drivers that don't\nproperly support downloading textures back from hardware.");
 	gettext("Tooltip delay");
 	gettext("Delay showing tooltips, stated in milliseconds.");
 	gettext("Append item name");
 	gettext("Append item name to tooltip.");
 	gettext("FreeType fonts");
-	gettext("Whether FreeType fonts are used, requires FreeType support to be compiled in.");
+	gettext(
+			"Whether FreeType fonts are used, requires FreeType support to be compiled in.");
 	gettext("Font path");
 	gettext("Path to TrueTypeFont or bitmap.");
 	gettext("Font size");
@@ -415,12 +535,15 @@ fake_function() {
 	gettext("Screenshot format");
 	gettext("Format of screenshots.");
 	gettext("Screenshot quality");
-	gettext("Screenshot quality. Only used for JPEG format.\n1 means worst quality; 100 means best quality.\nUse 0 for default quality.");
+	gettext(
+			"Screenshot quality. Only used for JPEG format.\n1 means worst quality; 100 means best quality.\nUse 0 for default quality.");
 	gettext("Advanced");
 	gettext("DPI");
-	gettext("Adjust dpi configuration to your screen (non X11/Android only) e.g. for 4k screens.");
+	gettext(
+			"Adjust dpi configuration to your screen (non X11/Android only) e.g. for 4k screens.");
 	gettext("Enable console window");
-	gettext("Windows systems only: Start Minetest with the command line window in the background.\nContains the same information as the file debug.txt (default name).");
+	gettext(
+			"Windows systems only: Start Minetest with the command line window in the background.\nContains the same information as the file debug.txt (default name).");
 	gettext("Sound");
 	gettext("Sound");
 	gettext("Volume");
@@ -428,35 +551,46 @@ fake_function() {
 	gettext("Client");
 	gettext("Network");
 	gettext("Server address");
-	gettext("Address to connect to.\nLeave this blank to start a local server.\nNote that the address field in the main menu overrides this setting.");
+	gettext(
+			"Address to connect to.\nLeave this blank to start a local server.\nNote that the address field in the main menu overrides this setting.");
 	gettext("Remote port");
-	gettext("Port to connect to (UDP).\nNote that the port field in the main menu overrides this setting.");
+	gettext(
+			"Port to connect to (UDP).\nNote that the port field in the main menu overrides this setting.");
 	gettext("Saving map received from server");
 	gettext("Save the map received by the client on disk.");
 	gettext("Connect to external media server");
-	gettext("Enable usage of remote media server (if provided by server).\nRemote servers offer a significantly faster way to download media (e.g. textures)\nwhen connecting to the server.");
+	gettext(
+			"Enable usage of remote media server (if provided by server).\nRemote servers offer a significantly faster way to download media (e.g. textures)\nwhen connecting to the server.");
 	gettext("Client modding");
-	gettext("Enable Lua modding support on client.\nThis support is experimental and API can change.");
+	gettext(
+			"Enable Lua modding support on client.\nThis support is experimental and API can change.");
 	gettext("Serverlist URL");
 	gettext("URL to the server list displayed in the Multiplayer Tab.");
 	gettext("Serverlist file");
-	gettext("File in client/serverlist/ that contains your favorite servers displayed in the\nMultiplayer Tab.");
+	gettext(
+			"File in client/serverlist/ that contains your favorite servers displayed in the\nMultiplayer Tab.");
 	gettext("Maximum size of the out chat queue");
-	gettext("Maximum size of the out chat queue.\n0 to disable queueing and -1 to make the queue size unlimited.");
+	gettext(
+			"Maximum size of the out chat queue.\n0 to disable queueing and -1 to make the queue size unlimited.");
 	gettext("Enable register confirmation");
-	gettext("Enable register confirmation when connecting to server.\nIf disabled, new account will be registered automatically.");
+	gettext(
+			"Enable register confirmation when connecting to server.\nIf disabled, new account will be registered automatically.");
 	gettext("Advanced");
 	gettext("Mapblock unload timeout");
 	gettext("Timeout for client to remove unused map data from memory.");
 	gettext("Mapblock limit");
-	gettext("Maximum number of mapblocks for client to be kept in memory.\nSet to -1 for unlimited amount.");
+	gettext(
+			"Maximum number of mapblocks for client to be kept in memory.\nSet to -1 for unlimited amount.");
 	gettext("Show debug info");
-	gettext("Whether to show the client debug info (has the same effect as hitting F5).");
+	gettext(
+			"Whether to show the client debug info (has the same effect as hitting F5).");
 	gettext("Server / Singleplayer");
 	gettext("Server name");
-	gettext("Name of the server, to be displayed when players join and in the serverlist.");
+	gettext(
+			"Name of the server, to be displayed when players join and in the serverlist.");
 	gettext("Server description");
-	gettext("Description of server, to be displayed when players join and in the serverlist.");
+	gettext(
+			"Description of server, to be displayed when players join and in the serverlist.");
 	gettext("Server address");
 	gettext("Domain name of server, to be displayed in the serverlist.");
 	gettext("Server URL");
@@ -466,50 +600,63 @@ fake_function() {
 	gettext("Serverlist URL");
 	gettext("Announce to this serverlist.");
 	gettext("Strip color codes");
-	gettext("Remove color codes from incoming chat messages\nUse this to stop players from being able to use color in their messages");
+	gettext(
+			"Remove color codes from incoming chat messages\nUse this to stop players from being able to use color in their messages");
 	gettext("Network");
 	gettext("Server port");
-	gettext("Network port to listen (UDP).\nThis value will be overridden when starting from the main menu.");
+	gettext(
+			"Network port to listen (UDP).\nThis value will be overridden when starting from the main menu.");
 	gettext("Bind address");
 	gettext("The network interface that the server listens on.");
 	gettext("Strict protocol checking");
-	gettext("Enable to disallow old clients from connecting.\nOlder clients are compatible in the sense that they will not crash when connecting\nto new servers, but they may not support all new features that you are expecting.");
+	gettext(
+			"Enable to disallow old clients from connecting.\nOlder clients are compatible in the sense that they will not crash when connecting\nto new servers, but they may not support all new features that you are expecting.");
 	gettext("Remote media");
-	gettext("Specifies URL from which client fetches media instead of using UDP.\n$filename should be accessible from $remote_media$filename via cURL\n(obviously, remote_media should end with a slash).\nFiles that are not present will be fetched the usual way.");
+	gettext(
+			"Specifies URL from which client fetches media instead of using UDP.\n$filename should be accessible from $remote_media$filename via cURL\n(obviously, remote_media should end with a slash).\nFiles that are not present will be fetched the usual way.");
 	gettext("IPv6 server");
 	gettext("Enable/disable running an IPv6 server.\nIgnored if bind_address is set.");
 	gettext("Advanced");
 	gettext("Maximum simultaneous block sends per client");
-	gettext("Maximum number of blocks that are simultaneously sent per client.\nThe maximum total count is calculated dynamically:\nmax_total = ceil((#clients + max_users) * per_client / 4)");
+	gettext(
+			"Maximum number of blocks that are simultaneously sent per client.\nThe maximum total count is calculated dynamically:\nmax_total = ceil((#clients + max_users) * per_client / 4)");
 	gettext("Delay in sending blocks after building");
-	gettext("To reduce lag, block transfers are slowed down when a player is building something.\nThis determines how long they are slowed down after placing or removing a node.");
+	gettext(
+			"To reduce lag, block transfers are slowed down when a player is building something.\nThis determines how long they are slowed down after placing or removing a node.");
 	gettext("Max. packets per iteration");
-	gettext("Maximum number of packets sent per send step, if you have a slow connection\ntry reducing it, but don't reduce it to a number below double of targeted\nclient number.");
+	gettext(
+			"Maximum number of packets sent per send step, if you have a slow connection\ntry reducing it, but don't reduce it to a number below double of targeted\nclient number.");
 	gettext("Game");
 	gettext("Default game");
-	gettext("Default game when creating a new world.\nThis will be overridden when creating a world from the main menu.");
+	gettext(
+			"Default game when creating a new world.\nThis will be overridden when creating a world from the main menu.");
 	gettext("Message of the day");
 	gettext("Message of the day displayed to players connecting.");
 	gettext("Maximum users");
 	gettext("Maximum number of players that can be connected simultaneously.");
 	gettext("Map directory");
-	gettext("World directory (everything in the world is stored here).\nNot needed if starting from the main menu.");
+	gettext(
+			"World directory (everything in the world is stored here).\nNot needed if starting from the main menu.");
 	gettext("Item entity TTL");
-	gettext("Time in seconds for item entity (dropped items) to live.\nSetting it to -1 disables the feature.");
+	gettext(
+			"Time in seconds for item entity (dropped items) to live.\nSetting it to -1 disables the feature.");
 	gettext("Damage");
 	gettext("Enable players getting damage and dying.");
 	gettext("Creative");
 	gettext("Enable creative mode for new created maps.");
 	gettext("Fixed map seed");
-	gettext("A chosen map seed for a new map, leave empty for random.\nWill be overridden when creating a new world in the main menu.");
+	gettext(
+			"A chosen map seed for a new map, leave empty for random.\nWill be overridden when creating a new world in the main menu.");
 	gettext("Default password");
 	gettext("New users need to input this password.");
 	gettext("Default privileges");
-	gettext("The privileges that new users automatically get.\nSee /privs in game for a full list on your server and mod configuration.");
+	gettext(
+			"The privileges that new users automatically get.\nSee /privs in game for a full list on your server and mod configuration.");
 	gettext("Basic privileges");
 	gettext("Privileges that players with basic_privs can grant");
 	gettext("Unlimited player transfer distance");
-	gettext("Whether players are shown to clients without any range limit.\nDeprecated, use the setting player_transfer_distance instead.");
+	gettext(
+			"Whether players are shown to clients without any range limit.\nDeprecated, use the setting player_transfer_distance instead.");
 	gettext("Player transfer distance");
 	gettext("Defines the maximal player transfer distance in blocks (0 = unlimited).");
 	gettext("Player versus player");
@@ -523,27 +670,34 @@ fake_function() {
 	gettext("Disable anticheat");
 	gettext("If enabled, disable cheat prevention in multiplayer.");
 	gettext("Rollback recording");
-	gettext("If enabled, actions are recorded for rollback.\nThis option is only read when server starts.");
+	gettext(
+			"If enabled, actions are recorded for rollback.\nThis option is only read when server starts.");
 	gettext("Chat message format");
-	gettext("Format of player chat messages. The following strings are valid placeholders:\n@name, @message, @timestamp (optional)");
+	gettext(
+			"Format of player chat messages. The following strings are valid placeholders:\n@name, @message, @timestamp (optional)");
 	gettext("Shutdown message");
 	gettext("A message to be displayed to all clients when the server shuts down.");
 	gettext("Crash message");
 	gettext("A message to be displayed to all clients when the server crashes.");
 	gettext("Ask to reconnect after crash");
-	gettext("Whether to ask clients to reconnect after a (Lua) crash.\nSet this to true if your server is set up to restart automatically.");
+	gettext(
+			"Whether to ask clients to reconnect after a (Lua) crash.\nSet this to true if your server is set up to restart automatically.");
 	gettext("Active object send range");
-	gettext("From how far clients know about objects, stated in mapblocks (16 nodes).\n\nSetting this larger than active_block_range will also cause the server\nto maintain active objects up to this distance in the direction the\nplayer is looking. (This can avoid mobs suddenly disappearing from view)");
+	gettext(
+			"From how far clients know about objects, stated in mapblocks (16 nodes).\n\nSetting this larger than active_block_range will also cause the server\nto maintain active objects up to this distance in the direction the\nplayer is looking. (This can avoid mobs suddenly disappearing from view)");
 	gettext("Active block range");
-	gettext("The radius of the volume of blocks around every player that is subject to the\nactive block stuff, stated in mapblocks (16 nodes).\nIn active blocks objects are loaded and ABMs run.\nThis is also the minimum range in which active objects (mobs) are maintained.\nThis should be configured together with active_object_range.");
+	gettext(
+			"The radius of the volume of blocks around every player that is subject to the\nactive block stuff, stated in mapblocks (16 nodes).\nIn active blocks objects are loaded and ABMs run.\nThis is also the minimum range in which active objects (mobs) are maintained.\nThis should be configured together with active_object_range.");
 	gettext("Max block send distance");
-	gettext("From how far blocks are sent to clients, stated in mapblocks (16 nodes).");
+	gettext(
+			"From how far blocks are sent to clients, stated in mapblocks (16 nodes).");
 	gettext("Maximum forceloaded blocks");
 	gettext("Maximum number of forceloaded mapblocks.");
 	gettext("Time send interval");
 	gettext("Interval of sending time of day to clients.");
 	gettext("Time speed");
-	gettext("Controls length of day/night cycle.\nExamples:\n72 = 20min, 360 = 4min, 1 = 24hour, 0 = day/night/whatever stays unchanged.");
+	gettext(
+			"Controls length of day/night cycle.\nExamples:\n72 = 20min, 360 = 4min, 1 = 24hour, 0 = day/night/whatever stays unchanged.");
 	gettext("World start time");
 	gettext("Time of day when a new world is started, in millihours (0-23999).");
 	gettext("Map save interval");
@@ -556,11 +710,14 @@ fake_function() {
 	gettext("Kick players who sent more than X messages per 10 seconds.");
 	gettext("Physics");
 	gettext("Default acceleration");
-	gettext("Horizontal and vertical acceleration on ground or when climbing,\nin nodes per second per second.");
+	gettext(
+			"Horizontal and vertical acceleration on ground or when climbing,\nin nodes per second per second.");
 	gettext("Acceleration in air");
-	gettext("Horizontal acceleration in air when jumping or falling,\nin nodes per second per second.");
+	gettext(
+			"Horizontal acceleration in air when jumping or falling,\nin nodes per second per second.");
 	gettext("Fast mode acceleration");
-	gettext("Horizontal and vertical acceleration in fast mode,\nin nodes per second per second.");
+	gettext(
+			"Horizontal and vertical acceleration in fast mode,\nin nodes per second per second.");
 	gettext("Walking speed");
 	gettext("Walking and flying speed, in nodes per second.");
 	gettext("Sneaking speed");
@@ -574,24 +731,29 @@ fake_function() {
 	gettext("Liquid fluidity");
 	gettext("Decrease this to increase liquid resistence to movement.");
 	gettext("Liquid fluidity smoothing");
-	gettext("Maximum liquid resistence. Controls deceleration when entering liquid at\nhigh speed.");
+	gettext(
+			"Maximum liquid resistence. Controls deceleration when entering liquid at\nhigh speed.");
 	gettext("Liquid sinking");
 	gettext("Controls sinking speed in liquid.");
 	gettext("Gravity");
 	gettext("Acceleration of gravity, in nodes per second per second.");
 	gettext("Advanced");
 	gettext("Deprecated Lua API handling");
-	gettext("Handling for deprecated lua api calls:\n-    legacy: (try to) mimic old behaviour (default for release).\n-    log: mimic and log backtrace of deprecated call (default for debug).\n-    error: abort on usage of deprecated call (suggested for mod developers).");
+	gettext(
+			"Handling for deprecated lua api calls:\n-    legacy: (try to) mimic old behaviour (default for release).\n-    log: mimic and log backtrace of deprecated call (default for debug).\n-    error: abort on usage of deprecated call (suggested for mod developers).");
 	gettext("Max. clearobjects extra blocks");
-	gettext("Number of extra blocks that can be loaded by /clearobjects at once.\nThis is a trade-off between sqlite transaction overhead and\nmemory consumption (4096=100MB, as a rule of thumb).");
+	gettext(
+			"Number of extra blocks that can be loaded by /clearobjects at once.\nThis is a trade-off between sqlite transaction overhead and\nmemory consumption (4096=100MB, as a rule of thumb).");
 	gettext("Unload unused server data");
-	gettext("How much the server will wait before unloading unused mapblocks.\nHigher value is smoother, but will use more RAM.");
+	gettext(
+			"How much the server will wait before unloading unused mapblocks.\nHigher value is smoother, but will use more RAM.");
 	gettext("Maximum objects per block");
 	gettext("Maximum number of statically stored objects in a block.");
 	gettext("Synchronous SQLite");
 	gettext("See https://www.sqlite.org/pragma.html#pragma_synchronous");
 	gettext("Dedicated server step");
-	gettext("Length of a server tick and the interval at which objects are generally updated over\nnetwork.");
+	gettext(
+			"Length of a server tick and the interval at which objects are generally updated over\nnetwork.");
 	gettext("Active block management interval");
 	gettext("Length of time between active block management cycles");
 	gettext("ABM interval");
@@ -599,89 +761,117 @@ fake_function() {
 	gettext("NodeTimer interval");
 	gettext("Length of time between NodeTimer execution cycles");
 	gettext("Ignore world errors");
-	gettext("If enabled, invalid world data won't cause the server to shut down.\nOnly enable this if you know what you are doing.");
+	gettext(
+			"If enabled, invalid world data won't cause the server to shut down.\nOnly enable this if you know what you are doing.");
 	gettext("Liquid loop max");
 	gettext("Max liquids processed per step.");
 	gettext("Liquid queue purge time");
-	gettext("The time (in seconds) that the liquids queue may grow beyond processing\ncapacity until an attempt is made to decrease its size by dumping old queue\nitems.  A value of 0 disables the functionality.");
+	gettext(
+			"The time (in seconds) that the liquids queue may grow beyond processing\ncapacity until an attempt is made to decrease its size by dumping old queue\nitems.  A value of 0 disables the functionality.");
 	gettext("Liquid update tick");
 	gettext("Liquid update interval in seconds.");
 	gettext("Block send optimize distance");
-	gettext("At this distance the server will aggressively optimize which blocks are sent to\nclients.\nSmall values potentially improve performance a lot, at the expense of visible\nrendering glitches (some blocks will not be rendered under water and in caves,\nas well as sometimes on land).\nSetting this to a value greater than max_block_send_distance disables this\noptimization.\nStated in mapblocks (16 nodes).");
+	gettext(
+			"At this distance the server will aggressively optimize which blocks are sent to\nclients.\nSmall values potentially improve performance a lot, at the expense of visible\nrendering glitches (some blocks will not be rendered under water and in caves,\nas well as sometimes on land).\nSetting this to a value greater than max_block_send_distance disables this\noptimization.\nStated in mapblocks (16 nodes).");
 	gettext("Server side occlusion culling");
-	gettext("If enabled the server will perform map block occlusion culling based on\non the eye position of the player. This can reduce the number of blocks\nsent to the client 50-80%. The client will not longer receive most invisible\nso that the utility of noclip mode is reduced.");
+	gettext(
+			"If enabled the server will perform map block occlusion culling based on\non the eye position of the player. This can reduce the number of blocks\nsent to the client 50-80%. The client will not longer receive most invisible\nso that the utility of noclip mode is reduced.");
 	gettext("Client side modding restrictions");
-	gettext("Restricts the access of certain client-side functions on servers.\nCombine the byteflags below to restrict client-side features, or set to 0\nfor no restrictions:\nLOAD_CLIENT_MODS: 1 (disable loading client-provided mods)\nCHAT_MESSAGES: 2 (disable send_chat_message call client-side)\nREAD_ITEMDEFS: 4 (disable get_item_def call client-side)\nREAD_NODEDEFS: 8 (disable get_node_def call client-side)\nLOOKUP_NODES_LIMIT: 16 (limits get_node call client-side to\ncsm_restriction_noderange)\nREAD_PLAYERINFO: 32 (disable get_player_names call client-side)");
+	gettext(
+			"Restricts the access of certain client-side functions on servers.\nCombine the byteflags below to restrict client-side features, or set to 0\nfor no restrictions:\nLOAD_CLIENT_MODS: 1 (disable loading client-provided mods)\nCHAT_MESSAGES: 2 (disable send_chat_message call client-side)\nREAD_ITEMDEFS: 4 (disable get_item_def call client-side)\nREAD_NODEDEFS: 8 (disable get_node_def call client-side)\nLOOKUP_NODES_LIMIT: 16 (limits get_node call client-side to\ncsm_restriction_noderange)\nREAD_PLAYERINFO: 32 (disable get_player_names call client-side)");
 	gettext("Client side node lookup range restriction");
-	gettext("If the CSM restriction for node range is enabled, get_node calls are limited\nto this distance from the player to the node.");
+	gettext(
+			"If the CSM restriction for node range is enabled, get_node calls are limited\nto this distance from the player to the node.");
 	gettext("Security");
 	gettext("Enable mod security");
 	gettext("Prevent mods from doing insecure things like running shell commands.");
 	gettext("Trusted mods");
-	gettext("Comma-separated list of trusted mods that are allowed to access insecure\nfunctions even when mod security is on (via request_insecure_environment()).");
+	gettext(
+			"Comma-separated list of trusted mods that are allowed to access insecure\nfunctions even when mod security is on (via request_insecure_environment()).");
 	gettext("HTTP mods");
-	gettext("Comma-separated list of mods that are allowed to access HTTP APIs, which\nallow them to upload and download data to/from the internet.");
+	gettext(
+			"Comma-separated list of mods that are allowed to access HTTP APIs, which\nallow them to upload and download data to/from the internet.");
 	gettext("Advanced");
 	gettext("Profiling");
 	gettext("Load the game profiler");
-	gettext("Load the game profiler to collect game profiling data.\nProvides a /profiler command to access the compiled profile.\nUseful for mod developers and server operators.");
+	gettext(
+			"Load the game profiler to collect game profiling data.\nProvides a /profiler command to access the compiled profile.\nUseful for mod developers and server operators.");
 	gettext("Default report format");
-	gettext("The default format in which profiles are being saved,\nwhen calling `/profiler save [format]` without format.");
+	gettext(
+			"The default format in which profiles are being saved,\nwhen calling `/profiler save [format]` without format.");
 	gettext("Report path");
-	gettext("The file path relative to your worldpath in which profiles will be saved to.");
+	gettext(
+			"The file path relative to your worldpath in which profiles will be saved to.");
 	gettext("Instrumentation");
 	gettext("Entity methods");
 	gettext("Instrument the methods of entities on registration.");
 	gettext("Active Block Modifiers");
-	gettext("Instrument the action function of Active Block Modifiers on registration.");
+	gettext(
+			"Instrument the action function of Active Block Modifiers on registration.");
 	gettext("Loading Block Modifiers");
-	gettext("Instrument the action function of Loading Block Modifiers on registration.");
+	gettext(
+			"Instrument the action function of Loading Block Modifiers on registration.");
 	gettext("Chatcommands");
 	gettext("Instrument chatcommands on registration.");
 	gettext("Global callbacks");
-	gettext("Instrument global callback functions on registration.\n(anything you pass to a minetest.register_*() function)");
+	gettext(
+			"Instrument global callback functions on registration.\n(anything you pass to a minetest.register_*() function)");
 	gettext("Advanced");
 	gettext("Builtin");
-	gettext("Instrument builtin.\nThis is usually only needed by core/builtin contributors");
+	gettext(
+			"Instrument builtin.\nThis is usually only needed by core/builtin contributors");
 	gettext("Profiler");
-	gettext("Have the profiler instrument itself:\n* Instrument an empty function.\nThis estimates the overhead, that instrumentation is adding (+1 function call).\n* Instrument the sampler being used to update the statistics.");
+	gettext(
+			"Have the profiler instrument itself:\n* Instrument an empty function.\nThis estimates the overhead, that instrumentation is adding (+1 function call).\n* Instrument the sampler being used to update the statistics.");
 	gettext("Client and Server");
 	gettext("Player name");
-	gettext("Name of the player.\nWhen running a server, clients connecting with this name are admins.\nWhen starting from the main menu, this is overridden.");
+	gettext(
+			"Name of the player.\nWhen running a server, clients connecting with this name are admins.\nWhen starting from the main menu, this is overridden.");
 	gettext("Language");
-	gettext("Set the language. Leave empty to use the system language.\nA restart is required after changing this.");
+	gettext(
+			"Set the language. Leave empty to use the system language.\nA restart is required after changing this.");
 	gettext("Debug log level");
-	gettext("Level of logging to be written to debug.txt:\n-    <nothing> (no logging)\n-    none (messages with no level)\n-    error\n-    warning\n-    action\n-    info\n-    verbose");
+	gettext(
+			"Level of logging to be written to debug.txt:\n-    <nothing> (no logging)\n-    none (messages with no level)\n-    error\n-    warning\n-    action\n-    info\n-    verbose");
 	gettext("Debug log file size threshold");
-	gettext("If the file size of debug.txt exceeds the number of megabytes specified in\nthis setting when it is opened, the file is moved to debug.txt.1,\ndeleting an older debug.txt.1 if it exists.\ndebug.txt is only moved if this setting is positive.");
+	gettext(
+			"If the file size of debug.txt exceeds the number of megabytes specified in\nthis setting when it is opened, the file is moved to debug.txt.1,\ndeleting an older debug.txt.1 if it exists.\ndebug.txt is only moved if this setting is positive.");
 	gettext("IPv6");
 	gettext("IPv6 support.");
 	gettext("Advanced");
 	gettext("cURL timeout");
-	gettext("Default timeout for cURL, stated in milliseconds.\nOnly has an effect if compiled with cURL.");
+	gettext(
+			"Default timeout for cURL, stated in milliseconds.\nOnly has an effect if compiled with cURL.");
 	gettext("cURL parallel limit");
-	gettext("Limits number of parallel HTTP requests. Affects:\n-    Media fetch if server uses remote_media setting.\n-    Serverlist download and server announcement.\n-    Downloads performed by main menu (e.g. mod manager).\nOnly has an effect if compiled with cURL.");
+	gettext(
+			"Limits number of parallel HTTP requests. Affects:\n-    Media fetch if server uses remote_media setting.\n-    Serverlist download and server announcement.\n-    Downloads performed by main menu (e.g. mod manager).\nOnly has an effect if compiled with cURL.");
 	gettext("cURL file download timeout");
 	gettext("Maximum time in ms a file download (e.g. a mod download) may take.");
 	gettext("High-precision FPU");
 	gettext("Makes DirectX work with LuaJIT. Disable if it causes troubles.");
 	gettext("Main menu style");
-	gettext("Changes the main menu UI:\n-   Full:  Multiple singleplayer worlds, game choice, texture pack chooser, etc.\n-   Simple: One singleplayer world, no game or texture pack choosers. May be\nnecessary for smaller screens.");
+	gettext(
+			"Changes the main menu UI:\n-   Full:  Multiple singleplayer worlds, game choice, texture pack chooser, etc.\n-   Simple: One singleplayer world, no game or texture pack choosers. May be\nnecessary for smaller screens.");
 	gettext("Main menu script");
 	gettext("Replaces the default main menu with a custom one.");
 	gettext("Engine profiling data print interval");
-	gettext("Print the engine's profiling data in regular intervals (in seconds).\n0 = disable. Useful for developers.");
+	gettext(
+			"Print the engine's profiling data in regular intervals (in seconds).\n0 = disable. Useful for developers.");
 	gettext("Mapgen");
 	gettext("Mapgen name");
-	gettext("Name of map generator to be used when creating a new world.\nCreating a world in the main menu will override this.\nCurrent mapgens in a highly unstable state:\n-    The optional floatlands of v7 (disabled by default).");
+	gettext(
+			"Name of map generator to be used when creating a new world.\nCreating a world in the main menu will override this.\nCurrent mapgens in a highly unstable state:\n-    The optional floatlands of v7 (disabled by default).");
 	gettext("Water level");
 	gettext("Water surface level of the world.");
 	gettext("Max block generate distance");
-	gettext("From how far blocks are generated for clients, stated in mapblocks (16 nodes).");
+	gettext(
+			"From how far blocks are generated for clients, stated in mapblocks (16 nodes).");
 	gettext("Map generation limit");
-	gettext("Limit of map generation, in nodes, in all 6 directions from (0, 0, 0).\nOnly mapchunks completely within the mapgen limit are generated.\nValue is stored per-world.");
+	gettext(
+			"Limit of map generation, in nodes, in all 6 directions from (0, 0, 0).\nOnly mapchunks completely within the mapgen limit are generated.\nValue is stored per-world.");
 	gettext("Mapgen flags");
-	gettext("Global map generation attributes.\nIn Mapgen v6 the 'decorations' flag controls all decorations except trees\nand junglegrass, in all other mapgens this flag controls all decorations.");
+	gettext(
+			"Global map generation attributes.\nIn Mapgen v6 the 'decorations' flag controls all decorations except trees\nand junglegrass, in all other mapgens this flag controls all decorations.");
 	gettext("Projecting dungeons");
 	gettext("Whether dungeons occasionally project from the terrain.");
 	gettext("Biome API temperature and humidity noise parameters");
@@ -701,7 +891,8 @@ fake_function() {
 	gettext("Large cave depth");
 	gettext("Y of upper limit of large caves.");
 	gettext("Lava depth");
-	gettext("Deprecated, define and locate cave liquids using biome definitions instead.\nY of upper limit of lava in large caves.");
+	gettext(
+			"Deprecated, define and locate cave liquids using biome definitions instead.\nY of upper limit of lava in large caves.");
 	gettext("Cavern limit");
 	gettext("Y-level of cavern upper limit.");
 	gettext("Cavern taper");
@@ -716,7 +907,8 @@ fake_function() {
 	gettext("Filler depth noise");
 	gettext("Variation of biome filler depth.");
 	gettext("Factor noise");
-	gettext("Variation of terrain vertical scale.\nWhen noise is < -0.55 terrain is near-flat.");
+	gettext(
+			"Variation of terrain vertical scale.\nWhen noise is < -0.55 terrain is near-flat.");
 	gettext("Height noise");
 	gettext("Y-level of average terrain surface.");
 	gettext("Cave1 noise");
@@ -731,9 +923,11 @@ fake_function() {
 	gettext("3D noise that determines number of dungeons per mapchunk.");
 	gettext("Mapgen V6");
 	gettext("Mapgen V6 specific flags");
-	gettext("Map generation attributes specific to Mapgen v6.\nThe 'snowbiomes' flag enables the new 5 biome system.\nWhen the 'snowbiomes' flag is enabled jungles are automatically enabled and\nthe 'jungles' flag is ignored.");
+	gettext(
+			"Map generation attributes specific to Mapgen v6.\nThe 'snowbiomes' flag enables the new 5 biome system.\nWhen the 'snowbiomes' flag is enabled jungles are automatically enabled and\nthe 'jungles' flag is ignored.");
 	gettext("Desert noise threshold");
-	gettext("Deserts occur when np_biome exceeds this value.\nWhen the 'snowbiomes' flag is enabled, this is ignored.");
+	gettext(
+			"Deserts occur when np_biome exceeds this value.\nWhen the 'snowbiomes' flag is enabled, this is ignored.");
 	gettext("Beach noise threshold");
 	gettext("Sandy beaches occur when np_beach exceeds this value.");
 	gettext("Dungeon minimum Y");
@@ -765,19 +959,24 @@ fake_function() {
 	gettext("Defines areas where trees have apples.");
 	gettext("Mapgen V7");
 	gettext("Mapgen V7 specific flags");
-	gettext("Map generation attributes specific to Mapgen v7.\n'ridges' enables the rivers.");
+	gettext(
+			"Map generation attributes specific to Mapgen v7.\n'ridges' enables the rivers.");
 	gettext("Mountain zero level");
-	gettext("Y of mountain density gradient zero level. Used to shift mountains vertically.");
+	gettext(
+			"Y of mountain density gradient zero level. Used to shift mountains vertically.");
 	gettext("Cave width");
 	gettext("Controls width of tunnels, a smaller value creates wider tunnels.");
 	gettext("Large cave depth");
 	gettext("Y of upper limit of large caves.");
 	gettext("Lava depth");
-	gettext("Deprecated, define and locate cave liquids using biome definitions instead.\nY of upper limit of lava in large caves.");
+	gettext(
+			"Deprecated, define and locate cave liquids using biome definitions instead.\nY of upper limit of lava in large caves.");
 	gettext("Floatland mountain density");
-	gettext("Controls the density of mountain-type floatlands.\nIs a noise offset added to the 'mgv7_np_mountain' noise value.");
+	gettext(
+			"Controls the density of mountain-type floatlands.\nIs a noise offset added to the 'mgv7_np_mountain' noise value.");
 	gettext("Floatland mountain height");
-	gettext("Typical maximum height, above and below midpoint, of floatland mountains.");
+	gettext(
+			"Typical maximum height, above and below midpoint, of floatland mountains.");
 	gettext("Floatland mountain exponent");
 	gettext("Alters how mountain-type floatlands taper above and below midpoint.");
 	gettext("Floatland level");
@@ -800,7 +999,8 @@ fake_function() {
 	gettext("Terrain alternative noise");
 	gettext("Y-level of lower terrain and seabed.");
 	gettext("Terrain persistence noise");
-	gettext("Varies roughness of terrain.\nDefines the 'persistence' value for terrain_base and terrain_alt noises.");
+	gettext(
+			"Varies roughness of terrain.\nDefines the 'persistence' value for terrain_base and terrain_alt noises.");
 	gettext("Height select noise");
 	gettext("Defines distribution of higher terrain and steepness of cliffs.");
 	gettext("Filler depth noise");
@@ -810,11 +1010,13 @@ fake_function() {
 	gettext("Ridge underwater noise");
 	gettext("Defines large-scale river channel structure.");
 	gettext("Floatland base noise");
-	gettext("Defines areas of floatland smooth terrain.\nSmooth floatlands occur when noise > 0.");
+	gettext(
+			"Defines areas of floatland smooth terrain.\nSmooth floatlands occur when noise > 0.");
 	gettext("Floatland base height noise");
 	gettext("Variation of hill height and lake depth on floatland smooth terrain.");
 	gettext("Mountain noise");
-	gettext("3D noise defining mountain structure and height.\nAlso defines structure of floatland mountain terrain.");
+	gettext(
+			"3D noise defining mountain structure and height.\nAlso defines structure of floatland mountain terrain.");
 	gettext("Ridge noise");
 	gettext("3D noise defining structure of river canyon walls.");
 	gettext("Cavern noise");
@@ -841,7 +1043,8 @@ fake_function() {
 	gettext("Large cave depth");
 	gettext("Y of upper limit of large caves.");
 	gettext("Lava depth");
-	gettext("Deprecated, define and locate cave liquids using biome definitions instead.\nY of upper limit of lava in large caves.");
+	gettext(
+			"Deprecated, define and locate cave liquids using biome definitions instead.\nY of upper limit of lava in large caves.");
 	gettext("Cavern limit");
 	gettext("Y-level of cavern upper limit.");
 	gettext("Cavern taper");
@@ -889,21 +1092,25 @@ fake_function() {
 	gettext("3D noise that determines number of dungeons per mapchunk.");
 	gettext("Mapgen Flat");
 	gettext("Mapgen Flat specific flags");
-	gettext("Map generation attributes specific to Mapgen flat.\nOccasional lakes and hills can be added to the flat world.");
+	gettext(
+			"Map generation attributes specific to Mapgen flat.\nOccasional lakes and hills can be added to the flat world.");
 	gettext("Ground level");
 	gettext("Y of flat ground.");
 	gettext("Large cave depth");
 	gettext("Y of upper limit of large caves.");
 	gettext("Lava depth");
-	gettext("Deprecated, define and locate cave liquids using biome definitions instead.\nY of upper limit of lava in large caves.");
+	gettext(
+			"Deprecated, define and locate cave liquids using biome definitions instead.\nY of upper limit of lava in large caves.");
 	gettext("Cave width");
 	gettext("Controls width of tunnels, a smaller value creates wider tunnels.");
 	gettext("Lake threshold");
-	gettext("Terrain noise threshold for lakes.\nControls proportion of world area covered by lakes.\nAdjust towards 0.0 for a larger proportion.");
+	gettext(
+			"Terrain noise threshold for lakes.\nControls proportion of world area covered by lakes.\nAdjust towards 0.0 for a larger proportion.");
 	gettext("Lake steepness");
 	gettext("Controls steepness/depth of lake depressions.");
 	gettext("Hill threshold");
-	gettext("Terrain noise threshold for hills.\nControls proportion of world area covered by hills.\nAdjust towards 0.0 for a larger proportion.");
+	gettext(
+			"Terrain noise threshold for hills.\nControls proportion of world area covered by hills.\nAdjust towards 0.0 for a larger proportion.");
 	gettext("Hill steepness");
 	gettext("Controls steepness/height of hills.");
 	gettext("Dungeon minimum Y");
@@ -923,35 +1130,46 @@ fake_function() {
 	gettext("3D noise that determines number of dungeons per mapchunk.");
 	gettext("Mapgen Fractal");
 	gettext("Mapgen Fractal specific flags");
-	gettext("Map generation attributes specific to Mapgen flat.\n'terrain' enables the generation of non-fractal terrain:\nocean, islands and underground.");
+	gettext(
+			"Map generation attributes specific to Mapgen flat.\n'terrain' enables the generation of non-fractal terrain:\nocean, islands and underground.");
 	gettext("Cave width");
 	gettext("Controls width of tunnels, a smaller value creates wider tunnels.");
 	gettext("Large cave depth");
 	gettext("Y of upper limit of large caves.");
 	gettext("Lava depth");
-	gettext("Deprecated, define and locate cave liquids using biome definitions instead.\nY of upper limit of lava in large caves.");
+	gettext(
+			"Deprecated, define and locate cave liquids using biome definitions instead.\nY of upper limit of lava in large caves.");
 	gettext("Dungeon minimum Y");
 	gettext("Lower Y limit of dungeons.");
 	gettext("Dungeon maximum Y");
 	gettext("Upper Y limit of dungeons.");
 	gettext("Fractal type");
-	gettext("Selects one of 18 fractal types.\n1 = 4D \"Roundy\" mandelbrot set.\n2 = 4D \"Roundy\" julia set.\n3 = 4D \"Squarry\" mandelbrot set.\n4 = 4D \"Squarry\" julia set.\n5 = 4D \"Mandy Cousin\" mandelbrot set.\n6 = 4D \"Mandy Cousin\" julia set.\n7 = 4D \"Variation\" mandelbrot set.\n8 = 4D \"Variation\" julia set.\n9 = 3D \"Mandelbrot/Mandelbar\" mandelbrot set.\n10 = 3D \"Mandelbrot/Mandelbar\" julia set.\n11 = 3D \"Christmas Tree\" mandelbrot set.\n12 = 3D \"Christmas Tree\" julia set.\n13 = 3D \"Mandelbulb\" mandelbrot set.\n14 = 3D \"Mandelbulb\" julia set.\n15 = 3D \"Cosine Mandelbulb\" mandelbrot set.\n16 = 3D \"Cosine Mandelbulb\" julia set.\n17 = 4D \"Mandelbulb\" mandelbrot set.\n18 = 4D \"Mandelbulb\" julia set.");
+	gettext(
+			"Selects one of 18 fractal types.\n1 = 4D \"Roundy\" mandelbrot set.\n2 = 4D \"Roundy\" julia set.\n3 = 4D \"Squarry\" mandelbrot set.\n4 = 4D \"Squarry\" julia set.\n5 = 4D \"Mandy Cousin\" mandelbrot set.\n6 = 4D \"Mandy Cousin\" julia set.\n7 = 4D \"Variation\" mandelbrot set.\n8 = 4D \"Variation\" julia set.\n9 = 3D \"Mandelbrot/Mandelbar\" mandelbrot set.\n10 = 3D \"Mandelbrot/Mandelbar\" julia set.\n11 = 3D \"Christmas Tree\" mandelbrot set.\n12 = 3D \"Christmas Tree\" julia set.\n13 = 3D \"Mandelbulb\" mandelbrot set.\n14 = 3D \"Mandelbulb\" julia set.\n15 = 3D \"Cosine Mandelbulb\" mandelbrot set.\n16 = 3D \"Cosine Mandelbulb\" julia set.\n17 = 4D \"Mandelbulb\" mandelbrot set.\n18 = 4D \"Mandelbulb\" julia set.");
 	gettext("Iterations");
-	gettext("Iterations of the recursive function.\nIncreasing this increases the amount of fine detail, but also\nincreases processing load.\nAt iterations = 20 this mapgen has a similar load to mapgen V7.");
+	gettext(
+			"Iterations of the recursive function.\nIncreasing this increases the amount of fine detail, but also\nincreases processing load.\nAt iterations = 20 this mapgen has a similar load to mapgen V7.");
 	gettext("Scale");
-	gettext("(X,Y,Z) scale of fractal in nodes.\nActual fractal size will be 2 to 3 times larger.\nThese numbers can be made very large, the fractal does\nnot have to fit inside the world.\nIncrease these to 'zoom' into the detail of the fractal.\nDefault is for a vertically-squashed shape suitable for\nan island, set all 3 numbers equal for the raw shape.");
+	gettext(
+			"(X,Y,Z) scale of fractal in nodes.\nActual fractal size will be 2 to 3 times larger.\nThese numbers can be made very large, the fractal does\nnot have to fit inside the world.\nIncrease these to 'zoom' into the detail of the fractal.\nDefault is for a vertically-squashed shape suitable for\nan island, set all 3 numbers equal for the raw shape.");
 	gettext("Offset");
-	gettext("(X,Y,Z) offset of fractal from world center in units of 'scale'.\nCan be used to move a desired point to (0, 0) to create a\nsuitable spawn point, or to allow 'zooming in' on a desired\npoint by increasing 'scale'.\nThe default is tuned for a suitable spawn point for mandelbrot\nsets with default parameters, it may need altering in other\nsituations.\nRange roughly -2 to 2. Multiply by 'scale' for offset in nodes.");
+	gettext(
+			"(X,Y,Z) offset of fractal from world center in units of 'scale'.\nCan be used to move a desired point to (0, 0) to create a\nsuitable spawn point, or to allow 'zooming in' on a desired\npoint by increasing 'scale'.\nThe default is tuned for a suitable spawn point for mandelbrot\nsets with default parameters, it may need altering in other\nsituations.\nRange roughly -2 to 2. Multiply by 'scale' for offset in nodes.");
 	gettext("Slice w");
-	gettext("W coordinate of the generated 3D slice of a 4D fractal.\nDetermines which 3D slice of the 4D shape is generated.\nAlters the shape of the fractal.\nHas no effect on 3D fractals.\nRange roughly -2 to 2.");
+	gettext(
+			"W coordinate of the generated 3D slice of a 4D fractal.\nDetermines which 3D slice of the 4D shape is generated.\nAlters the shape of the fractal.\nHas no effect on 3D fractals.\nRange roughly -2 to 2.");
 	gettext("Julia x");
-	gettext("Julia set only.\nX component of hypercomplex constant.\nAlters the shape of the fractal.\nRange roughly -2 to 2.");
+	gettext(
+			"Julia set only.\nX component of hypercomplex constant.\nAlters the shape of the fractal.\nRange roughly -2 to 2.");
 	gettext("Julia y");
-	gettext("Julia set only.\nY component of hypercomplex constant.\nAlters the shape of the fractal.\nRange roughly -2 to 2.");
+	gettext(
+			"Julia set only.\nY component of hypercomplex constant.\nAlters the shape of the fractal.\nRange roughly -2 to 2.");
 	gettext("Julia z");
-	gettext("Julia set only.\nZ component of hypercomplex constant.\nAlters the shape of the fractal.\nRange roughly -2 to 2.");
+	gettext(
+			"Julia set only.\nZ component of hypercomplex constant.\nAlters the shape of the fractal.\nRange roughly -2 to 2.");
 	gettext("Julia w");
-	gettext("Julia set only.\nW component of hypercomplex constant.\nAlters the shape of the fractal.\nHas no effect on 3D fractals.\nRange roughly -2 to 2.");
+	gettext(
+			"Julia set only.\nW component of hypercomplex constant.\nAlters the shape of the fractal.\nHas no effect on 3D fractals.\nRange roughly -2 to 2.");
 	gettext("Noises");
 	gettext("Seabed noise");
 	gettext("Y-level of seabed.");
@@ -965,13 +1183,16 @@ fake_function() {
 	gettext("3D noise that determines number of dungeons per mapchunk.");
 	gettext("Mapgen Valleys");
 	gettext("Mapgen Valleys specific flags");
-	gettext("Map generation attributes specific to Mapgen Valleys.\n'altitude_chill': Reduces heat with altitude.\n'humid_rivers': Increases humidity around rivers.\n'vary_river_depth': If enabled, low humidity and high heat causes rivers\nto become shallower and occasionally dry.\n'altitude_dry': Reduces humidity with altitude.");
+	gettext(
+			"Map generation attributes specific to Mapgen Valleys.\n'altitude_chill': Reduces heat with altitude.\n'humid_rivers': Increases humidity around rivers.\n'vary_river_depth': If enabled, low humidity and high heat causes rivers\nto become shallower and occasionally dry.\n'altitude_dry': Reduces humidity with altitude.");
 	gettext("Altitude chill");
-	gettext("The vertical distance over which heat drops by 20 if 'altitude_chill' is\nenabled. Also the vertical distance over which humidity drops by 10 if\n'altitude_dry' is enabled.");
+	gettext(
+			"The vertical distance over which heat drops by 20 if 'altitude_chill' is\nenabled. Also the vertical distance over which humidity drops by 10 if\n'altitude_dry' is enabled.");
 	gettext("Large cave depth");
 	gettext("Depth below which you'll find large caves.");
 	gettext("Lava depth");
-	gettext("Deprecated, define and locate cave liquids using biome definitions instead.\nY of upper limit of lava in large caves.");
+	gettext(
+			"Deprecated, define and locate cave liquids using biome definitions instead.\nY of upper limit of lava in large caves.");
 	gettext("Cavern upper limit");
 	gettext("Depth below which you'll find giant caverns.");
 	gettext("Cavern taper");
@@ -1013,20 +1234,25 @@ fake_function() {
 	gettext("3D noise that determines number of dungeons per mapchunk.");
 	gettext("Advanced");
 	gettext("Chunk size");
-	gettext("Size of mapchunks generated by mapgen, stated in mapblocks (16 nodes).\nWARNING!: There is no benefit, and there are several dangers, in\nincreasing this value above 5.\nReducing this value increases cave and dungeon density.\nAltering this value is for special usage, leaving it unchanged is\nrecommended.");
+	gettext(
+			"Size of mapchunks generated by mapgen, stated in mapblocks (16 nodes).\nWARNING!: There is no benefit, and there are several dangers, in\nincreasing this value above 5.\nReducing this value increases cave and dungeon density.\nAltering this value is for special usage, leaving it unchanged is\nrecommended.");
 	gettext("Mapgen debug");
 	gettext("Dump the mapgen debug information.");
 	gettext("Absolute limit of emerge queues");
 	gettext("Maximum number of blocks that can be queued for loading.");
 	gettext("Limit of emerge queues on disk");
-	gettext("Maximum number of blocks to be queued that are to be loaded from file.\nSet to blank for an appropriate amount to be chosen automatically.");
+	gettext(
+			"Maximum number of blocks to be queued that are to be loaded from file.\nSet to blank for an appropriate amount to be chosen automatically.");
 	gettext("Limit of emerge queues to generate");
-	gettext("Maximum number of blocks to be queued that are to be generated.\nSet to blank for an appropriate amount to be chosen automatically.");
+	gettext(
+			"Maximum number of blocks to be queued that are to be generated.\nSet to blank for an appropriate amount to be chosen automatically.");
 	gettext("Number of emerge threads");
-	gettext("Number of emerge threads to use.\nWARNING: Currently there are multiple bugs that may cause crashes when\n'num_emerge_threads' is larger than 1. Until this warning is removed it is\nstrongly recommended this value is set to the default '1'.\nValue 0:\n-    Automatic selection. The number of emerge threads will be\n-    'number of processors - 2', with a lower limit of 1.\nAny other value:\n-    Specifies the number of emerge threads, with a lower limit of 1.\nWARNING: Increasing the number of emerge threads increases engine mapgen\nspeed, but this may harm game performance by interfering with other\nprocesses, especially in singleplayer and/or when running Lua code in\n'on_generated'. For many users the optimum setting may be '1'.");
+	gettext(
+			"Number of emerge threads to use.\nWARNING: Currently there are multiple bugs that may cause crashes when\n'num_emerge_threads' is larger than 1. Until this warning is removed it is\nstrongly recommended this value is set to the default '1'.\nValue 0:\n-    Automatic selection. The number of emerge threads will be\n-    'number of processors - 2', with a lower limit of 1.\nAny other value:\n-    Specifies the number of emerge threads, with a lower limit of 1.\nWARNING: Increasing the number of emerge threads increases engine mapgen\nspeed, but this may harm game performance by interfering with other\nprocesses, especially in singleplayer and/or when running Lua code in\n'on_generated'. For many users the optimum setting may be '1'.");
 	gettext("Online Content Repository");
 	gettext("ContentDB URL");
 	gettext("The URL for the content repository");
 	gettext("ContentDB Flag Blacklist");
-	gettext("Comma-separated list of flags to hide in the content repository.\n\"nonfree\" can be used to hide packages which do not qualify as 'free software',\nas defined by the Free Software Foundation.\nYou can also specify content ratings.\nThese flags are independent from Minetest versions,\nso see a full list at https://content.minetest.net/help/content_flags/");
+	gettext(
+			"Comma-separated list of flags to hide in the content repository.\n\"nonfree\" can be used to hide packages which do not qualify as 'free software',\nas defined by the Free Software Foundation.\nYou can also specify content ratings.\nThese flags are independent from Minetest versions,\nso see a full list at https://content.minetest.net/help/content_flags/");
 }

@@ -47,7 +47,7 @@ class SimpleTriggerEvent : public MtEvent
 	Type type;
 
 public:
-	SimpleTriggerEvent(Type type) : type(type) {}
+	SimpleTriggerEvent(Type type) : type(type){}
 	Type getType() const override { return type; }
 };
 
@@ -58,7 +58,7 @@ public:
 	virtual void onEvent(MtEvent *e) = 0;
 };
 
-typedef void (*event_receive_func)(MtEvent *e, void *data);
+typedef void (*event_receive_func)(MtEvent *e, void * data);
 
 class MtEventManager
 {

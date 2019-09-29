@@ -25,10 +25,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 
 struct EnumString es_ItemType[] =
-	{
-		{ITEM_NONE, "none"},
-		{ITEM_NODE, "node"},
-		{ITEM_CRAFT, "craft"},
-		{ITEM_TOOL, "tool"},
-		{0, NULL},
-	};
+{
+	{ ITEM_NONE, "none" },
+			{ ITEM_NODE, "node" },
+			{ ITEM_CRAFT, "craft" },
+			{ ITEM_TOOL, "tool" },
+			{ 0, NULL },
+};

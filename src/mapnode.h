@@ -139,11 +139,11 @@ struct MapNode
 
 	MapNode() = default;
 
-	MapNode(content_t content, u8 a_param1=0, u8 a_param2=0) noexcept
-		: param0(content),
-		  param1(a_param1),
-		  param2(a_param2)
-	{ }
+	MapNode(content_t content, u8 a_param1 = 0, u8 a_param2 = 0) noexcept
+			: param0(content),
+	param1(a_param1),
+	param2(a_param2)
+	{}
 
 	bool operator==(const MapNode &other) const noexcept
 	{
@@ -224,7 +224,7 @@ struct MapNode
 	u8 getLightNoChecks(LightBank bank, const ContentFeatures *f) const noexcept;
 
 	bool getLightBanks(u8 &lightday, u8 &lightnight,
-		const NodeDefManager *nodemgr) const;
+			const NodeDefManager *nodemgr) const;
 
 	// 0 <= daylight_factor <= 1000
 	// 0 <= return value <= LIGHT_SUN
@@ -236,7 +236,8 @@ struct MapNode
 		return blend_light(daylight_factor, lightday, lightnight);
 	}
 
-	u8 getFaceDir(const NodeDefManager *nodemgr, bool allow_wallmounted = false) const;
+	u8 getFaceDir(const NodeDefManager *nodemgr,
+			bool allow_wallmounted = false) const;
 	u8 getWallMounted(const NodeDefManager *nodemgr) const;
 	v3s16 getWallMountedDir(const NodeDefManager *nodemgr) const;
 
@@ -253,19 +254,19 @@ struct MapNode
 		Gets list of node boxes (used for rendering (NDT_NODEBOX))
 	*/
 	void getNodeBoxes(const NodeDefManager *nodemgr, std::vector<aabb3f> *boxes,
-		u8 neighbors = 0) const;
+			u8 neighbors = 0) const;
 
 	/*
 		Gets list of selection boxes
 	*/
 	void getSelectionBoxes(const NodeDefManager *nodemg,
-		std::vector<aabb3f> *boxes, u8 neighbors = 0) const;
+			std::vector<aabb3f> *boxes, u8 neighbors = 0) const;
 
 	/*
 		Gets list of collision boxes
 	*/
 	void getCollisionBoxes(const NodeDefManager *nodemgr,
-		std::vector<aabb3f> *boxes, u8 neighbors = 0) const;
+			std::vector<aabb3f> *boxes, u8 neighbors = 0) const;
 
 	/*
 		Liquid helpers

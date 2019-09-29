@@ -34,7 +34,7 @@ public:
 
 	void loadTranslation(const std::string &data);
 	void clear();
-	const std::wstring &getTranslation(
+	const std::wstring& getTranslation(
 			const std::wstring &textdomain, const std::wstring &s);
 
 private:

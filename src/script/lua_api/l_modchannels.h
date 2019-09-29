@@ -56,8 +56,8 @@ private:
 	// garbage collector
 	static int gc_object(lua_State *L);
 
-	static ModChannelRef *checkobject(lua_State *L, int narg);
-	static ModChannel *getobject(lua_State *L, ModChannelRef *ref);
+	static ModChannelRef* checkobject(lua_State *L, int narg);
+	static ModChannel* getobject(lua_State *L, ModChannelRef *ref);
 
 	std::string m_modchannel_name;
 

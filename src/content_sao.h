@@ -26,15 +26,15 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "object_properties.h"
 #include "constants.h"
 
-class UnitSAO: public ServerActiveObject
+class UnitSAO : public ServerActiveObject
 {
 public:
 	UnitSAO(ServerEnvironment *env, v3f pos);
 	virtual ~UnitSAO() = default;
 
-	void setRotation(v3f rotation) { m_rotation = rotation; }
-	const v3f &getRotation() const { return m_rotation; }
-	v3f getRadRotation() { return m_rotation * core::DEGTORAD; }
+	void setRotation(v3f rotation){ m_rotation = rotation; }
+	const v3f& getRotation() const { return m_rotation; }
+	v3f getRadRotation(){ return m_rotation * core::DEGTORAD; }
 
 	// Deprecated
 	f32 getRadYawDep() const { return (m_rotation.Y + 90.) * core::DEGTORAD; }
@@ -44,27 +44,30 @@ public:
 	bool isDead() const { return m_hp == 0; }
 
 	inline bool isAttached() const
-	{ return getParent(); }
+			{ return getParent(); }
 
 	inline bool isImmortal() const
-	{ return itemgroup_get(getArmorGroups(), "immortal"); }
+			{ return itemgroup_get(getArmorGroups(), "immortal"); }
 
 	void setArmorGroups(const ItemGroupList &armor_groups);
-	const ItemGroupList &getArmorGroups() const;
-	void setAnimation(v2f frame_range, float frame_speed, float frame_blend, bool frame_loop);
-	void getAnimation(v2f *frame_range, float *frame_speed, float *frame_blend, bool *frame_loop);
+	const ItemGroupList& getArmorGroups() const;
+	void setAnimation(v2f frame_range, float frame_speed, float frame_blend,
+			bool frame_loop);
+	void getAnimation(v2f *frame_range, float *frame_speed, float *frame_blend,
+			bool *frame_loop);
 	void setAnimationSpeed(float frame_speed);
 	void setBonePosition(const std::string &bone, v3f position, v3f rotation);
 	void getBonePosition(const std::string &bone, v3f *position, v3f *rotation);
-	void setAttachment(int parent_id, const std::string &bone, v3f position, v3f rotation);
+	void setAttachment(int parent_id, const std::string &bone, v3f position,
+			v3f rotation);
 	void getAttachment(int *parent_id, std::string *bone, v3f *position,
 			v3f *rotation) const;
 	void clearChildAttachments();
 	void clearParentAttachment();
 	void addAttachmentChild(int child_id);
 	void removeAttachmentChild(int child_id);
-	const std::unordered_set<int> &getAttachmentChildIds() const;
-	ServerActiveObject *getParent() const;
+	const std::unordered_set<int>& getAttachmentChildIds() const;
+	ServerActiveObject* getParent() const;
 	ObjectProperties* accessObjectProperties();
 	void notifyObjectPropertiesModified();
 protected:
@@ -86,7 +89,7 @@ protected:
 	bool m_animation_speed_sent = false;
 
 	// Stores position and rotation for each bone name
-	std::unordered_map<std::string, core::vector2d<v3f>> m_bone_position;
+	std::unordered_map<std::string, core::vector2d<v3f> > m_bone_position;
 	bool m_bone_position_sent = false;
 
 	int m_attachment_parent_id = 0;
@@ -108,24 +111,24 @@ class LuaEntitySAO : public UnitSAO
 {
 public:
 	LuaEntitySAO(ServerEnvironment *env, v3f pos,
-		const std::string &name, const std::string &state);
+			const std::string &name, const std::string &state);
 	~LuaEntitySAO();
 	ActiveObjectType getType() const
-	{ return ACTIVEOBJECT_TYPE_LUAENTITY; }
+			{ return ACTIVEOBJECT_TYPE_LUAENTITY; }
 	ActiveObjectType getSendType() const
-	{ return ACTIVEOBJECT_TYPE_GENERIC; }
+			{ return ACTIVEOBJECT_TYPE_GENERIC; }
 	virtual void addedToEnvironment(u32 dtime_s);
 	static ServerActiveObject* create(ServerEnvironment *env, v3f pos,
-		const std::string &data);
+			const std::string &data);
 	void step(float dtime, bool send_recommended);
 	std::string getClientInitializationData(u16 protocol_version);
 	bool isStaticAllowed() const
-	{ return m_prop.static_save; }
+			{ return m_prop.static_save; }
 	void getStaticData(std::string *result) const;
 	u16 punch(v3f dir,
-		const ToolCapabilities *toolcap = nullptr,
-		ServerActiveObject *puncher = nullptr,
-		float time_from_last_punch = 1000000.0f);
+			const ToolCapabilities *toolcap = nullptr,
+			ServerActiveObject *puncher = nullptr,
+			float time_from_last_punch = 1000000.0f);
 	void rightClick(ServerActiveObject *clicker);
 	void setPos(const v3f &pos);
 	void moveTo(v3f pos, bool continuous);
@@ -185,14 +188,14 @@ public:
 	void setMax(float new_max)
 	{
 		m_max = new_max;
-		if(m_pool > new_max)
+		if (m_pool > new_max)
 			m_pool = new_max;
 	}
 
 	void add(float dtime)
 	{
 		m_pool -= dtime;
-		if(m_pool < 0)
+		if (m_pool < 0)
 			m_pool = 0;
 	}
 
@@ -203,9 +206,9 @@ public:
 
 	bool grab(float dtime)
 	{
-		if(dtime <= 0)
+		if (dtime <= 0)
 			return true;
-		if(m_pool + dtime > m_max)
+		if (m_pool + dtime > m_max)
 			return false;
 		m_pool += dtime;
 		return true;
@@ -221,9 +224,9 @@ public:
 			bool is_singleplayer);
 
 	ActiveObjectType getType() const
-	{ return ACTIVEOBJECT_TYPE_PLAYER; }
+			{ return ACTIVEOBJECT_TYPE_PLAYER; }
 	ActiveObjectType getSendType() const
-	{ return ACTIVEOBJECT_TYPE_GENERIC; }
+			{ return ACTIVEOBJECT_TYPE_GENERIC; }
 	std::string getDescription();
 
 	/*
@@ -259,12 +262,12 @@ public:
 	*/
 
 	u16 punch(v3f dir,
-		const ToolCapabilities *toolcap,
-		ServerActiveObject *puncher,
-		float time_from_last_punch);
-	void rightClick(ServerActiveObject *clicker) {}
+			const ToolCapabilities *toolcap,
+			ServerActiveObject *puncher,
+			float time_from_last_punch);
+	void rightClick(ServerActiveObject *clicker){}
 	void setHP(s32 hp, const PlayerHPChangeReason &reason);
-	void setHPRaw(u16 hp) { m_hp = hp; }
+	void setHPRaw(u16 hp){ m_hp = hp; }
 	s16 readDamage();
 	u16 getBreath() const { return m_breath; }
 	void setBreath(const u16 breath, bool send = true);
@@ -272,9 +275,9 @@ public:
 	/*
 		Inventory interface
 	*/
-	Inventory *getInventory() const;
+	Inventory* getInventory() const;
 	InventoryLocation getInventoryLocation() const;
-	void setInventoryModified() {}
+	void setInventoryModified(){}
 	std::string getWieldList() const { return "main"; }
 	u16 getWieldIndex() const;
 	ItemStack getWieldedItem(ItemStack *selected, ItemStack *hand = nullptr) const;
@@ -286,7 +289,7 @@ public:
 
 	void disconnected();
 
-	RemotePlayer *getPlayer() { return m_player; }
+	RemotePlayer* getPlayer(){ return m_player; }
 	session_t getPeerID() const { return m_peer_id; }
 
 	// Cheat prevention
@@ -345,7 +348,7 @@ public:
 	v3f getEyeOffset() const;
 	float getZoomFOV() const;
 
-	inline Metadata &getMeta() { return m_meta; }
+	inline Metadata& getMeta(){ return m_meta; }
 
 private:
 	std::string getPropertyPacket();
@@ -457,15 +460,15 @@ struct PlayerHPChangeReason {
 		}
 	}
 
-	PlayerHPChangeReason(Type type):
-			type(type)
+	PlayerHPChangeReason(Type type) :
+	type(type)
 	{}
 
-	PlayerHPChangeReason(Type type, ServerActiveObject *object):
-			type(type), object(object)
+	PlayerHPChangeReason(Type type, ServerActiveObject *object) :
+	type(type), object(object)
 	{}
 
-	PlayerHPChangeReason(Type type, std::string node):
-			type(type), node(node)
+	PlayerHPChangeReason(Type type, std::string node) :
+	type(type), node(node)
 	{}
 };

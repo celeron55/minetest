@@ -43,7 +43,7 @@ void LuaCamera::create(lua_State *L, Camera *m)
 	}
 
 	LuaCamera *o = new LuaCamera(m);
-	*(void **)(lua_newuserdata(L, sizeof(void *))) = o;
+	*(void**)(lua_newuserdata(L, sizeof(void*))) = o;
 	luaL_getmetatable(L, className);
 	lua_setmetatable(L, -2);
 
@@ -158,7 +158,7 @@ int LuaCamera::l_get_aspect_ratio(lua_State *L)
 	return 1;
 }
 
-LuaCamera *LuaCamera::checkobject(lua_State *L, int narg)
+LuaCamera* LuaCamera::checkobject(lua_State *L, int narg)
 {
 	luaL_checktype(L, narg, LUA_TUSERDATA);
 
@@ -166,15 +166,15 @@ LuaCamera *LuaCamera::checkobject(lua_State *L, int narg)
 	if (!ud)
 		luaL_typerror(L, narg, className);
 
-	return *(LuaCamera **)ud;
+	return *(LuaCamera**)ud;
 }
 
-Camera *LuaCamera::getobject(LuaCamera *ref)
+Camera* LuaCamera::getobject(LuaCamera *ref)
 {
 	return ref->m_camera;
 }
 
-Camera *LuaCamera::getobject(lua_State *L, int narg)
+Camera* LuaCamera::getobject(lua_State *L, int narg)
 {
 	LuaCamera *ref = checkobject(L, narg);
 	assert(ref);
@@ -186,7 +186,7 @@ Camera *LuaCamera::getobject(lua_State *L, int narg)
 
 int LuaCamera::gc_object(lua_State *L)
 {
-	LuaCamera *o = *(LuaCamera **)(lua_touserdata(L, 1));
+	LuaCamera *o = *(LuaCamera**)(lua_touserdata(L, 1));
 	delete o;
 	return 0;
 }
@@ -217,12 +217,14 @@ void LuaCamera::Register(lua_State *L)
 }
 
 const char LuaCamera::className[] = "Camera";
-const luaL_Reg LuaCamera::methods[] = {luamethod(LuaCamera, set_camera_mode),
-		luamethod(LuaCamera, get_camera_mode), luamethod(LuaCamera, get_fov),
-		luamethod(LuaCamera, get_pos), luamethod(LuaCamera, get_offset),
-		luamethod(LuaCamera, get_look_dir),
-		luamethod(LuaCamera, get_look_vertical),
-		luamethod(LuaCamera, get_look_horizontal),
-		luamethod(LuaCamera, get_aspect_ratio),
+const luaL_Reg LuaCamera::methods[] = { luamethod(LuaCamera, set_camera_mode),
+	luamethod(LuaCamera, get_camera_mode),
+	luamethod(LuaCamera, get_fov),
+	luamethod(LuaCamera, get_pos), luamethod(
+	LuaCamera, get_offset),
+	luamethod(LuaCamera, get_look_dir),
+	luamethod(LuaCamera, get_look_vertical),
+	luamethod(LuaCamera, get_look_horizontal),
+	luamethod(LuaCamera, get_aspect_ratio),
 
-		{0, 0}};
+	{ 0, 0 } };

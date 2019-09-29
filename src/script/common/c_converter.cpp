@@ -35,19 +35,20 @@ extern "C" {
 		if (t != (type)) { \
 			std::string traceback = script_get_backtrace(L); \
 			throw LuaError(std::string("Invalid ") + (name) + \
-				" (expected " + lua_typename(L, (type)) + \
-				" got " + lua_typename(L, t) + ").\n" + traceback); \
+					  " (expected " + lua_typename(L, (type)) + \
+					  " got " + lua_typename(L, t) + ").\n" + traceback); \
 		} \
-	}
-#define CHECK_POS_COORD(name) CHECK_TYPE(-1, "position coordinate '" name "'", LUA_TNUMBER)
-#define CHECK_FLOAT_RANGE(value, name) \
-if (value < F1000_MIN || value > F1000_MAX) { \
-	std::ostringstream error_text; \
-	error_text << "Invalid float vector dimension range '" name "' " << \
-	"(expected " << F1000_MIN << " < " name " < " << F1000_MAX << \
-	" got " << value << ")." << std::endl; \
-	throw LuaError(error_text.str()); \
 }
+#define CHECK_POS_COORD(name) CHECK_TYPE(-1, "position coordinate '" name "'", \
+		LUA_TNUMBER)
+#define CHECK_FLOAT_RANGE(value, name) \
+	if (value < F1000_MIN || value > F1000_MAX) { \
+		std::ostringstream error_text; \
+		error_text << "Invalid float vector dimension range '" name "' " << \
+			"(expected " << F1000_MIN << " < " name " < " << F1000_MAX << \
+			" got " << value << ")." << std::endl; \
+		throw LuaError(error_text.str()); \
+	}
 #define CHECK_POS_TAB(index) CHECK_TYPE(index, "position", LUA_TTABLE)
 
 
@@ -338,7 +339,7 @@ video::SColor read_ARGB8(lua_State *L, int index)
 aabb3f read_aabb3f(lua_State *L, int index, f32 scale)
 {
 	aabb3f box;
-	if(lua_istable(L, index)){
+	if (lua_istable(L, index)) {
 		lua_rawgeti(L, index, 1);
 		box.MinEdge.X = lua_tonumber(L, -1) * scale;
 		lua_pop(L, 1);
@@ -382,22 +383,22 @@ void push_aabb3f(lua_State *L, aabb3f box)
 std::vector<aabb3f> read_aabb3f_vector(lua_State *L, int index, f32 scale)
 {
 	std::vector<aabb3f> boxes;
-	if(lua_istable(L, index)){
+	if (lua_istable(L, index)) {
 		int n = lua_objlen(L, index);
 		// Check if it's a single box or a list of boxes
 		bool possibly_single_box = (n == 6);
-		for(int i = 1; i <= n && possibly_single_box; i++){
+		for (int i = 1; i <= n && possibly_single_box; i++) {
 			lua_rawgeti(L, index, i);
-			if(!lua_isnumber(L, -1))
+			if (!lua_isnumber(L, -1))
 				possibly_single_box = false;
 			lua_pop(L, 1);
 		}
-		if(possibly_single_box){
+		if (possibly_single_box) {
 			// Read a single box
 			boxes.push_back(read_aabb3f(L, index, scale));
 		} else {
 			// Read a list of boxes
-			for(int i = 1; i <= n; i++){
+			for (int i = 1; i <= n; i++) {
 				lua_rawgeti(L, index, i);
 				boxes.push_back(read_aabb3f(L, -1, scale));
 				lua_pop(L, 1);
@@ -440,7 +441,7 @@ bool getstringfield(lua_State *L, int table,
 {
 	lua_getfield(L, table, fieldname);
 	bool got = false;
-	if(lua_isstring(L, -1)){
+	if (lua_isstring(L, -1)) {
 		size_t len = 0;
 		const char *ptr = lua_tolstring(L, -1, &len);
 		if (ptr) {
@@ -457,7 +458,7 @@ bool getfloatfield(lua_State *L, int table,
 {
 	lua_getfield(L, table, fieldname);
 	bool got = false;
-	if(lua_isnumber(L, -1)){
+	if (lua_isnumber(L, -1)) {
 		result = lua_tonumber(L, -1);
 		got = true;
 	}
@@ -470,7 +471,7 @@ bool getboolfield(lua_State *L, int table,
 {
 	lua_getfield(L, table, fieldname);
 	bool got = false;
-	if(lua_isboolean(L, -1)){
+	if (lua_isboolean(L, -1)) {
 		result = lua_toboolean(L, -1);
 		got = true;
 	}
@@ -543,7 +544,7 @@ void setstringfield(lua_State *L, int table,
 		const char *fieldname, const std::string &value)
 {
 	lua_pushlstring(L, value.c_str(), value.length());
-	if(table < 0)
+	if (table < 0)
 		table -= 1;
 	lua_setfield(L, table, fieldname);
 }
@@ -552,7 +553,7 @@ void setintfield(lua_State *L, int table,
 		const char *fieldname, int value)
 {
 	lua_pushinteger(L, value);
-	if(table < 0)
+	if (table < 0)
 		table -= 1;
 	lua_setfield(L, table, fieldname);
 }
@@ -561,7 +562,7 @@ void setfloatfield(lua_State *L, int table,
 		const char *fieldname, float value)
 {
 	lua_pushnumber(L, value);
-	if(table < 0)
+	if (table < 0)
 		table -= 1;
 	lua_setfield(L, table, fieldname);
 }
@@ -570,7 +571,7 @@ void setboolfield(lua_State *L, int table,
 		const char *fieldname, bool value)
 {
 	lua_pushboolean(L, value);
-	if(table < 0)
+	if (table < 0)
 		table -= 1;
 	lua_setfield(L, table, fieldname);
 }
@@ -581,12 +582,12 @@ void setboolfield(lua_State *L, int table,
 ////
 
 size_t write_array_slice_float(
-	lua_State *L,
-	int table_index,
-	float *data,
-	v3u16 data_size,
-	v3u16 slice_offset,
-	v3u16 slice_size)
+		lua_State *L,
+		int table_index,
+		float *data,
+		v3u16 data_size,
+		v3u16 slice_offset,
+		v3u16 slice_size)
 {
 	v3u16 pmin, pmax(data_size);
 
@@ -614,7 +615,7 @@ size_t write_array_slice_float(
 	u32 elem_index = 1;
 	for (u32 z = pmin.Z; z != pmax.Z; z++)
 	for (u32 y = pmin.Y; y != pmax.Y; y++)
-	for (u32 x = pmin.X; x != pmax.X; x++) {
+		for (u32 x = pmin.X; x != pmax.X; x++) {
 		u32 i = z * zstride + y * ystride + x;
 		lua_pushnumber(L, data[i]);
 		lua_rawseti(L, table_index, elem_index);
@@ -626,12 +627,12 @@ size_t write_array_slice_float(
 
 
 size_t write_array_slice_u16(
-	lua_State *L,
-	int table_index,
-	u16 *data,
-	v3u16 data_size,
-	v3u16 slice_offset,
-	v3u16 slice_size)
+		lua_State *L,
+		int table_index,
+		u16 *data,
+		v3u16 data_size,
+		v3u16 slice_offset,
+		v3u16 slice_size)
 {
 	v3u16 pmin, pmax(data_size);
 
@@ -659,7 +660,7 @@ size_t write_array_slice_u16(
 	u32 elem_index = 1;
 	for (u32 z = pmin.Z; z != pmax.Z; z++)
 	for (u32 y = pmin.Y; y != pmax.Y; y++)
-	for (u32 x = pmin.X; x != pmax.X; x++) {
+		for (u32 x = pmin.X; x != pmax.X; x++) {
 		u32 i = z * zstride + y * ystride + x;
 		lua_pushinteger(L, data[i]);
 		lua_rawseti(L, table_index, elem_index);

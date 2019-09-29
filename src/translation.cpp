@@ -34,16 +34,16 @@ void Translations::clear()
 	m_translations.clear();
 }
 
-const std::wstring &Translations::getTranslation(
+const std::wstring& Translations::getTranslation(
 		const std::wstring &textdomain, const std::wstring &s)
 {
 	std::wstring key = textdomain + L"|" + s;
 	try {
 		return m_translations.at(key);
-	} catch (const std::out_of_range &) {
+	} catch(const std::out_of_range&) {
 		verbosestream << "Translations: can't find translation for string \""
-		              << wide_to_utf8(s) << "\" in textdomain \""
-		              << wide_to_utf8(textdomain) << "\"" << std::endl;
+				<< wide_to_utf8(s) << "\" in textdomain \""
+				<< wide_to_utf8(textdomain) << "\"" << std::endl;
 		// Silence that warning in the future
 		m_translations[key] = s;
 		return s;
@@ -59,7 +59,7 @@ void Translations::loadTranslation(const std::string &data)
 	while (is.good()) {
 		std::getline(is, line);
 		// Trim last character if file was using a \r\n line ending
-		if (line.length () > 0 && line[line.length() - 1] == '\r')
+		if (line.length() > 0 && line[line.length() - 1] == '\r')
 			line.resize(line.length() - 1);
 
 		if (str_starts_with(line, "# textdomain:")) {
@@ -109,7 +109,7 @@ void Translations::loadTranslation(const std::string &data)
 
 		if (i == wline.length()) {
 			errorstream << "Malformed translation line \"" << line << "\""
-			            << std::endl;
+					<< std::endl;
 			continue;
 		}
 		i++;
@@ -146,7 +146,7 @@ void Translations::loadTranslation(const std::string &data)
 		if (oword2.empty()) {
 			oword2 = oword1;
 			errorstream << "Ignoring empty translation for \""
-			            << wide_to_utf8(oword1) << "\"" << std::endl;
+					<< wide_to_utf8(oword1) << "\"" << std::endl;
 		}
 
 		std::wstring translation_index = textdomain + L"|";

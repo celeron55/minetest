@@ -28,13 +28,14 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "emerge.h"
 
 
-Environment::Environment(IGameDef *gamedef):
-	m_time_of_day_speed(0.0f),
-	m_day_count(0),
-	m_gamedef(gamedef)
+Environment::Environment(IGameDef *gamedef) :
+m_time_of_day_speed(0.0f),
+m_day_count(0),
+m_gamedef(gamedef)
 {
 	m_cache_enable_shaders = g_settings->getBool("enable_shaders");
-	m_cache_active_block_mgmt_interval = g_settings->getFloat("active_block_mgmt_interval");
+	m_cache_active_block_mgmt_interval = g_settings->getFloat(
+			"active_block_mgmt_interval");
 	m_cache_abm_interval = g_settings->getFloat("abm_interval");
 	m_cache_nodetimer_interval = g_settings->getFloat("nodetimer_interval");
 
@@ -87,11 +88,11 @@ float Environment::getTimeOfDayF()
 	Check if a node is pointable
 */
 inline static bool isPointableNode(const MapNode &n,
-	const NodeDefManager *nodedef , bool liquids_pointable)
+		const NodeDefManager *nodedef, bool liquids_pointable)
 {
 	const ContentFeatures &features = nodedef->get(n);
 	return features.pointable ||
-	       (liquids_pointable && features.isLiquid());
+			(liquids_pointable && features.isLiquid());
 }
 
 void Environment::continueRaycast(RaycastState *state, PointedThing *result)
@@ -119,7 +120,7 @@ void Environment::continueRaycast(RaycastState *state, PointedThing *result)
 	s16 lastIndex = state->m_iterator.m_last_index;
 	if (!state->m_found.empty()) {
 		lastIndex = state->m_iterator.getIndex(
-			floatToInt(state->m_found.top().intersection_point, BS));
+				floatToInt(state->m_found.top().intersection_point, BS));
 	}
 
 	Map &map = getMap();
@@ -136,7 +137,7 @@ void Environment::continueRaycast(RaycastState *state, PointedThing *result)
 
 		// Only check new nodes
 		v3s16 delta = state->m_iterator.m_current_node_pos
-			- state->m_previous_node;
+				- state->m_previous_node;
 		if (delta.X > 0) {
 			new_nodes.MinEdge.X = new_nodes.MaxEdge.X;
 		} else if (delta.X < 0) {
@@ -154,7 +155,7 @@ void Environment::continueRaycast(RaycastState *state, PointedThing *result)
 		// For each untested node
 		for (s16 x = new_nodes.MinEdge.X; x <= new_nodes.MaxEdge.X; x++)
 		for (s16 y = new_nodes.MinEdge.Y; y <= new_nodes.MaxEdge.Y; y++)
-		for (s16 z = new_nodes.MinEdge.Z; z <= new_nodes.MaxEdge.Z; z++) {
+			for (s16 z = new_nodes.MinEdge.Z; z <= new_nodes.MaxEdge.Z; z++) {
 			MapNode n;
 			v3s16 np(x, y, z);
 			bool is_valid_position;
@@ -169,7 +170,7 @@ void Environment::continueRaycast(RaycastState *state, PointedThing *result)
 
 			std::vector<aabb3f> boxes;
 			n.getSelectionBoxes(nodedef, &boxes,
-				n.getNeighbors(np, &map));
+					n.getNeighbors(np, &map));
 
 			// Is there a collision with a selection box?
 			bool is_colliding = false;
@@ -194,7 +195,7 @@ void Environment::continueRaycast(RaycastState *state, PointedThing *result)
 				}
 
 				f32 distanceSq = (intersection_point
-					- state->m_shootline.start).getLengthSQ();
+						- state->m_shootline.start).getLengthSQ();
 				// If this is the nearest collision, save it
 				if (min_distance_sq > distanceSq) {
 					min_distance_sq = distanceSq;
@@ -233,15 +234,15 @@ void Environment::continueRaycast(RaycastState *state, PointedThing *result)
 				fake_intersection.Z -= d;
 			}
 			result.node_real_undersurface = floatToInt(
-				fake_intersection, BS);
+					fake_intersection, BS);
 			result.node_abovesurface = result.node_real_undersurface
-				+ result.intersection_normal;
+					+ result.intersection_normal;
 			// Push found PointedThing
 			state->m_found.push(result);
 			// If this is nearer than the old nearest object,
 			// the search can be shorter
 			s16 newIndex = state->m_iterator.getIndex(
-				result.node_real_undersurface);
+					result.node_real_undersurface);
 			if (newIndex < lastIndex) {
 				lastIndex = newIndex;
 			}

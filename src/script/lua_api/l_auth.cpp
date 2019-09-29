@@ -28,10 +28,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <algorithm>
 
 // common start: ensure auth db
-AuthDatabase *ModApiAuth::getAuthDb(lua_State *L)
+AuthDatabase* ModApiAuth::getAuthDb(lua_State *L)
 {
 	ServerEnvironment *server_environment =
-			dynamic_cast<ServerEnvironment *>(getEnv(L));
+			dynamic_cast<ServerEnvironment*>(getEnv(L));
 	if (!server_environment)
 		return nullptr;
 	return server_environment->getAuthDatabase();

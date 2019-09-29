@@ -52,9 +52,9 @@ public:
 
 	static void create(lua_State *L, Camera *m);
 
-	static LuaCamera *checkobject(lua_State *L, int narg);
-	static Camera *getobject(LuaCamera *ref);
-	static Camera *getobject(lua_State *L, int narg);
+	static LuaCamera* checkobject(lua_State *L, int narg);
+	static Camera* getobject(LuaCamera *ref);
+	static Camera* getobject(lua_State *L, int narg);
 
 	static void Register(lua_State *L);
 };

@@ -50,8 +50,8 @@ extern "C" {
 #include "lualib.h"
 }
 
-ServerScripting::ServerScripting(Server* server):
-		ScriptApiBase(ScriptingType::Server)
+ServerScripting::ServerScripting(Server *server) :
+ScriptApiBase(ScriptingType::Server)
 {
 	setGameDef(server);
 

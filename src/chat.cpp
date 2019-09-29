@@ -29,8 +29,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "util/string.h"
 #include "util/numeric.h"
 
-ChatBuffer::ChatBuffer(u32 scrollback):
-	m_scrollback(scrollback)
+ChatBuffer::ChatBuffer(u32 scrollback) :
+m_scrollback(scrollback)
 {
 	if (m_scrollback == 0)
 		m_scrollback = 1;
@@ -70,7 +70,7 @@ u32 ChatBuffer::getLineCount() const
 
 const ChatLine& ChatBuffer::getLine(u32 index) const
 {
-	assert(index < getLineCount());	// pre-condition
+	assert(index < getLineCount()); // pre-condition
 	return m_unformatted[index];
 }
 
@@ -106,7 +106,8 @@ void ChatBuffer::deleteOldest(u32 count)
 		--count;
 	}
 
-	m_unformatted.erase(m_unformatted.begin(), m_unformatted.begin() + del_unformatted);
+	m_unformatted.erase(m_unformatted.begin(),
+			m_unformatted.begin() + del_unformatted);
 	m_formatted.erase(m_formatted.begin(), m_formatted.begin() + del_formatted);
 
 	if (at_bottom)
@@ -118,7 +119,7 @@ void ChatBuffer::deleteOldest(u32 count)
 void ChatBuffer::deleteByAge(f32 maxAge)
 {
 	u32 count = 0;
-	while (count < m_unformatted.size() && m_unformatted[count].age > maxAge)
+	while (count<m_unformatted.size() && m_unformatted[count].age> maxAge)
 		++count;
 	deleteOldest(count);
 }
@@ -191,8 +192,8 @@ void ChatBuffer::reformat(u32 cols, u32 rows)
 
 const ChatFormattedLine& ChatBuffer::getFormattedLine(u32 row) const
 {
-	s32 index = m_scroll + (s32) row;
-	if (index >= 0 && index < (s32) m_formatted.size())
+	s32 index = m_scroll + (s32)row;
+	if (index >= 0 && index < (s32)m_formatted.size())
 		return m_formatted[index];
 
 	return m_empty_formatted_line;
@@ -225,8 +226,8 @@ void ChatBuffer::scrollTop()
 	m_scroll = getTopScrollPos();
 }
 
-u32 ChatBuffer::formatChatLine(const ChatLine& line, u32 cols,
-		std::vector<ChatFormattedLine>& destination) const
+u32 ChatBuffer::formatChatLine(const ChatLine &line, u32 cols,
+		std::vector<ChatFormattedLine> &destination) const
 {
 	u32 num_added = 0;
 	std::vector<ChatFormattedFragment> next_frags;
@@ -276,7 +277,7 @@ u32 ChatBuffer::formatChatLine(const ChatLine& line, u32 cols,
 		// Layout fragments into lines
 		while (!next_frags.empty())
 		{
-			ChatFormattedFragment& frag = next_frags[0];
+			ChatFormattedFragment &frag = next_frags[0];
 			if (frag.text.size() <= cols - out_column)
 			{
 				// Fragment fits into current line
@@ -349,8 +350,8 @@ u32 ChatBuffer::formatChatLine(const ChatLine& line, u32 cols,
 
 s32 ChatBuffer::getTopScrollPos() const
 {
-	s32 formatted_count = (s32) m_formatted.size();
-	s32 rows = (s32) m_rows;
+	s32 formatted_count = (s32)m_formatted.size();
+	s32 rows = (s32)m_rows;
 	if (rows == 0)
 		return 0;
 
@@ -362,8 +363,8 @@ s32 ChatBuffer::getTopScrollPos() const
 
 s32 ChatBuffer::getBottomScrollPos() const
 {
-	s32 formatted_count = (s32) m_formatted.size();
-	s32 rows = (s32) m_rows;
+	s32 formatted_count = (s32)m_formatted.size();
+	s32 rows = (s32)m_rows;
 	if (rows == 0)
 		return 0;
 
@@ -378,9 +379,9 @@ void ChatBuffer::resize(u32 scrollback)
 }
 
 
-ChatPrompt::ChatPrompt(const std::wstring &prompt, u32 history_limit):
-	m_prompt(prompt),
-	m_history_limit(history_limit)
+ChatPrompt::ChatPrompt(const std::wstring &prompt, u32 history_limit) :
+m_prompt(prompt),
+m_history_limit(history_limit)
 {
 }
 
@@ -408,7 +409,7 @@ void ChatPrompt::addToHistory(const std::wstring &line)
 			(m_history.size() == 0 || m_history.back() != line)) {
 		// Remove all duplicates
 		m_history.erase(std::remove(m_history.begin(), m_history.end(),
-			line), m_history.end());
+				line), m_history.end());
 		// Push unique line
 		m_history.push_back(line);
 	}
@@ -429,7 +430,7 @@ void ChatPrompt::clear()
 std::wstring ChatPrompt::replace(const std::wstring &line)
 {
 	std::wstring old_line = m_line;
-	m_line =  line;
+	m_line = line;
 	m_view = m_cursor = line.size();
 	clampView();
 	m_nick_completion_start = 0;
@@ -460,7 +461,7 @@ void ChatPrompt::historyNext()
 	}
 }
 
-void ChatPrompt::nickCompletion(const std::list<std::string>& names, bool backwards)
+void ChatPrompt::nickCompletion(const std::list<std::string> &names, bool backwards)
 {
 	// Two cases:
 	// (a) m_nick_completion_start == m_nick_completion_end == 0
@@ -653,10 +654,10 @@ void ChatPrompt::clampView()
 
 
 
-ChatBackend::ChatBackend():
-	m_console_buffer(500),
-	m_recent_buffer(6),
-	m_prompt(L"]", 500)
+ChatBackend::ChatBackend() :
+m_console_buffer(500),
+m_recent_buffer(6),
+m_prompt(L"]", 500)
 {
 }
 
@@ -710,7 +711,7 @@ EnrichedString ChatBackend::getRecentChat() const
 {
 	EnrichedString result;
 	for (u32 i = 0; i < m_recent_buffer.getLineCount(); ++i) {
-		const ChatLine& line = m_recent_buffer.getLine(i);
+		const ChatLine &line = m_recent_buffer.getLine(i);
 		if (i != 0)
 			result += L"\n";
 		if (!line.name.empty()) {

@@ -27,7 +27,7 @@ bool ScriptApiServer::getAuth(const std::string &playername,
 {
 	SCRIPTAPI_PRECHECKHEADER
 
-	int error_handler = PUSH_ERROR_HANDLER(L);
+			int error_handler = PUSH_ERROR_HANDLER(L);
 	getAuthHandler();
 	lua_getfield(L, -1, "get_auth");
 	if (lua_type(L, -1) != LUA_TFUNCTION)
@@ -65,7 +65,7 @@ void ScriptApiServer::getAuthHandler()
 
 	lua_getglobal(L, "core");
 	lua_getfield(L, -1, "registered_auth_handler");
-	if (lua_isnil(L, -1)){
+	if (lua_isnil(L, -1)) {
 		lua_pop(L, 1);
 		lua_getfield(L, -1, "builtin_auth_handler");
 	}
@@ -101,7 +101,7 @@ void ScriptApiServer::createAuth(const std::string &playername,
 {
 	SCRIPTAPI_PRECHECKHEADER
 
-	int error_handler = PUSH_ERROR_HANDLER(L);
+			int error_handler = PUSH_ERROR_HANDLER(L);
 	getAuthHandler();
 	lua_getfield(L, -1, "create_auth");
 	lua_remove(L, -2); // Remove auth handler
@@ -118,7 +118,7 @@ bool ScriptApiServer::setPassword(const std::string &playername,
 {
 	SCRIPTAPI_PRECHECKHEADER
 
-	int error_handler = PUSH_ERROR_HANDLER(L);
+			int error_handler = PUSH_ERROR_HANDLER(L);
 	getAuthHandler();
 	lua_getfield(L, -1, "set_password");
 	lua_remove(L, -2); // Remove auth handler
@@ -137,7 +137,7 @@ bool ScriptApiServer::on_chat_message(const std::string &name,
 	SCRIPTAPI_PRECHECKHEADER
 
 	// Get core.registered_on_chat_messages
-	lua_getglobal(L, "core");
+			lua_getglobal(L, "core");
 	lua_getfield(L, -1, "registered_on_chat_messages");
 	// Call callbacks
 	lua_pushstring(L, name.c_str());
@@ -151,7 +151,7 @@ void ScriptApiServer::on_mods_loaded()
 	SCRIPTAPI_PRECHECKHEADER
 
 	// Get registered shutdown hooks
-	lua_getglobal(L, "core");
+			lua_getglobal(L, "core");
 	lua_getfield(L, -1, "registered_on_mods_loaded");
 	// Call callbacks
 	runCallbacks(0, RUN_CALLBACKS_MODE_FIRST);
@@ -162,19 +162,19 @@ void ScriptApiServer::on_shutdown()
 	SCRIPTAPI_PRECHECKHEADER
 
 	// Get registered shutdown hooks
-	lua_getglobal(L, "core");
+			lua_getglobal(L, "core");
 	lua_getfield(L, -1, "registered_on_shutdown");
 	// Call callbacks
 	runCallbacks(0, RUN_CALLBACKS_MODE_FIRST);
 }
 
 std::string ScriptApiServer::formatChatMessage(const std::string &name,
-	const std::string &message)
+		const std::string &message)
 {
 	SCRIPTAPI_PRECHECKHEADER
 
 	// Push function onto stack
-	lua_getglobal(L, "core");
+			lua_getglobal(L, "core");
 	lua_getfield(L, -1, "format_chat_message");
 
 	// Push arguments onto stack

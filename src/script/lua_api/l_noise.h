@@ -49,7 +49,7 @@ public:
 	// Creates an LuaPerlinNoise and leaves it on top of stack
 	static int create_object(lua_State *L);
 
-	static LuaPerlinNoise *checkobject(lua_State *L, int narg);
+	static LuaPerlinNoise* checkobject(lua_State *L, int narg);
 
 	static void Register(lua_State *L);
 };
@@ -88,7 +88,7 @@ public:
 	// Creates an LuaPerlinNoiseMap and leaves it on top of stack
 	static int create_object(lua_State *L);
 
-	static LuaPerlinNoiseMap *checkobject(lua_State *L, int narg);
+	static LuaPerlinNoiseMap* checkobject(lua_State *L, int narg);
 
 	static void Register(lua_State *L);
 };
@@ -113,13 +113,13 @@ private:
 	static int l_next(lua_State *L);
 
 public:
-	LuaPseudoRandom(s32 seed) : m_pseudo(seed) {}
+	LuaPseudoRandom(s32 seed) : m_pseudo(seed){}
 
 	// LuaPseudoRandom(seed)
 	// Creates an LuaPseudoRandom and leaves it on top of stack
 	static int create_object(lua_State *L);
 
-	static LuaPseudoRandom *checkobject(lua_State *L, int narg);
+	static LuaPseudoRandom* checkobject(lua_State *L, int narg);
 
 	static void Register(lua_State *L);
 };
@@ -148,14 +148,14 @@ private:
 	static int l_rand_normal_dist(lua_State *L);
 
 public:
-	LuaPcgRandom(u64 seed) : m_rnd(seed) {}
-	LuaPcgRandom(u64 seed, u64 seq) : m_rnd(seed, seq) {}
+	LuaPcgRandom(u64 seed) : m_rnd(seed){}
+	LuaPcgRandom(u64 seed, u64 seq) : m_rnd(seed, seq){}
 
 	// LuaPcgRandom(seed)
 	// Creates an LuaPcgRandom and leaves it on top of stack
 	static int create_object(lua_State *L);
 
-	static LuaPcgRandom *checkobject(lua_State *L, int narg);
+	static LuaPcgRandom* checkobject(lua_State *L, int narg);
 
 	static void Register(lua_State *L);
 };
@@ -188,7 +188,7 @@ public:
 	// Creates an LuaSecureRandom and leaves it on top of stack
 	static int create_object(lua_State *L);
 
-	static LuaSecureRandom *checkobject(lua_State *L, int narg);
+	static LuaSecureRandom* checkobject(lua_State *L, int narg);
 
 	static void Register(lua_State *L);
 };

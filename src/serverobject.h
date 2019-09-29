@@ -59,16 +59,16 @@ public:
 	virtual ~ServerActiveObject() = default;
 
 	virtual ActiveObjectType getSendType() const
-	{ return getType(); }
+			{ return getType(); }
 
 	// Called after id has been set and has been inserted in environment
-	virtual void addedToEnvironment(u32 dtime_s){};
+	virtual void addedToEnvironment(u32 dtime_s){}
 	// Called before removing from environment
-	virtual void removingFromEnvironment(){};
+	virtual void removingFromEnvironment(){}
 	// Returns true if object's deletion is the job of the
 	// environment
 	virtual bool environmentDeletes() const
-	{ return true; }
+			{ return true; }
 
 	// Create a certain type of ServerActiveObject
 	static ServerActiveObject* create(ActiveObjectType type,
@@ -87,15 +87,15 @@ public:
 	*/
 
 	virtual void setPos(const v3f &pos)
-		{ setBasePosition(pos); }
+	{ setBasePosition(pos); }
 	// continuous: if true, object does not stop immediately at pos
 	virtual void moveTo(v3f pos, bool continuous)
-		{ setBasePosition(pos); }
+	{ setBasePosition(pos); }
 	// If object has moved less than this and data has not changed,
 	// saving to disk may be omitted
 	virtual float getMinimumSavedMovement();
 
-	virtual std::string getDescription(){return "SAO";}
+	virtual std::string getDescription(){ return "SAO"; }
 
 	/*
 		Step object in time.
@@ -113,7 +113,9 @@ public:
 		The return value of this is passed to the client-side object
 		when it is created
 	*/
-	virtual std::string getClientInitializationData(u16 protocol_version){return "";}
+	virtual std::string getClientInitializationData(u16 protocol_version){
+		return "";
+	}
 
 	/*
 		The return value of this is passed to the server-side object
@@ -130,7 +132,7 @@ public:
 		on unload. getStaticData() will not be called in that case.
 	*/
 	virtual bool isStaticAllowed() const
-	{return true;}
+			{ return true; }
 
 	// Returns tool wear
 	virtual u16 punch(v3f dir,
@@ -143,43 +145,48 @@ public:
 	virtual void setHP(s32 hp, const PlayerHPChangeReason &reason)
 	{}
 	virtual u16 getHP() const
-	{ return 0; }
+			{ return 0; }
 
 	virtual void setArmorGroups(const ItemGroupList &armor_groups)
 	{}
-	virtual const ItemGroupList &getArmorGroups() const
-	{ static ItemGroupList rv; return rv; }
-	virtual void setPhysicsOverride(float physics_override_speed, float physics_override_jump, float physics_override_gravity)
+	virtual const ItemGroupList& getArmorGroups() const
+			{ static ItemGroupList rv; return rv; }
+	virtual void setPhysicsOverride(float physics_override_speed,
+			float physics_override_jump,
+			float physics_override_gravity)
 	{}
-	virtual void setAnimation(v2f frames, float frame_speed, float frame_blend, bool frame_loop)
+	virtual void setAnimation(v2f frames, float frame_speed, float frame_blend,
+			bool frame_loop)
 	{}
-	virtual void getAnimation(v2f *frames, float *frame_speed, float *frame_blend, bool *frame_loop)
+	virtual void getAnimation(v2f *frames, float *frame_speed, float *frame_blend,
+			bool *frame_loop)
 	{}
 	virtual void setAnimationSpeed(float frame_speed)
 	{}
 	virtual void setBonePosition(const std::string &bone, v3f position, v3f rotation)
 	{}
-	virtual void getBonePosition(const std::string &bone, v3f *position, v3f *lotation)
+	virtual void getBonePosition(const std::string &bone, v3f *position,
+			v3f *lotation)
 	{}
-	virtual const std::unordered_set<int> &getAttachmentChildIds() const
-	{ static std::unordered_set<int> rv; return rv; }
-	virtual ServerActiveObject *getParent() const { return nullptr; }
+	virtual const std::unordered_set<int>& getAttachmentChildIds() const
+			{ static std::unordered_set<int> rv; return rv; }
+	virtual ServerActiveObject* getParent() const { return nullptr; }
 	virtual ObjectProperties* accessObjectProperties()
 	{ return NULL; }
 	virtual void notifyObjectPropertiesModified()
 	{}
 
 	// Inventory and wielded item
-	virtual Inventory *getInventory() const
-	{ return NULL; }
+	virtual Inventory* getInventory() const
+			{ return NULL; }
 	virtual InventoryLocation getInventoryLocation() const
-	{ return InventoryLocation(); }
+			{ return InventoryLocation(); }
 	virtual void setInventoryModified()
 	{}
 	virtual std::string getWieldList() const
-	{ return ""; }
+			{ return ""; }
 	virtual u16 getWieldIndex() const
-	{ return 0; }
+			{ return 0; }
 	virtual ItemStack getWieldedItem(ItemStack *selected,
 			ItemStack *hand = nullptr) const;
 	virtual bool setWieldedItem(const ItemStack &item);
@@ -224,7 +231,7 @@ public:
 		"Can the environment still interact with this object?"
 	*/
 	inline bool isGone() const
-	{ return m_pending_removal || m_pending_deactivation; }
+			{ return m_pending_removal || m_pending_deactivation; }
 
 	/*
 		Whether the object's static data has been stored to a block
@@ -234,7 +241,7 @@ public:
 		The block from which the object was loaded from, and in which
 		a copy of the static data resides.
 	*/
-	v3s16 m_static_block = v3s16(1337,1337,1337);
+	v3s16 m_static_block = v3s16(1337, 1337, 1337);
 
 	/*
 		Queue of messages to be sent to the client
@@ -242,11 +249,11 @@ public:
 	std::queue<ActiveObjectMessage> m_messages_out;
 
 protected:
-	virtual void onAttach(int parent_id) {}
-	virtual void onDetach(int parent_id) {}
+	virtual void onAttach(int parent_id){}
+	virtual void onDetach(int parent_id){}
 
 	// Used for creating objects based on type
-	typedef ServerActiveObject* (*Factory)
+	typedef ServerActiveObject*(* Factory)
 			(ServerEnvironment *env, v3f pos,
 			const std::string &data);
 	static void registerType(u16 type, Factory f);

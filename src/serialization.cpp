@@ -26,29 +26,29 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 /* report a zlib or i/o error */
 void zerr(int ret)
 {
-    dstream<<"zerr: ";
-    switch (ret) {
-    case Z_ERRNO:
-        if (ferror(stdin))
-            dstream<<"error reading stdin"<<std::endl;
-        if (ferror(stdout))
-            dstream<<"error writing stdout"<<std::endl;
-        break;
-    case Z_STREAM_ERROR:
-        dstream<<"invalid compression level"<<std::endl;
-        break;
-    case Z_DATA_ERROR:
-        dstream<<"invalid or incomplete deflate data"<<std::endl;
-        break;
-    case Z_MEM_ERROR:
-        dstream<<"out of memory"<<std::endl;
-        break;
-    case Z_VERSION_ERROR:
-        dstream<<"zlib version mismatch!"<<std::endl;
+	dstream<<"zerr: ";
+	switch (ret) {
+	case Z_ERRNO:
+		if (ferror(stdin))
+			dstream<<"error reading stdin"<<std::endl;
+		if (ferror(stdout))
+			dstream<<"error writing stdout"<<std::endl;
+		break;
+	case Z_STREAM_ERROR:
+		dstream<<"invalid compression level"<<std::endl;
+		break;
+	case Z_DATA_ERROR:
+		dstream<<"invalid or incomplete deflate data"<<std::endl;
+		break;
+	case Z_MEM_ERROR:
+		dstream<<"out of memory"<<std::endl;
+		break;
+	case Z_VERSION_ERROR:
+		dstream<<"zlib version mismatch!"<<std::endl;
 		break;
 	default:
 		dstream<<"return value = "<<ret<<std::endl;
-    }
+	}
 }
 
 void compressZlib(const u8 *data, size_t data_size, std::ostream &os, int level)
@@ -64,30 +64,30 @@ void compressZlib(const u8 *data, size_t data_size, std::ostream &os, int level)
 	z.opaque = Z_NULL;
 
 	ret = deflateInit(&z, level);
-	if(ret != Z_OK)
+	if (ret != Z_OK)
 		throw SerializationError("compressZlib: deflateInit failed");
 
 	// Point zlib to our input buffer
 	z.next_in = (Bytef*)&data[0];
 	z.avail_in = data_size;
 	// And get all output
-	for(;;)
+	for (;;)
 	{
 		z.next_out = (Bytef*)output_buffer;
 		z.avail_out = bufsize;
 
 		status = deflate(&z, Z_FINISH);
-		if(status == Z_NEED_DICT || status == Z_DATA_ERROR
+		if (status == Z_NEED_DICT || status == Z_DATA_ERROR
 				|| status == Z_MEM_ERROR)
 		{
 			zerr(status);
 			throw SerializationError("compressZlib: deflate failed");
 		}
 		int count = bufsize - z.avail_out;
-		if(count)
+		if (count)
 			os.write(output_buffer, count);
 		// This determines zlib has given all output
-		if(status == Z_STREAM_END)
+		if (status == Z_STREAM_END)
 			break;
 	}
 
@@ -115,19 +115,19 @@ void decompressZlib(std::istream &is, std::ostream &os)
 	z.opaque = Z_NULL;
 
 	ret = inflateInit(&z);
-	if(ret != Z_OK)
+	if (ret != Z_OK)
 		throw SerializationError("dcompressZlib: inflateInit failed");
 
 	z.avail_in = 0;
 
 	//dstream<<"initial fail="<<is.fail()<<" bad="<<is.bad()<<std::endl;
 
-	for(;;)
+	for (;;)
 	{
 		z.next_out = (Bytef*)output_buffer;
 		z.avail_out = bufsize;
 
-		if(z.avail_in == 0)
+		if (z.avail_in == 0)
 		{
 			z.next_in = (Bytef*)input_buffer;
 			is.read(input_buffer, bufsize);
@@ -135,7 +135,7 @@ void decompressZlib(std::istream &is, std::ostream &os)
 			z.avail_in = input_buffer_len;
 			//dstream<<"read fail="<<is.fail()<<" bad="<<is.bad()<<std::endl;
 		}
-		if(z.avail_in == 0)
+		if (z.avail_in == 0)
 		{
 			//dstream<<"z.avail_in == 0"<<std::endl;
 			break;
@@ -147,7 +147,7 @@ void decompressZlib(std::istream &is, std::ostream &os)
 		bytes_read += is.gcount() - z.avail_in;
 		//dstream<<"bytes_read="<<bytes_read<<std::endl;
 
-		if(status == Z_NEED_DICT || status == Z_DATA_ERROR
+		if (status == Z_NEED_DICT || status == Z_DATA_ERROR
 				|| status == Z_MEM_ERROR)
 		{
 			zerr(status);
@@ -155,9 +155,9 @@ void decompressZlib(std::istream &is, std::ostream &os)
 		}
 		int count = bufsize - z.avail_out;
 		//dstream<<"count="<<count<<std::endl;
-		if(count)
+		if (count)
 			os.write(output_buffer, count);
-		if(status == Z_STREAM_END)
+		if (status == Z_STREAM_END)
 		{
 			//dstream<<"Z_STREAM_END"<<std::endl;
 
@@ -165,10 +165,10 @@ void decompressZlib(std::istream &is, std::ostream &os)
 			//dstream<<"fail="<<is.fail()<<" bad="<<is.bad()<<std::endl;
 			// Unget all the data that inflate didn't take
 			is.clear(); // Just in case EOF is set
-			for(u32 i=0; i < z.avail_in; i++)
+			for (u32 i = 0; i < z.avail_in; i++)
 			{
 				is.unget();
-				if(is.fail() || is.bad())
+				if (is.fail() || is.bad())
 				{
 					dstream<<"unget #"<<i<<" failed"<<std::endl;
 					dstream<<"fail="<<is.fail()<<" bad="<<is.bad()<<std::endl;
@@ -185,13 +185,13 @@ void decompressZlib(std::istream &is, std::ostream &os)
 
 void compress(const SharedBuffer<u8> &data, std::ostream &os, u8 version)
 {
-	if(version >= 11)
+	if (version >= 11)
 	{
-		compressZlib(*data ,data.getSize(), os);
+		compressZlib(*data, data.getSize(), os);
 		return;
 	}
 
-	if(data.getSize() == 0)
+	if (data.getSize() == 0)
 		return;
 
 	// Write length (u32)
@@ -203,11 +203,11 @@ void compress(const SharedBuffer<u8> &data, std::ostream &os, u8 version)
 	// We will be writing 8-bit pairs of more_count and byte
 	u8 more_count = 0;
 	u8 current_byte = data[0];
-	for(u32 i=1; i<data.getSize(); i++)
+	for (u32 i = 1; i<data.getSize(); i++)
 	{
-		if(
-			data[i] != current_byte
-			|| more_count == 255
+		if (
+				data[i] != current_byte
+				|| more_count == 255
 		)
 		{
 			// write count and byte
@@ -228,7 +228,7 @@ void compress(const SharedBuffer<u8> &data, std::ostream &os, u8 version)
 
 void decompress(std::istream &is, std::ostream &os, u8 version)
 {
-	if(version >= 11)
+	if (version >= 11)
 	{
 		decompressZlib(is, os);
 		return;
@@ -242,24 +242,24 @@ void decompress(std::istream &is, std::ostream &os, u8 version)
 
 	// We will be reading 8-bit pairs of more_count and byte
 	u32 count = 0;
-	for(;;)
+	for (;;)
 	{
-		u8 more_count=0;
-		u8 byte=0;
+		u8 more_count = 0;
+		u8 byte = 0;
 
 		is.read((char*)&more_count, 1);
 
 		is.read((char*)&byte, 1);
 
-		if(is.eof())
+		if (is.eof())
 			throw SerializationError("decompress: stream ended halfway");
 
-		for(s32 i=0; i<(u16)more_count+1; i++)
+		for (s32 i = 0; i<(u16)more_count+1; i++)
 			os.write((char*)&byte, 1);
 
 		count += (u16)more_count+1;
 
-		if(count == len)
+		if (count == len)
 			break;
 	}
 }

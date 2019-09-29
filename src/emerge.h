@@ -31,8 +31,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define BLOCK_EMERGE_FORCE_QUEUE (1 << 1)
 
 #define EMERGE_DBG_OUT(x) {                            \
-	if (enable_mapgen_debug_info)                      \
-		infostream << "EmergeThread: " x << std::endl; \
+		if (enable_mapgen_debug_info)                      \
+			infostream << "EmergeThread: " x << std::endl; \
 }
 
 class EmergeThread;
@@ -57,7 +57,7 @@ struct BlockMakeData {
 
 	BlockMakeData() = default;
 
-	~BlockMakeData() { delete vmanip; }
+	~BlockMakeData(){ delete vmanip; }
 };
 
 // Result from processing an item on the emerge queue
@@ -70,15 +70,15 @@ enum EmergeAction {
 };
 
 // Callback
-typedef void (*EmergeCompletionCallback)(
-	v3s16 blockpos, EmergeAction action, void *param);
+typedef void (* EmergeCompletionCallback)(
+		v3s16 blockpos, EmergeAction action, void *param);
 
 typedef std::vector<
-	std::pair<
-		EmergeCompletionCallback,
-		void *
-	>
-> EmergeCallbackList;
+			std::pair<
+			EmergeCompletionCallback,
+			void*
+			>
+			> EmergeCallbackList;
 
 struct BlockEmergeData {
 	u16 peer_requested;
@@ -124,21 +124,21 @@ public:
 	bool isRunning();
 
 	bool enqueueBlockEmerge(
-		session_t peer_id,
-		v3s16 blockpos,
-		bool allow_generate,
-		bool ignore_queue_limits=false);
+			session_t peer_id,
+			v3s16 blockpos,
+			bool allow_generate,
+			bool ignore_queue_limits = false);
 
 	bool enqueueBlockEmergeEx(
-		v3s16 blockpos,
-		session_t peer_id,
-		u16 flags,
-		EmergeCompletionCallback callback,
-		void *callback_param);
+			v3s16 blockpos,
+			session_t peer_id,
+			u16 flags,
+			EmergeCompletionCallback callback,
+			void *callback_param);
 
 	v3s16 getContainingChunk(v3s16 blockpos);
 
-	Mapgen *getCurrentMapgen();
+	Mapgen* getCurrentMapgen();
 
 	// Mapgen helpers methods
 	int getSpawnLevelAtPoint(v2s16 p);
@@ -148,8 +148,8 @@ public:
 	static v3s16 getContainingChunk(v3s16 blockpos, s16 chunksize);
 
 private:
-	std::vector<Mapgen *> m_mapgens;
-	std::vector<EmergeThread *> m_threads;
+	std::vector<Mapgen*> m_mapgens;
+	std::vector<EmergeThread*> m_threads;
 	bool m_threads_active = false;
 
 	std::mutex m_queue_mutex;
@@ -161,15 +161,15 @@ private:
 	u16 m_qlimit_generate;
 
 	// Requires m_queue_mutex held
-	EmergeThread *getOptimalThread();
+	EmergeThread* getOptimalThread();
 
 	bool pushBlockEmergeData(
-		v3s16 pos,
-		u16 peer_requested,
-		u16 flags,
-		EmergeCompletionCallback callback,
-		void *callback_param,
-		bool *entry_already_exists);
+			v3s16 pos,
+			u16 peer_requested,
+			u16 flags,
+			EmergeCompletionCallback callback,
+			void *callback_param,
+			bool *entry_already_exists);
 
 	bool popBlockEmergeData(v3s16 pos, BlockEmergeData *bedata);
 

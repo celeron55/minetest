@@ -23,8 +23,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "map.h"
 
 
-int NodeTimerRef::gc_object(lua_State *L) {
-	NodeTimerRef *o = *(NodeTimerRef **)(lua_touserdata(L, 1));
+int NodeTimerRef::gc_object(lua_State *L){
+	NodeTimerRef *o = *(NodeTimerRef**)(lua_touserdata(L, 1));
 	delete o;
 	return 0;
 }
@@ -33,8 +33,8 @@ NodeTimerRef* NodeTimerRef::checkobject(lua_State *L, int narg)
 {
 	luaL_checktype(L, narg, LUA_TUSERDATA);
 	void *ud = luaL_checkudata(L, narg, className);
-	if(!ud) luaL_typerror(L, narg, className);
-	return *(NodeTimerRef**)ud;  // unbox pointer
+	if (!ud) luaL_typerror(L, narg, className);
+	return *(NodeTimerRef**)ud; // unbox pointer
 }
 
 int NodeTimerRef::l_set(lua_State *L)
@@ -42,9 +42,9 @@ int NodeTimerRef::l_set(lua_State *L)
 	MAP_LOCK_REQUIRED;
 	NodeTimerRef *o = checkobject(L, 1);
 	ServerEnvironment *env = o->m_env;
-	if(env == NULL) return 0;
-	f32 t = readParam<float>(L,2);
-	f32 e = readParam<float>(L,3);
+	if (env == NULL) return 0;
+	f32 t = readParam<float>(L, 2);
+	f32 e = readParam<float>(L, 3);
 	env->getMap().setNodeTimer(NodeTimer(t, e, o->m_p));
 	return 0;
 }
@@ -54,8 +54,8 @@ int NodeTimerRef::l_start(lua_State *L)
 	MAP_LOCK_REQUIRED;
 	NodeTimerRef *o = checkobject(L, 1);
 	ServerEnvironment *env = o->m_env;
-	if(env == NULL) return 0;
-	f32 t = readParam<float>(L,2);
+	if (env == NULL) return 0;
+	f32 t = readParam<float>(L, 2);
 	env->getMap().setNodeTimer(NodeTimer(t, 0, o->m_p));
 	return 0;
 }
@@ -65,7 +65,7 @@ int NodeTimerRef::l_stop(lua_State *L)
 	MAP_LOCK_REQUIRED;
 	NodeTimerRef *o = checkobject(L, 1);
 	ServerEnvironment *env = o->m_env;
-	if(env == NULL) return 0;
+	if (env == NULL) return 0;
 	env->getMap().removeNodeTimer(o->m_p);
 	return 0;
 }
@@ -75,10 +75,10 @@ int NodeTimerRef::l_is_started(lua_State *L)
 	MAP_LOCK_REQUIRED;
 	NodeTimerRef *o = checkobject(L, 1);
 	ServerEnvironment *env = o->m_env;
-	if(env == NULL) return 0;
+	if (env == NULL) return 0;
 
 	NodeTimer t = env->getMap().getNodeTimer(o->m_p);
-	lua_pushboolean(L,(t.timeout != 0));
+	lua_pushboolean(L, (t.timeout != 0));
 	return 1;
 }
 
@@ -87,10 +87,10 @@ int NodeTimerRef::l_get_timeout(lua_State *L)
 	MAP_LOCK_REQUIRED;
 	NodeTimerRef *o = checkobject(L, 1);
 	ServerEnvironment *env = o->m_env;
-	if(env == NULL) return 0;
+	if (env == NULL) return 0;
 
 	NodeTimer t = env->getMap().getNodeTimer(o->m_p);
-	lua_pushnumber(L,t.timeout);
+	lua_pushnumber(L, t.timeout);
 	return 1;
 }
 
@@ -99,17 +99,17 @@ int NodeTimerRef::l_get_elapsed(lua_State *L)
 	MAP_LOCK_REQUIRED;
 	NodeTimerRef *o = checkobject(L, 1);
 	ServerEnvironment *env = o->m_env;
-	if(env == NULL) return 0;
+	if (env == NULL) return 0;
 
 	NodeTimer t = env->getMap().getNodeTimer(o->m_p);
-	lua_pushnumber(L,t.elapsed);
+	lua_pushnumber(L, t.elapsed);
 	return 1;
 }
 
 
-NodeTimerRef::NodeTimerRef(v3s16 p, ServerEnvironment *env):
-	m_p(p),
-	m_env(env)
+NodeTimerRef::NodeTimerRef(v3s16 p, ServerEnvironment *env) :
+m_p(p),
+m_env(env)
 {
 }
 
@@ -118,7 +118,7 @@ NodeTimerRef::NodeTimerRef(v3s16 p, ServerEnvironment *env):
 void NodeTimerRef::create(lua_State *L, v3s16 p, ServerEnvironment *env)
 {
 	NodeTimerRef *o = new NodeTimerRef(p, env);
-	*(void **)(lua_newuserdata(L, sizeof(void *))) = o;
+	*(void**)(lua_newuserdata(L, sizeof(void*))) = o;
 	luaL_getmetatable(L, className);
 	lua_setmetatable(L, -2);
 }
@@ -138,7 +138,7 @@ void NodeTimerRef::Register(lua_State *L)
 
 	lua_pushliteral(L, "__metatable");
 	lua_pushvalue(L, methodtable);
-	lua_settable(L, metatable);  // hide metatable from Lua getmetatable()
+	lua_settable(L, metatable); // hide metatable from Lua getmetatable()
 
 	lua_pushliteral(L, "__index");
 	lua_pushvalue(L, methodtable);
@@ -148,10 +148,10 @@ void NodeTimerRef::Register(lua_State *L)
 	lua_pushcfunction(L, gc_object);
 	lua_settable(L, metatable);
 
-	lua_pop(L, 1);  // drop metatable
+	lua_pop(L, 1); // drop metatable
 
-	luaL_openlib(L, 0, methods, 0);  // fill methodtable
-	lua_pop(L, 1);  // drop methodtable
+	luaL_openlib(L, 0, methods, 0); // fill methodtable
+	lua_pop(L, 1); // drop methodtable
 
 	// Cannot be created from Lua
 	//lua_register(L, className, create_object);
@@ -165,5 +165,5 @@ const luaL_Reg NodeTimerRef::methods[] = {
 	luamethod(NodeTimerRef, is_started),
 	luamethod(NodeTimerRef, get_timeout),
 	luamethod(NodeTimerRef, get_elapsed),
-	{0,0}
+	{ 0, 0 }
 };

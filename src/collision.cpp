@@ -24,7 +24,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "nodedef.h"
 #include "gamedef.h"
 #ifndef SERVER
-#include "client/clientenvironment.h"
+	#include "client/clientenvironment.h"
 #endif
 #include "serverenvironment.h"
 #include "serverobject.h"
@@ -39,11 +39,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 struct NearbyCollisionInfo {
 	NearbyCollisionInfo(bool is_ul, bool is_obj, int bouncy,
 			const v3s16 &pos, const aabb3f &box) :
-		is_unloaded(is_ul),
-		is_object(is_obj),
-		bouncy(bouncy),
-		position(pos),
-		box(box)
+	is_unloaded(is_ul),
+	is_object(is_obj),
+	bouncy(bouncy),
+	position(pos),
+	box(box)
 	{}
 
 	bool is_unloaded;
@@ -65,7 +65,7 @@ CollisionAxis axisAlignedCollision(
 {
 	//TimeTaker tt("axisAlignedCollision");
 
-	f32 xsize = (staticbox.MaxEdge.X - staticbox.MinEdge.X) - COLL_ZERO;     // reduce box size for solve collision stuck (flying sand)
+	f32 xsize = (staticbox.MaxEdge.X - staticbox.MinEdge.X) - COLL_ZERO; // reduce box size for solve collision stuck (flying sand)
 	f32 ysize = (staticbox.MaxEdge.Y - staticbox.MinEdge.Y); // - COLL_ZERO; // Y - no sense for falling, but maybe try later
 	f32 zsize = (staticbox.MaxEdge.Z - staticbox.MinEdge.Z) - COLL_ZERO;
 
@@ -78,7 +78,7 @@ CollisionAxis axisAlignedCollision(
 			movingbox.MaxEdge.Z - staticbox.MinEdge.Z
 	);
 
-	if(speed.X > 0) // Check for collision with X- plane
+	if (speed.X > 0) // Check for collision with X- plane
 	{
 		if (relbox.MaxEdge.X <= d) {
 			*dtime = -relbox.MaxEdge.X / speed.X;
@@ -88,12 +88,12 @@ CollisionAxis axisAlignedCollision(
 					(relbox.MaxEdge.Z + speed.Z * (*dtime) > COLL_ZERO))
 				return COLLISION_AXIS_X;
 		}
-		else if(relbox.MinEdge.X > xsize)
+		else if (relbox.MinEdge.X > xsize)
 		{
 			return COLLISION_AXIS_NONE;
 		}
 	}
-	else if(speed.X < 0) // Check for collision with X+ plane
+	else if (speed.X < 0) // Check for collision with X+ plane
 	{
 		if (relbox.MinEdge.X >= xsize - d) {
 			*dtime = (xsize - relbox.MinEdge.X) / speed.X;
@@ -103,7 +103,7 @@ CollisionAxis axisAlignedCollision(
 					(relbox.MaxEdge.Z + speed.Z * (*dtime) > COLL_ZERO))
 				return COLLISION_AXIS_X;
 		}
-		else if(relbox.MaxEdge.X < 0)
+		else if (relbox.MaxEdge.X < 0)
 		{
 			return COLLISION_AXIS_NONE;
 		}
@@ -111,7 +111,7 @@ CollisionAxis axisAlignedCollision(
 
 	// NO else if here
 
-	if(speed.Y > 0) // Check for collision with Y- plane
+	if (speed.Y > 0) // Check for collision with Y- plane
 	{
 		if (relbox.MaxEdge.Y <= d) {
 			*dtime = -relbox.MaxEdge.Y / speed.Y;
@@ -121,12 +121,12 @@ CollisionAxis axisAlignedCollision(
 					(relbox.MaxEdge.Z + speed.Z * (*dtime) > COLL_ZERO))
 				return COLLISION_AXIS_Y;
 		}
-		else if(relbox.MinEdge.Y > ysize)
+		else if (relbox.MinEdge.Y > ysize)
 		{
 			return COLLISION_AXIS_NONE;
 		}
 	}
-	else if(speed.Y < 0) // Check for collision with Y+ plane
+	else if (speed.Y < 0) // Check for collision with Y+ plane
 	{
 		if (relbox.MinEdge.Y >= ysize - d) {
 			*dtime = (ysize - relbox.MinEdge.Y) / speed.Y;
@@ -136,7 +136,7 @@ CollisionAxis axisAlignedCollision(
 					(relbox.MaxEdge.Z + speed.Z * (*dtime) > COLL_ZERO))
 				return COLLISION_AXIS_Y;
 		}
-		else if(relbox.MaxEdge.Y < 0)
+		else if (relbox.MaxEdge.Y < 0)
 		{
 			return COLLISION_AXIS_NONE;
 		}
@@ -144,7 +144,7 @@ CollisionAxis axisAlignedCollision(
 
 	// NO else if here
 
-	if(speed.Z > 0) // Check for collision with Z- plane
+	if (speed.Z > 0) // Check for collision with Z- plane
 	{
 		if (relbox.MaxEdge.Z <= d) {
 			*dtime = -relbox.MaxEdge.Z / speed.Z;
@@ -159,7 +159,7 @@ CollisionAxis axisAlignedCollision(
 		//	return COLLISION_AXIS_NONE;
 		//}
 	}
-	else if(speed.Z < 0) // Check for collision with Z+ plane
+	else if (speed.Z < 0) // Check for collision with Z+ plane
 	{
 		if (relbox.MinEdge.Z >= zsize - d) {
 			*dtime = (zsize - relbox.MinEdge.Z) / speed.Z;
@@ -187,7 +187,7 @@ bool wouldCollideWithCeiling(
 {
 	//TimeTaker tt("wouldCollideWithCeiling");
 
-	assert(y_increase >= 0);	// pre-condition
+	assert(y_increase >= 0); // pre-condition
 
 	for (const auto &it : cinfo) {
 		const aabb3f &staticbox = it.box;
@@ -204,7 +204,7 @@ bool wouldCollideWithCeiling(
 }
 
 static inline void getNeighborConnectingFace(const v3s16 &p,
-	const NodeDefManager *nodedef, Map *map, MapNode n, int v, int *neighbors)
+		const NodeDefManager *nodedef, Map *map, MapNode n, int v, int *neighbors)
 {
 	MapNode n2 = map->getNode(p);
 	if (nodedef->nodeboxConnects(n, n2, v))
@@ -254,102 +254,109 @@ collisionMoveResult collisionMoveSimple(Environment *env, IGameDef *gamedef,
 	*/
 	std::vector<NearbyCollisionInfo> cinfo;
 	{
-	//TimeTaker tt2("collisionMoveSimple collect boxes");
-	ScopeProfiler sp2(g_profiler, "collisionMoveSimple(): collect boxes", SPT_AVG);
+		//TimeTaker tt2("collisionMoveSimple collect boxes");
+		ScopeProfiler sp2(g_profiler, "collisionMoveSimple(): collect boxes",
+				SPT_AVG);
 
-	v3f newpos_f = *pos_f + *speed_f * dtime;
-	v3f minpos_f(
-		MYMIN(pos_f->X, newpos_f.X),
-		MYMIN(pos_f->Y, newpos_f.Y) + 0.01f * BS, // bias rounding, player often at +/-n.5
-		MYMIN(pos_f->Z, newpos_f.Z)
-	);
-	v3f maxpos_f(
-		MYMAX(pos_f->X, newpos_f.X),
-		MYMAX(pos_f->Y, newpos_f.Y),
-		MYMAX(pos_f->Z, newpos_f.Z)
-	);
-	v3s16 min = floatToInt(minpos_f + box_0.MinEdge, BS) - v3s16(1, 1, 1);
-	v3s16 max = floatToInt(maxpos_f + box_0.MaxEdge, BS) + v3s16(1, 1, 1);
+		v3f newpos_f = *pos_f + *speed_f * dtime;
+		v3f minpos_f(
+				MYMIN(pos_f->X, newpos_f.X),
+				MYMIN(pos_f->Y, newpos_f.Y) + 0.01f * BS, // bias rounding, player often at +/-n.5
+				MYMIN(pos_f->Z, newpos_f.Z)
+		);
+		v3f maxpos_f(
+				MYMAX(pos_f->X, newpos_f.X),
+				MYMAX(pos_f->Y, newpos_f.Y),
+				MYMAX(pos_f->Z, newpos_f.Z)
+		);
+		v3s16 min = floatToInt(minpos_f + box_0.MinEdge, BS) - v3s16(1, 1, 1);
+		v3s16 max = floatToInt(maxpos_f + box_0.MaxEdge, BS) + v3s16(1, 1, 1);
 
-	bool any_position_valid = false;
+		bool any_position_valid = false;
 
-	v3s16 p;
-	for (p.X = min.X; p.X <= max.X; p.X++)
-	for (p.Y = min.Y; p.Y <= max.Y; p.Y++)
-	for (p.Z = min.Z; p.Z <= max.Z; p.Z++) {
-		bool is_position_valid;
-		MapNode n = map->getNode(p, &is_position_valid);
+		v3s16 p;
+		for (p.X = min.X; p.X <= max.X; p.X++)
+		for (p.Y = min.Y; p.Y <= max.Y; p.Y++)
+			for (p.Z = min.Z; p.Z <= max.Z; p.Z++) {
+			bool is_position_valid;
+			MapNode n = map->getNode(p, &is_position_valid);
 
-		if (is_position_valid && n.getContent() != CONTENT_IGNORE) {
-			// Object collides into walkable nodes
+			if (is_position_valid && n.getContent() != CONTENT_IGNORE) {
+				// Object collides into walkable nodes
 
-			any_position_valid = true;
-			const NodeDefManager *nodedef = gamedef->getNodeDefManager();
-			const ContentFeatures &f = nodedef->get(n);
+				any_position_valid = true;
+				const NodeDefManager *nodedef = gamedef->getNodeDefManager();
+				const ContentFeatures &f = nodedef->get(n);
 
-			if (!f.walkable)
-				continue;
+				if (!f.walkable)
+					continue;
 
-			int n_bouncy_value = itemgroup_get(f.groups, "bouncy");
+				int n_bouncy_value = itemgroup_get(f.groups, "bouncy");
 
-			int neighbors = 0;
-			if (f.drawtype == NDT_NODEBOX &&
-				f.node_box.type == NODEBOX_CONNECTED) {
-				v3s16 p2 = p;
+				int neighbors = 0;
+				if (f.drawtype == NDT_NODEBOX &&
+						f.node_box.type == NODEBOX_CONNECTED) {
+					v3s16 p2 = p;
 
-				p2.Y++;
-				getNeighborConnectingFace(p2, nodedef, map, n, 1, &neighbors);
+					p2.Y++;
+					getNeighborConnectingFace(p2, nodedef, map, n, 1,
+							&neighbors);
 
-				p2 = p;
-				p2.Y--;
-				getNeighborConnectingFace(p2, nodedef, map, n, 2, &neighbors);
+					p2 = p;
+					p2.Y--;
+					getNeighborConnectingFace(p2, nodedef, map, n, 2,
+							&neighbors);
 
-				p2 = p;
-				p2.Z--;
-				getNeighborConnectingFace(p2, nodedef, map, n, 4, &neighbors);
+					p2 = p;
+					p2.Z--;
+					getNeighborConnectingFace(p2, nodedef, map, n, 4,
+							&neighbors);
 
-				p2 = p;
-				p2.X--;
-				getNeighborConnectingFace(p2, nodedef, map, n, 8, &neighbors);
+					p2 = p;
+					p2.X--;
+					getNeighborConnectingFace(p2, nodedef, map, n, 8,
+							&neighbors);
 
-				p2 = p;
-				p2.Z++;
-				getNeighborConnectingFace(p2, nodedef, map, n, 16, &neighbors);
+					p2 = p;
+					p2.Z++;
+					getNeighborConnectingFace(p2, nodedef, map, n, 16,
+							&neighbors);
 
-				p2 = p;
-				p2.X++;
-				getNeighborConnectingFace(p2, nodedef, map, n, 32, &neighbors);
+					p2 = p;
+					p2.X++;
+					getNeighborConnectingFace(p2, nodedef, map, n, 32,
+							&neighbors);
+				}
+				std::vector<aabb3f> nodeboxes;
+				n.getCollisionBoxes(gamedef->ndef(), &nodeboxes, neighbors);
+
+				// Calculate float position only once
+				v3f posf = intToFloat(p, BS);
+				for (auto box : nodeboxes) {
+					box.MinEdge += posf;
+					box.MaxEdge += posf;
+					cinfo.emplace_back(false, false, n_bouncy_value, p, box);
+				}
+			} else {
+				// Collide with unloaded nodes (position invalid) and loaded
+				// CONTENT_IGNORE nodes (position valid)
+				aabb3f box = getNodeBox(p, BS);
+				cinfo.emplace_back(true, false, 0, p, box);
 			}
-			std::vector<aabb3f> nodeboxes;
-			n.getCollisionBoxes(gamedef->ndef(), &nodeboxes, neighbors);
-
-			// Calculate float position only once
-			v3f posf = intToFloat(p, BS);
-			for (auto box : nodeboxes) {
-				box.MinEdge += posf;
-				box.MaxEdge += posf;
-				cinfo.emplace_back(false, false, n_bouncy_value, p, box);
-			}
-		} else {
-			// Collide with unloaded nodes (position invalid) and loaded
-			// CONTENT_IGNORE nodes (position valid)
-			aabb3f box = getNodeBox(p, BS);
-			cinfo.emplace_back(true, false, 0, p, box);
 		}
-	}
 
-	// Do not move if world has not loaded yet, since custom node boxes
-	// are not available for collision detection.
-	// This also intentionally occurs in the case of the object being positioned
-	// solely on loaded CONTENT_IGNORE nodes, no matter where they come from.
-	if (!any_position_valid) {
-		*speed_f = v3f(0, 0, 0);
-		return result;
-	}
+		// Do not move if world has not loaded yet, since custom node boxes
+		// are not available for collision detection.
+		// This also intentionally occurs in the case of the object being positioned
+		// solely on loaded CONTENT_IGNORE nodes, no matter where they come from.
+		if (!any_position_valid) {
+			*speed_f = v3f(0, 0, 0);
+			return result;
+		}
 
 	} // tt2
 
-	if(collideWithObjects)
+	if (collideWithObjects)
 	{
 		/* add object boxes to cinfo */
 
@@ -359,7 +366,7 @@ collisionMoveResult collisionMoveSimple(Environment *env, IGameDef *gamedef,
 		if (c_env != 0) {
 			// Calculate distance by speed, add own extent and 1.5m of tolerance
 			f32 distance = speed_f->getLength() * dtime +
-				box_0.getExtent().getLength() + 1.5f * BS;
+					box_0.getExtent().getLength() + 1.5f * BS;
 			std::vector<DistanceSortedActiveObject> clientobjects;
 			c_env->getActiveObjects(*pos_f, distance, clientobjects);
 
@@ -367,7 +374,7 @@ collisionMoveResult collisionMoveSimple(Environment *env, IGameDef *gamedef,
 				// Do collide with everything but itself and the parent CAO
 				if (!self || (self != clientobject.obj &&
 						self != clientobject.obj->getParent())) {
-					objects.push_back((ActiveObject*) clientobject.obj);
+					objects.push_back((ActiveObject*)clientobject.obj);
 				}
 			}
 		}
@@ -378,7 +385,7 @@ collisionMoveResult collisionMoveSimple(Environment *env, IGameDef *gamedef,
 			if (s_env != NULL) {
 				// Calculate distance by speed, add own extent and 1.5m of tolerance
 				f32 distance = speed_f->getLength() * dtime +
-					box_0.getExtent().getLength() + 1.5f * BS;
+						box_0.getExtent().getLength() + 1.5f * BS;
 				std::vector<u16> s_objects;
 				s_env->getObjectsInsideRadius(s_objects, *pos_f, distance);
 
@@ -394,7 +401,7 @@ collisionMoveResult collisionMoveSimple(Environment *env, IGameDef *gamedef,
 		}
 
 		for (std::vector<ActiveObject*>::const_iterator iter = objects.begin();
-				iter != objects.end(); ++iter) {
+		iter != objects.end(); ++iter) {
 			ActiveObject *object = *iter;
 
 			if (object) {
@@ -420,15 +427,17 @@ collisionMoveResult collisionMoveSimple(Environment *env, IGameDef *gamedef,
 	//f32 d = 0.15*BS;
 
 	// This should always apply, otherwise there are glitches
-	assert(d > pos_max_d);	// invariant
+	assert(d > pos_max_d); // invariant
 
 	int loopcount = 0;
 
-	while(dtime > BS * 1e-10f) {
+	while (dtime > BS * 1e-10f) {
 		// Avoid infinite loop
 		loopcount++;
 		if (loopcount >= 100) {
-			warningstream << "collisionMoveSimple: Loop count exceeded, aborting to avoid infiniite loop" << std::endl;
+			warningstream <<
+					"collisionMoveSimple: Loop count exceeded, aborting to avoid infiniite loop"
+					<< std::endl;
 			break;
 		}
 
@@ -465,18 +474,18 @@ collisionMoveResult collisionMoveSimple(Environment *env, IGameDef *gamedef,
 		if (nearest_collided == COLLISION_AXIS_NONE) {
 			// No collision with any collision box.
 			*pos_f += *speed_f * dtime;
-			dtime = 0;  // Set to 0 to avoid "infinite" loop due to small FP numbers
+			dtime = 0; // Set to 0 to avoid "infinite" loop due to small FP numbers
 		} else {
 			// Otherwise, a collision occurred.
 			NearbyCollisionInfo &nearest_info = cinfo[nearest_boxindex];
-			const aabb3f& cbox = nearest_info.box;
+			const aabb3f &cbox = nearest_info.box;
 			// Check for stairs.
 			bool step_up = (nearest_collided != COLLISION_AXIS_Y) && // must not be Y direction
 					(movingbox.MinEdge.Y < cbox.MaxEdge.Y) &&
 					(movingbox.MinEdge.Y + stepheight > cbox.MaxEdge.Y) &&
 					(!wouldCollideWithCeiling(cinfo, movingbox,
-							cbox.MaxEdge.Y - movingbox.MinEdge.Y,
-							d));
+					cbox.MaxEdge.Y - movingbox.MinEdge.Y,
+					d));
 
 			// Get bounce multiplier
 			float bounce = -(float)nearest_info.bouncy / 100.0f;
@@ -523,7 +532,7 @@ collisionMoveResult collisionMoveSimple(Environment *env, IGameDef *gamedef,
 					speed_f->X = 0;
 				result.collides = true;
 			} else if (nearest_collided == COLLISION_AXIS_Y) {
-				if(fabs(speed_f->Y) > BS * 3)
+				if (fabs(speed_f->Y) > BS * 3)
 					speed_f->Y *= bounce;
 				else
 					speed_f->Y = 0;
@@ -565,7 +574,8 @@ collisionMoveResult collisionMoveSimple(Environment *env, IGameDef *gamedef,
 
 			Use 0.15*BS so that it is easier to get on a node.
 		*/
-		if (cbox.MaxEdge.X - d > box.MinEdge.X && cbox.MinEdge.X + d < box.MaxEdge.X &&
+		if (cbox.MaxEdge.X - d > box.MinEdge.X &&
+				cbox.MinEdge.X + d < box.MaxEdge.X &&
 				cbox.MaxEdge.Z - d > box.MinEdge.Z &&
 				cbox.MinEdge.Z + d < box.MaxEdge.Z) {
 			if (box_info.is_step_up) {

@@ -85,10 +85,10 @@ bool RollbackAction::isImportant(IGameDef *gamedef) const
 	if (type != TYPE_SET_NODE)
 		return true;
 	// If names differ, action is always important
-	if(n_old.name != n_new.name)
+	if (n_old.name != n_new.name)
 		return true;
 	// If metadata differs, action is always important
-	if(n_old.meta != n_new.meta)
+	if (n_old.meta != n_new.meta)
 		return true;
 	const NodeDefManager *ndef = gamedef->ndef();
 	// Both are of the same name, so a single definition is needed
@@ -107,124 +107,128 @@ bool RollbackAction::getPosition(v3s16 *dst) const
 	case TYPE_SET_NODE:
 		if (dst) *dst = p;
 		return true;
-	case TYPE_MODIFY_INVENTORY_STACK: {
-		InventoryLocation loc;
-		loc.deSerialize(inventory_location);
-		if (loc.type != InventoryLocation::NODEMETA) {
-			return false;
+		case TYPE_MODIFY_INVENTORY_STACK: {
+			InventoryLocation loc;
+			loc.deSerialize(inventory_location);
+			if (loc.type != InventoryLocation::NODEMETA) {
+				return false;
+			}
+			if (dst) *dst = loc.p;
+			return true;
 		}
-		if (dst) *dst = loc.p;
-		return true; }
 	default:
 		return false;
 	}
 }
 
 
-bool RollbackAction::applyRevert(Map *map, InventoryManager *imgr, IGameDef *gamedef) const
+bool RollbackAction::applyRevert(Map *map, InventoryManager *imgr,
+		IGameDef *gamedef) const
 {
 	try {
 		switch (type) {
 		case TYPE_NOTHING:
 			return true;
-		case TYPE_SET_NODE: {
-			const NodeDefManager *ndef = gamedef->ndef();
-			// Make sure position is loaded from disk
-			map->emergeBlock(getContainerPos(p, MAP_BLOCKSIZE), false);
-			// Check current node
-			MapNode current_node = map->getNode(p);
-			std::string current_name = ndef->get(current_node).name;
-			// If current node not the new node, it's bad
-			if (current_name != n_new.name) {
-				return false;
-			}
-			// Create rollback node
-			content_t id = CONTENT_IGNORE;
-			if (!ndef->getId(n_old.name, id)) {
-				// The old node is not registered
-				return false;
-			}
-			MapNode n(id, n_old.param1, n_old.param2);
-			// Set rollback node
-			try {
-				if (!map->addNodeWithEvent(p, n)) {
-					infostream << "RollbackAction::applyRevert(): "
-						<< "AddNodeWithEvent failed at "
-						<< PP(p) << " for " << n_old.name
-						<< std::endl;
+			case TYPE_SET_NODE: {
+				const NodeDefManager *ndef = gamedef->ndef();
+				// Make sure position is loaded from disk
+				map->emergeBlock(getContainerPos(p, MAP_BLOCKSIZE), false);
+				// Check current node
+				MapNode current_node = map->getNode(p);
+				std::string current_name = ndef->get(current_node).name;
+				// If current node not the new node, it's bad
+				if (current_name != n_new.name) {
 					return false;
 				}
-				if (n_old.meta.empty()) {
-					map->removeNodeMetadata(p);
-				} else {
-					NodeMetadata *meta = map->getNodeMetadata(p);
-					if (!meta) {
-						meta = new NodeMetadata(gamedef->idef());
-						if (!map->setNodeMetadata(p, meta)) {
-							delete meta;
-							infostream << "RollbackAction::applyRevert(): "
-								<< "setNodeMetadata failed at "
+				// Create rollback node
+				content_t id = CONTENT_IGNORE;
+				if (!ndef->getId(n_old.name, id)) {
+					// The old node is not registered
+					return false;
+				}
+				MapNode n(id, n_old.param1, n_old.param2);
+				// Set rollback node
+				try {
+					if (!map->addNodeWithEvent(p, n)) {
+						infostream << "RollbackAction::applyRevert(): "
+								<< "AddNodeWithEvent failed at "
 								<< PP(p) << " for " << n_old.name
 								<< std::endl;
-							return false;
-						}
+						return false;
 					}
-					std::istringstream is(n_old.meta, std::ios::binary);
-					meta->deSerialize(is, 1); // FIXME: version bump??
-				}
-				// Inform other things that the meta data has changed
-				MapEditEvent event;
-				event.type = MEET_BLOCK_NODE_METADATA_CHANGED;
-				event.p = p;
-				map->dispatchEvent(event);
-			} catch (InvalidPositionException &e) {
-				infostream << "RollbackAction::applyRevert(): "
-					<< "InvalidPositionException: " << e.what()
-					<< std::endl;
-				return false;
-			}
-			// Success
-			return true; }
-		case TYPE_MODIFY_INVENTORY_STACK: {
-			InventoryLocation loc;
-			loc.deSerialize(inventory_location);
-			Inventory *inv = imgr->getInventory(loc);
-			if (!inv) {
-				infostream << "RollbackAction::applyRevert(): Could not get "
-					"inventory at " << inventory_location << std::endl;
-				return false;
-			}
-			InventoryList *list = inv->getList(inventory_list);
-			if (!list) {
-				infostream << "RollbackAction::applyRevert(): Could not get "
-					"inventory list \"" << inventory_list << "\" in "
-					<< inventory_location << std::endl;
-				return false;
-			}
-			if (list->getSize() <= inventory_index) {
-				infostream << "RollbackAction::applyRevert(): List index "
-					<< inventory_index << " too large in "
-					<< "inventory list \"" << inventory_list << "\" in "
-					<< inventory_location << std::endl;
-				return false;
-			}
-
-			// If item was added, take away item, otherwise add removed item
-			if (inventory_add) {
-				// Silently ignore different current item
-				if (list->getItem(inventory_index).name !=
-						gamedef->idef()->getAlias(inventory_stack.name))
+					if (n_old.meta.empty()) {
+						map->removeNodeMetadata(p);
+					} else {
+						NodeMetadata *meta = map->getNodeMetadata(p);
+						if (!meta) {
+							meta = new NodeMetadata(gamedef->idef());
+							if (!map->setNodeMetadata(p, meta)) {
+								delete meta;
+								infostream << "RollbackAction::applyRevert(): "
+										<< "setNodeMetadata failed at "
+										<< PP(p) << " for " << n_old.name
+										<< std::endl;
+								return false;
+							}
+						}
+						std::istringstream is(n_old.meta, std::ios::binary);
+						meta->deSerialize(is, 1); // FIXME: version bump??
+					}
+					// Inform other things that the meta data has changed
+					MapEditEvent event;
+					event.type = MEET_BLOCK_NODE_METADATA_CHANGED;
+					event.p = p;
+					map->dispatchEvent(event);
+				} catch(InvalidPositionException &e) {
+					infostream << "RollbackAction::applyRevert(): "
+							<< "InvalidPositionException: " << e.what()
+							<< std::endl;
 					return false;
-				list->takeItem(inventory_index, inventory_stack.count);
-			} else {
-				list->addItem(inventory_index, inventory_stack);
+				}
+				// Success
+				return true;
 			}
-			// Inventory was modified; send to clients
-			imgr->setInventoryModified(loc);
-			return true; }
+			case TYPE_MODIFY_INVENTORY_STACK: {
+				InventoryLocation loc;
+				loc.deSerialize(inventory_location);
+				Inventory *inv = imgr->getInventory(loc);
+				if (!inv) {
+					infostream << "RollbackAction::applyRevert(): Could not get "
+							"inventory at " << inventory_location << std::endl;
+					return false;
+				}
+				InventoryList *list = inv->getList(inventory_list);
+				if (!list) {
+					infostream << "RollbackAction::applyRevert(): Could not get "
+							"inventory list \"" << inventory_list << "\" in "
+							<< inventory_location << std::endl;
+					return false;
+				}
+				if (list->getSize() <= inventory_index) {
+					infostream << "RollbackAction::applyRevert(): List index "
+							<< inventory_index << " too large in "
+							<< "inventory list \"" << inventory_list << "\" in "
+							<< inventory_location << std::endl;
+					return false;
+				}
+
+				// If item was added, take away item, otherwise add removed item
+				if (inventory_add) {
+					// Silently ignore different current item
+					if (list->getItem(inventory_index).name !=
+							gamedef->idef()->getAlias(inventory_stack.name))
+						return false;
+					list->takeItem(inventory_index, inventory_stack.count);
+				} else {
+					list->addItem(inventory_index, inventory_stack);
+				}
+				// Inventory was modified; send to clients
+				imgr->setInventoryModified(loc);
+				return true;
+			}
 		default:
 			errorstream << "RollbackAction::applyRevert(): type not handled"
-				<< std::endl;
+					<< std::endl;
 			return false;
 		}
 	} catch(SerializationError &e) {

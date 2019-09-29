@@ -34,7 +34,7 @@ private:
 	static const char className[];
 	static const luaL_Reg methods[];
 
-	static ItemStackMetaRef *checkobject(lua_State *L, int narg);
+	static ItemStackMetaRef* checkobject(lua_State *L, int narg);
 
 	virtual Metadata* getmeta(bool auto_create);
 
@@ -58,7 +58,7 @@ private:
 	// garbage collector
 	static int gc_object(lua_State *L);
 public:
-	ItemStackMetaRef(ItemStack *istack): istack(istack) {}
+	ItemStackMetaRef(ItemStack *istack) : istack(istack){}
 	~ItemStackMetaRef() = default;
 
 	// Creates an ItemStackMetaRef and leaves it on top of stack

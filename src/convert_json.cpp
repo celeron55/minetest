@@ -57,7 +57,7 @@ Json::Value fetchJsonValue(const std::string &url,
 		errorstream << "Failed to parse json data " << errs << std::endl;
 		if (fetch_result.data.size() > 100) {
 			errorstream << "Data (" << fetch_result.data.size()
-				<< " bytes) printed to warningstream." << std::endl;
+					<< " bytes) printed to warningstream." << std::endl;
 			warningstream << "data: \"" << fetch_result.data << "\"" << std::endl;
 		} else {
 			errorstream << "data: \"" << fetch_result.data << "\"" << std::endl;

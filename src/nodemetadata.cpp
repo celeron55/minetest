@@ -31,8 +31,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 	NodeMetadata
 */
 
-NodeMetadata::NodeMetadata(IItemDefManager *item_def_mgr):
-	m_inventory(new Inventory(item_def_mgr))
+NodeMetadata::NodeMetadata(IItemDefManager *item_def_mgr) :
+m_inventory(new Inventory(item_def_mgr))
 {}
 
 NodeMetadata::~NodeMetadata()
@@ -62,7 +62,7 @@ void NodeMetadata::deSerialize(std::istream &is, u8 version)
 {
 	clear();
 	int num_vars = readU32(is);
-	for(int i=0; i<num_vars; i++){
+	for (int i = 0; i<num_vars; i++) {
 		std::string name = deSerializeString(is);
 		std::string var = deSerializeLongString(is);
 		m_stringvars[name] = var;
@@ -113,7 +113,7 @@ int NodeMetadata::countNonPrivate() const
 */
 
 void NodeMetadataList::serialize(std::ostream &os, u8 blockver, bool disk,
-	bool absolute_pos) const
+		bool absolute_pos) const
 {
 	/*
 		Version 0 is a placeholder for "nothing to see here; go away."
@@ -131,7 +131,7 @@ void NodeMetadataList::serialize(std::ostream &os, u8 blockver, bool disk,
 
 	for (NodeMetadataMap::const_iterator
 			i = m_data.begin();
-			i != m_data.end(); ++i) {
+	i != m_data.end(); ++i) {
 		v3s16 p = i->first;
 		NodeMetadata *data = i->second;
 		if (data->empty())
@@ -151,7 +151,7 @@ void NodeMetadataList::serialize(std::ostream &os, u8 blockver, bool disk,
 }
 
 void NodeMetadataList::deSerialize(std::istream &is,
-	IItemDefManager *item_def_mgr, bool absolute_pos)
+		IItemDefManager *item_def_mgr, bool absolute_pos)
 {
 	clear();
 
@@ -164,7 +164,7 @@ void NodeMetadataList::deSerialize(std::istream &is,
 
 	if (version > 2) {
 		std::string err_str = std::string(FUNCTION_NAME)
-			+ ": version " + itos(version) + " not supported";
+				+ ": version " + itos(version) + " not supported";
 		infostream << err_str << std::endl;
 		throw SerializationError(err_str);
 	}
@@ -188,7 +188,7 @@ void NodeMetadataList::deSerialize(std::istream &is,
 		if (m_data.find(p) != m_data.end()) {
 			warningstream << "NodeMetadataList::deSerialize(): "
 					<< "already set data at position " << PP(p)
-					<< ": Ignoring." << std::endl;
+			<< ": Ignoring." << std::endl;
 			continue;
 		}
 
@@ -214,7 +214,7 @@ std::vector<v3s16> NodeMetadataList::getAllKeys()
 	return keys;
 }
 
-NodeMetadata *NodeMetadataList::get(v3s16 p)
+NodeMetadata* NodeMetadataList::get(v3s16 p)
 {
 	NodeMetadataMap::const_iterator n = m_data.find(p);
 	if (n == m_data.end())

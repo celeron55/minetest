@@ -38,15 +38,15 @@ struct ChatLine
 	// message text
 	EnrichedString text;
 
-	ChatLine(const std::wstring &a_name, const std::wstring &a_text):
-		name(a_name),
-		text(a_text)
+	ChatLine(const std::wstring &a_name, const std::wstring &a_text) :
+	name(a_name),
+	text(a_text)
 	{
 	}
 
-	ChatLine(const EnrichedString &a_name, const EnrichedString &a_text):
-		name(a_name),
-		text(a_text)
+	ChatLine(const EnrichedString &a_name, const EnrichedString &a_text) :
+	name(a_name),
+	text(a_text)
 	{
 	}
 };
@@ -116,8 +116,8 @@ public:
 	// Format a chat line for the given number of columns.
 	// Appends the formatted lines to the destination array and
 	// returns the number of formatted lines.
-	u32 formatChatLine(const ChatLine& line, u32 cols,
-			std::vector<ChatFormattedLine>& destination) const;
+	u32 formatChatLine(const ChatLine &line, u32 cols,
+			std::vector<ChatFormattedLine> &destination) const;
 
 	void resize(u32 scrollback);
 protected:
@@ -159,7 +159,9 @@ public:
 	std::wstring getLine() const { return m_line; }
 
 	// Get section of line that is currently selected
-	std::wstring getSelection() const { return m_line.substr(m_cursor, m_cursor_len); }
+	std::wstring getSelection() const {
+		return m_line.substr(m_cursor, m_cursor_len);
+	}
 
 	// Clear the current line
 	void clear();
@@ -173,7 +175,7 @@ public:
 	void historyNext();
 
 	// Nick completion
-	void nickCompletion(const std::list<std::string>& names, bool backwards);
+	void nickCompletion(const std::list<std::string> &names, bool backwards);
 
 	// Update console size and reformat the visible portion of the prompt
 	void reformat(u32 cols);

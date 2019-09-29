@@ -44,9 +44,9 @@ class ModApiBase : protected LuaHelper {
 public:
 	static ScriptApiBase*   getScriptApiBase(lua_State *L);
 	static Server*          getServer(lua_State *L);
-	#ifndef SERVER
+#ifndef SERVER
 	static Client*          getClient(lua_State *L);
-	#endif // !SERVER
+#endif // !SERVER
 
 	static IGameDef*        getGameDef(lua_State *L);
 
@@ -58,7 +58,7 @@ public:
 	// Get an arbitrary subclass of ScriptApiBase
 	// by using dynamic_cast<> on getScriptApiBase()
 	template<typename T>
-	static T* getScriptApi(lua_State *L) {
+	static T* getScriptApi(lua_State *L){
 		ScriptApiBase *scriptIface = getScriptApiBase(L);
 		T *scriptIfaceDowncast = dynamic_cast<T*>(scriptIface);
 		if (!scriptIfaceDowncast) {
@@ -68,7 +68,7 @@ public:
 	}
 
 	static bool registerFunction(lua_State *L,
-			const char* name,
+			const char *name,
 			lua_CFunction func,
 			int top);
 

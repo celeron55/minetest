@@ -26,12 +26,12 @@ class ServerActiveObject;
 
 struct InventoryLocation
 {
-	enum Type{
+	enum Type {
 		UNDEFINED,
 		CURRENT_PLAYER,
 		PLAYER,
 		NODEMETA,
-        DETACHED,
+		DETACHED,
 	} type;
 
 	std::string name; // PLAYER, DETACHED
@@ -67,9 +67,9 @@ struct InventoryLocation
 
 	bool operator==(const InventoryLocation &other) const
 	{
-		if(type != other.type)
+		if (type != other.type)
 			return false;
-		switch(type){
+		switch (type) {
 		case UNDEFINED:
 			return false;
 		case CURRENT_PLAYER:
@@ -90,7 +90,7 @@ struct InventoryLocation
 
 	void applyCurrentPlayer(const std::string &name_)
 	{
-		if(type == CURRENT_PLAYER)
+		if (type == CURRENT_PLAYER)
 			setPlayer(name_);
 	}
 
@@ -109,10 +109,10 @@ public:
 	virtual ~InventoryManager() = default;
 
 	// Get an inventory (server and client)
-	virtual Inventory* getInventory(const InventoryLocation &loc){return NULL;}
-    // Set modified (will be saved and sent over network; only on server)
-	virtual void setInventoryModified(const InventoryLocation &loc) {}
-    // Send inventory action to server (only on client)
+	virtual Inventory* getInventory(const InventoryLocation &loc){ return NULL; }
+	// Set modified (will be saved and sent over network; only on server)
+	virtual void setInventoryModified(const InventoryLocation &loc){}
+	// Send inventory action to server (only on client)
 	virtual void inventoryAction(InventoryAction *a){}
 };
 
@@ -124,14 +124,14 @@ enum class IAction : u16 {
 
 struct InventoryAction
 {
-	static InventoryAction *deSerialize(std::istream &is);
+	static InventoryAction* deSerialize(std::istream &is);
 
 	virtual IAction getType() const = 0;
 	virtual void serialize(std::ostream &os) const = 0;
 	virtual void apply(InventoryManager *mgr, ServerActiveObject *player,
 			IGameDef *gamedef) = 0;
 	virtual void clientApply(InventoryManager *mgr, IGameDef *gamedef) = 0;
-	virtual ~InventoryAction() = default;;
+	virtual ~InventoryAction() = default;
 };
 
 struct MoveAction

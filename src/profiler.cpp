@@ -24,8 +24,8 @@ static Profiler main_profiler;
 Profiler *g_profiler = &main_profiler;
 ScopeProfiler::ScopeProfiler(
 		Profiler *profiler, const std::string &name, ScopeProfilerType type) :
-		m_profiler(profiler),
-		m_name(name), m_type(type)
+m_profiler(profiler),
+m_name(name), m_type(type)
 {
 	m_name.append(" [ms]");
 	if (m_profiler)

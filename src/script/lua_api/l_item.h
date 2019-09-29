@@ -20,7 +20,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #pragma once
 
 #include "lua_api/l_base.h"
-#include "inventory.h"  // ItemStack
+#include "inventory.h" // ItemStack
 
 class LuaItemStack : public ModApiBase {
 private:

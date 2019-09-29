@@ -26,10 +26,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "server.h"
 
 // LUALIB_API
-void *luaL_checkudata_is_metadataref(lua_State *L, int ud) {
+void* luaL_checkudata_is_metadataref(lua_State *L, int ud){
 	void *p = lua_touserdata(L, ud);
-	if (p != NULL &&  // value is a userdata?
-			lua_getmetatable(L, ud)) {  // does it have a metatable?
+	if (p != NULL && // value is a userdata?
+			lua_getmetatable(L, ud)) { // does it have a metatable?
 		lua_getfield(L, -1, "metadata_class");
 		if (lua_type(L, -1) == LUA_TSTRING) { // does it have a metadata_class field?
 			return p;
@@ -46,7 +46,7 @@ MetaDataRef* MetaDataRef::checkobject(lua_State *L, int narg)
 	if (!ud)
 		luaL_typerror(L, narg, "MetaDataRef");
 
-	return *(MetaDataRef**)ud;  // unbox pointer
+	return *(MetaDataRef**)ud; // unbox pointer
 }
 
 // Exported functions

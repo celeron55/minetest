@@ -22,10 +22,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "mapblock.h"
 #include "serialization.h"
 
-MapSector::MapSector(Map *parent, v2s16 pos, IGameDef *gamedef):
-		m_parent(parent),
-		m_pos(pos),
-		m_gamedef(gamedef)
+MapSector::MapSector(Map *parent, v2s16 pos, IGameDef *gamedef) :
+m_parent(parent),
+m_pos(pos),
+m_gamedef(gamedef)
 {
 }
 
@@ -48,7 +48,7 @@ void MapSector::deleteBlocks()
 	m_blocks.clear();
 }
 
-MapBlock * MapSector::getBlockBuffered(s16 y)
+MapBlock* MapSector::getBlockBuffered(s16 y)
 {
 	MapBlock *block;
 
@@ -67,14 +67,14 @@ MapBlock * MapSector::getBlockBuffered(s16 y)
 	return block;
 }
 
-MapBlock * MapSector::getBlockNoCreateNoEx(s16 y)
+MapBlock* MapSector::getBlockNoCreateNoEx(s16 y)
 {
 	return getBlockBuffered(y);
 }
 
-MapBlock * MapSector::createBlankBlockNoInsert(s16 y)
+MapBlock* MapSector::createBlankBlockNoInsert(s16 y)
 {
-	assert(getBlockBuffered(y) == NULL);	// Pre-condition
+	assert(getBlockBuffered(y) == NULL); // Pre-condition
 
 	v3s16 blockpos_map(m_pos.X, y, m_pos.Y);
 
@@ -83,7 +83,7 @@ MapBlock * MapSector::createBlankBlockNoInsert(s16 y)
 	return block;
 }
 
-MapBlock * MapSector::createBlankBlock(s16 y)
+MapBlock* MapSector::createBlankBlock(s16 y)
 {
 	MapBlock *block = createBlankBlockNoInsert(y);
 

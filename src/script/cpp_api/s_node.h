@@ -29,7 +29,7 @@ class ServerActiveObject;
 
 class ScriptApiNode
 		: virtual public ScriptApiBase,
-		  public ScriptApiNodemeta
+		public ScriptApiNodemeta
 {
 public:
 	ScriptApiNode() = default;

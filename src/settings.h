@@ -34,14 +34,14 @@ extern Settings *g_settings;
 extern std::string g_settings_path;
 
 // Type for a settings changed callback function
-typedef void (*SettingsChangedCallback)(const std::string &name, void *data);
+typedef void (*SettingsChangedCallback)(const std::string &name, void * data);
 
 typedef std::vector<
-	std::pair<
-		SettingsChangedCallback,
-		void *
-	>
-> SettingsCallbackList;
+			std::pair<
+			SettingsChangedCallback,
+			void*
+			>
+			> SettingsCallbackList;
 
 typedef std::unordered_map<std::string, SettingsCallbackList> SettingsCallbackMap;
 
@@ -61,7 +61,7 @@ enum SettingsParseEvent {
 };
 
 struct ValueSpec {
-	ValueSpec(ValueType a_type, const char *a_help=NULL)
+	ValueSpec(ValueType a_type, const char *a_help = NULL)
 	{
 		type = a_type;
 		help = a_help;
@@ -75,12 +75,12 @@ struct SettingsEntry {
 	SettingsEntry() = default;
 
 	SettingsEntry(const std::string &value_) :
-		value(value_)
+	value(value_)
 	{}
 
 	SettingsEntry(Settings *group_) :
-		group(group_),
-		is_group(true)
+	group(group_),
+	is_group(true)
 	{}
 
 	std::string value = "";
@@ -96,8 +96,8 @@ public:
 
 	~Settings();
 
-	Settings & operator += (const Settings &other);
-	Settings & operator = (const Settings &other);
+	Settings& operator+=(const Settings &other);
+	Settings& operator=(const Settings &other);
 
 	/***********************
 	 * Reading and writing *
@@ -111,28 +111,28 @@ public:
 	bool parseCommandLine(int argc, char *argv[],
 			std::map<std::string, ValueSpec> &allowed_options);
 	bool parseConfigLines(std::istream &is, const std::string &end = "");
-	void writeLines(std::ostream &os, u32 tab_depth=0) const;
+	void writeLines(std::ostream &os, u32 tab_depth = 0) const;
 
 	SettingsParseEvent parseConfigObject(const std::string &line,
-		const std::string &end, std::string &name, std::string &value);
+			const std::string &end, std::string &name, std::string &value);
 	bool updateConfigObject(std::istream &is, std::ostream &os,
-		const std::string &end, u32 tab_depth=0);
+			const std::string &end, u32 tab_depth = 0);
 
 	static bool checkNameValid(const std::string &name);
 	static bool checkValueValid(const std::string &value);
-	static std::string getMultiline(std::istream &is, size_t *num_lines=NULL);
+	static std::string getMultiline(std::istream &is, size_t *num_lines = NULL);
 	static void printEntry(std::ostream &os, const std::string &name,
-		const SettingsEntry &entry, u32 tab_depth=0);
+			const SettingsEntry &entry, u32 tab_depth = 0);
 
 	/***********
 	 * Getters *
 	 ***********/
 
-	const SettingsEntry &getEntry(const std::string &name) const;
-	const SettingsEntry &getEntryDefault(const std::string &name) const;
-	Settings *getGroup(const std::string &name) const;
-	const std::string &get(const std::string &name) const;
-	const std::string &getDefault(const std::string &name) const;
+	const SettingsEntry& getEntry(const std::string &name) const;
+	const SettingsEntry& getEntryDefault(const std::string &name) const;
+	Settings* getGroup(const std::string &name) const;
+	const std::string& get(const std::string &name) const;
+	const std::string& getDefault(const std::string &name) const;
 	bool getBool(const std::string &name) const;
 	u16 getU16(const std::string &name) const;
 	s16 getS16(const std::string &name) const;
@@ -163,7 +163,7 @@ public:
 
 	bool getEntryNoEx(const std::string &name, SettingsEntry &val) const;
 	bool getEntryDefaultNoEx(const std::string &name, SettingsEntry &val) const;
-	bool getGroupNoEx(const std::string &name, Settings *&val) const;
+	bool getGroupNoEx(const std::string &name, Settings* &val) const;
 	bool getNoEx(const std::string &name, std::string &val) const;
 	bool getDefaultNoEx(const std::string &name, std::string &val) const;
 	bool getFlag(const std::string &name) const;
@@ -187,7 +187,7 @@ public:
 	// N.B. Groups not allocated with new must be set to NULL in the settings
 	// tree before object destruction.
 	bool setEntry(const std::string &name, const void *entry,
-		bool set_group, bool set_default);
+			bool set_group, bool set_default);
 	bool set(const std::string &name, const std::string &value);
 	bool setDefault(const std::string &name, const std::string &value);
 	bool setGroup(const std::string &name, Settings *group);
@@ -201,9 +201,9 @@ public:
 	bool setV2F(const std::string &name, v2f value);
 	bool setV3F(const std::string &name, v3f value);
 	bool setFlagStr(const std::string &name, u32 flags,
-		const FlagDesc *flagdesc, u32 flagmask);
+			const FlagDesc *flagdesc, u32 flagmask);
 	bool setNoiseParams(const std::string &name, const NoiseParams &np,
-		bool set_default=false);
+			bool set_default = false);
 	// N.B. if setStruct() is used to write a non-POD aggregate type,
 	// the behavior is undefined.
 	bool setStruct(const std::string &name, const std::string &format, void *value);
@@ -216,9 +216,9 @@ public:
 	void update(const Settings &other);
 
 	void registerChangedCallback(const std::string &name,
-		SettingsChangedCallback cbf, void *userdata = NULL);
+			SettingsChangedCallback cbf, void *userdata = NULL);
 	void deregisterChangedCallback(const std::string &name,
-		SettingsChangedCallback cbf, void *userdata = NULL);
+			SettingsChangedCallback cbf, void *userdata = NULL);
 
 private:
 	void updateNoLock(const Settings &other);

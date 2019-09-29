@@ -29,10 +29,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 class MainMenuScripting
 		: virtual public ScriptApiBase,
-		  public ScriptApiMainMenu
+		public ScriptApiMainMenu
 {
 public:
-	MainMenuScripting(GUIEngine* guiengine);
+	MainMenuScripting(GUIEngine *guiengine);
 
 	// Global step handler to pass back async events
 	void step();

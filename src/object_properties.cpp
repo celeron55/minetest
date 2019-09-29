@@ -27,7 +27,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 ObjectProperties::ObjectProperties()
 {
 	textures.emplace_back("unknown_object.png");
-	colors.emplace_back(255,255,255,255);
+	colors.emplace_back(255, 255, 255, 255);
 }
 
 std::string ObjectProperties::dump()
@@ -38,7 +38,8 @@ std::string ObjectProperties::dump()
 	os << ", physical=" << physical;
 	os << ", collideWithObjects=" << collideWithObjects;
 	os << ", weight=" << weight;
-	os << ", collisionbox=" << PP(collisionbox.MinEdge) << "," << PP(collisionbox.MaxEdge);
+	os << ", collisionbox=" << PP(collisionbox.MinEdge) << "," << PP(
+			collisionbox.MaxEdge);
 	os << ", visual=" << visual;
 	os << ", mesh=" << mesh;
 	os << ", visual_size=" << PP(visual_size);
@@ -50,7 +51,7 @@ std::string ObjectProperties::dump()
 	os << ", colors=[";
 	for (const video::SColor &color : colors) {
 		os << "\"" << color.getAlpha() << "," << color.getRed() << ","
-			<< color.getGreen() << "," << color.getBlue() << "\" ";
+				<< color.getGreen() << "," << color.getBlue() << "\" ";
 	}
 	os << "]";
 	os << ", spritediv=" << PP2(spritediv);
@@ -61,9 +62,11 @@ std::string ObjectProperties::dump()
 	os << ", backface_culling="<< backface_culling;
 	os << ", glow=" << glow;
 	os << ", nametag=" << nametag;
-	os << ", nametag_color=" << "\"" << nametag_color.getAlpha() << "," << nametag_color.getRed()
+	os << ", nametag_color=" << "\"" << nametag_color.getAlpha() << "," <<
+			nametag_color.getRed()
 			<< "," << nametag_color.getGreen() << "," << nametag_color.getBlue() << "\" ";
-	os << ", selectionbox=" << PP(selectionbox.MinEdge) << "," << PP(selectionbox.MaxEdge);
+	os << ", selectionbox=" << PP(selectionbox.MinEdge) << "," << PP(
+			selectionbox.MaxEdge);
 	os << ", pointable=" << pointable;
 	os << ", static_save=" << static_save;
 	os << ", eye_height=" << eye_height;
@@ -138,7 +141,7 @@ void ObjectProperties::deSerialize(std::istream &is)
 	visual_size = readV3F32(is);
 	textures.clear();
 	u32 texture_count = readU16(is);
-	for (u32 i = 0; i < texture_count; i++){
+	for (u32 i = 0; i < texture_count; i++) {
 		textures.push_back(deSerializeString(is));
 	}
 	spritediv = readV2S16(is);
@@ -149,7 +152,7 @@ void ObjectProperties::deSerialize(std::istream &is)
 	mesh = deSerializeString(is);
 	colors.clear();
 	u32 color_count = readU16(is);
-	for (u32 i = 0; i < color_count; i++){
+	for (u32 i = 0; i < color_count; i++) {
 		colors.push_back(readARGB8(is));
 	}
 	collideWithObjects = readU8(is);

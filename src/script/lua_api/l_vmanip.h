@@ -33,7 +33,7 @@ class MMVManip;
 class LuaVoxelManip : public ModApiBase
 {
 private:
-	std::map<v3s16, MapBlock *> modified_blocks;
+	std::map<v3s16, MapBlock*> modified_blocks;
 	bool is_mapgen_vm = false;
 
 	static const char className[];
@@ -75,7 +75,7 @@ public:
 	// Creates a LuaVoxelManip and leaves it on top of stack
 	static int create_object(lua_State *L);
 
-	static LuaVoxelManip *checkobject(lua_State *L, int narg);
+	static LuaVoxelManip* checkobject(lua_State *L, int narg);
 
 	static void Register(lua_State *L);
 };

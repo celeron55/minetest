@@ -28,11 +28,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 class Client;
 class LocalPlayer;
 class Camera;
-class ClientScripting:
-	virtual public ScriptApiBase,
-	public ScriptApiSecurity,
-	public ScriptApiClient,
-	public ScriptApiModChannels
+class ClientScripting :
+virtual public ScriptApiBase,
+		public ScriptApiSecurity,
+		public ScriptApiClient,
+		public ScriptApiModChannels
 {
 public:
 	ClientScripting(Client *client);

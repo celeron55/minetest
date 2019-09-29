@@ -65,7 +65,7 @@ int ModApiUtil::l_log(lua_State *L)
 		level = Logger::stringToLevel(name);
 		if (level == LL_MAX) {
 			warningstream << "Tried to log at unknown level '" << name
-				<< "'.  Defaulting to \"none\"." << std::endl;
+					<< "'.  Defaulting to \"none\"." << std::endl;
 			level = LL_NONE;
 		}
 	}
@@ -109,7 +109,7 @@ int ModApiUtil::l_parse_json(lua_State *L)
 			size_t jlen = strlen(jsonstr);
 			if (jlen > 100) {
 				errorstream << "Data (" << jlen
-					<< " bytes) printed to warningstream." << std::endl;
+						<< " bytes) printed to warningstream." << std::endl;
 				warningstream << "data: \"" << jsonstr << "\"" << std::endl;
 			} else {
 				errorstream << "data: \"" << jsonstr << "\"" << std::endl;
@@ -121,7 +121,7 @@ int ModApiUtil::l_parse_json(lua_State *L)
 
 	if (!push_json_value(L, root, nullindex)) {
 		errorstream << "Failed to parse json data, "
-			<< "depth exceeds lua stack limit" << std::endl;
+				<< "depth exceeds lua stack limit" << std::endl;
 		errorstream << "data: \"" << jsonstr << "\"" << std::endl;
 		lua_pushnil(L);
 	}
@@ -142,7 +142,7 @@ int ModApiUtil::l_write_json(lua_State *L)
 	Json::Value root;
 	try {
 		read_json_value(L, root, 1);
-	} catch (SerializationError &e) {
+	} catch(SerializationError &e) {
 		lua_pushnil(L);
 		lua_pushstring(L, e.what());
 		return 2;
@@ -176,7 +176,7 @@ int ModApiUtil::l_get_hit_params(lua_State *L)
 	std::unordered_map<std::string, int> groups;
 	read_groups(L, 1, groups);
 	ToolCapabilities tp = read_tool_capabilities(L, 2);
-	if(lua_isnoneornil(L, 3))
+	if (lua_isnoneornil(L, 3))
 		push_hit_params(L, getHitParams(groups, &tp));
 	else
 		push_hit_params(L, getHitParams(groups, &tp, readParam<float>(L, 3)));
@@ -306,7 +306,7 @@ int ModApiUtil::l_encode_base64(lua_State *L)
 	size_t size;
 	const char *data = luaL_checklstring(L, 1, &size);
 
-	std::string out = base64_encode((const unsigned char *)(data), size);
+	std::string out = base64_encode((const unsigned char*)(data), size);
 
 	lua_pushlstring(L, out.data(), out.size());
 	return 1;
@@ -413,7 +413,7 @@ int ModApiUtil::l_request_insecure_environment(lua_State *L)
 	std::string mod_name = readParam<std::string>(L, -1);
 	std::string trusted_mods = g_settings->get("secure.trusted_mods");
 	trusted_mods.erase(std::remove_if(trusted_mods.begin(),
-			trusted_mods.end(), static_cast<int(*)(int)>(&std::isspace)),
+			trusted_mods.end(), static_cast<int (*)(int)>(&std::isspace)),
 			trusted_mods.end());
 	std::vector<std::string> mod_list = str_split(trusted_mods, ',');
 	if (std::find(mod_list.begin(), mod_list.end(), mod_name) ==
@@ -459,7 +459,7 @@ int ModApiUtil::l_sha1(lua_State *L)
 		SHA1 ctx;
 		ctx.addBytes(data, size);
 		unsigned char *data_tmpdigest = ctx.getDigest();
-		data_sha1.assign((char*) data_tmpdigest, 20);
+		data_sha1.assign((char*)data_tmpdigest, 20);
 		free(data_tmpdigest);
 	}
 

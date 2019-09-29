@@ -43,7 +43,8 @@ float decode_light_f(float x)
 		return 1.0f;
 	x = std::fmax(x, 0.0f);
 	float brightness = ((params.a * x + params.b) * x + params.c) * x;
-	brightness += params.boost * std::exp(-0.5f * sqr((x - params.center) / params.sigma));
+	brightness += params.boost *
+			std::exp(-0.5f * sqr((x - params.center) / params.sigma));
 	if (brightness <= 0.0f) // may happen if parameters are insane
 		return 0.0f;
 	if (brightness >= 1.0f)
@@ -54,21 +55,21 @@ float decode_light_f(float x)
 // Initialize or update the light value tables using the specified gamma
 void set_light_table(float gamma)
 {
-// Lighting curve derivatives
+	// Lighting curve derivatives
 	const float alpha = g_settings->getFloat("lighting_alpha");
-	const float beta  = g_settings->getFloat("lighting_beta");
-// Lighting curve coefficients
+	const float beta = g_settings->getFloat("lighting_beta");
+	// Lighting curve coefficients
 	params.a = alpha + beta - 2.0f;
 	params.b = 3.0f - 2.0f * alpha - beta;
 	params.c = alpha;
-// Mid boost
+	// Mid boost
 	params.boost = g_settings->getFloat("lighting_boost");
 	params.center = g_settings->getFloat("lighting_boost_center");
 	params.sigma = g_settings->getFloat("lighting_boost_spread");
-// Gamma correction
+	// Gamma correction
 	params.gamma = rangelim(gamma, 0.5f, 10.0f);
 
-// Boundary values should be fixed
+	// Boundary values should be fixed
 	light_LUT[0] = 0;
 	light_LUT[LIGHT_SUN] = 255;
 

@@ -55,8 +55,8 @@ public:
 
 	static void create(lua_State *L, Minimap *object);
 
-	static LuaMinimap *checkobject(lua_State *L, int narg);
-	static Minimap *getobject(LuaMinimap *ref);
+	static LuaMinimap* checkobject(lua_State *L, int narg);
+	static Minimap* getobject(LuaMinimap *ref);
 
 	static void Register(lua_State *L);
 };

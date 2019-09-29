@@ -25,17 +25,17 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 /*
 	PlayerMetaRef
 */
-PlayerMetaRef *PlayerMetaRef::checkobject(lua_State *L, int narg)
+PlayerMetaRef* PlayerMetaRef::checkobject(lua_State *L, int narg)
 {
 	luaL_checktype(L, narg, LUA_TUSERDATA);
 	void *ud = luaL_checkudata(L, narg, className);
 	if (!ud)
 		luaL_typerror(L, narg, className);
 
-	return *(PlayerMetaRef **)ud; // unbox pointer
+	return *(PlayerMetaRef**)ud; // unbox pointer
 }
 
-Metadata *PlayerMetaRef::getmeta(bool auto_create)
+Metadata* PlayerMetaRef::getmeta(bool auto_create)
 {
 	return metadata;
 }
@@ -53,7 +53,7 @@ void PlayerMetaRef::reportMetadataChange(const std::string *name)
 // garbage collector
 int PlayerMetaRef::gc_object(lua_State *L)
 {
-	PlayerMetaRef *o = *(PlayerMetaRef **)(lua_touserdata(L, 1));
+	PlayerMetaRef *o = *(PlayerMetaRef**)(lua_touserdata(L, 1));
 	delete o;
 	return 0;
 }
@@ -63,7 +63,7 @@ int PlayerMetaRef::gc_object(lua_State *L)
 void PlayerMetaRef::create(lua_State *L, Metadata *metadata)
 {
 	PlayerMetaRef *o = new PlayerMetaRef(metadata);
-	*(void **)(lua_newuserdata(L, sizeof(void *))) = o;
+	*(void**)(lua_newuserdata(L, sizeof(void*))) = o;
 	luaL_getmetatable(L, className);
 	lua_setmetatable(L, -2);
 }
@@ -118,6 +118,6 @@ const luaL_Reg PlayerMetaRef::methods[] = {
 	luamethod(MetaDataRef, to_table),
 	luamethod(MetaDataRef, from_table),
 	luamethod(MetaDataRef, equals),
-	{0,0}
+	{ 0, 0 }
 };
 // clang-format on

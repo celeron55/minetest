@@ -59,7 +59,7 @@ public:
 	*/
 	virtual void step(f32 dtime) = 0;
 
-	virtual Map &getMap() = 0;
+	virtual Map& getMap() = 0;
 
 	u32 getDayNightRatio();
 
@@ -99,7 +99,7 @@ public:
 	// counter used internally when triggering ABMs
 	u32 m_added_objects;
 
-	IGameDef *getGameDef() { return m_gamedef; }
+	IGameDef* getGameDef(){ return m_gamedef; }
 
 protected:
 	std::atomic<float> m_time_of_day_speed;

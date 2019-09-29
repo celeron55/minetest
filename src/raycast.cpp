@@ -22,8 +22,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "irr_aabb3d.h"
 #include "constants.h"
 
-bool RaycastSort::operator() (const PointedThing &pt1,
-	const PointedThing &pt2) const
+bool RaycastSort::operator()(const PointedThing &pt1,
+		const PointedThing &pt2) const
 {
 	// "nothing" can not be sorted
 	assert(pt1.type != POINTEDTHING_NOTHING);
@@ -47,7 +47,7 @@ bool RaycastSort::operator() (const PointedThing &pt1,
 		// Sort them to allow only one order
 		if (pt1.type == POINTEDTHING_OBJECT)
 			return (pt2.type == POINTEDTHING_OBJECT
-				&& pt1.object_id < pt2.object_id);
+					&& pt1.object_id < pt2.object_id);
 
 		return (pt2.type == POINTEDTHING_OBJECT
 				|| pt1.node_undersurface < pt2.node_undersurface);
@@ -57,18 +57,18 @@ bool RaycastSort::operator() (const PointedThing &pt1,
 
 
 RaycastState::RaycastState(const core::line3d<f32> &shootline,
-	bool objects_pointable, bool liquids_pointable) :
-	m_shootline(shootline),
-	m_iterator(shootline.start / BS, shootline.getVector() / BS),
-	m_previous_node(m_iterator.m_current_node_pos),
-	m_objects_pointable(objects_pointable),
-	m_liquids_pointable(liquids_pointable)
+		bool objects_pointable, bool liquids_pointable) :
+m_shootline(shootline),
+m_iterator(shootline.start / BS, shootline.getVector() / BS),
+m_previous_node(m_iterator.m_current_node_pos),
+m_objects_pointable(objects_pointable),
+m_liquids_pointable(liquids_pointable)
 {
 }
 
 
 bool boxLineCollision(const aabb3f &box, const v3f &start,
-	const v3f &dir, v3f *collision_point, v3s16 *collision_normal)
+		const v3f &dir, v3f *collision_point, v3s16 *collision_normal)
 {
 	if (box.isPointInside(start)) {
 		*collision_point = start;

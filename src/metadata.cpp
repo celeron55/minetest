@@ -58,7 +58,7 @@ bool Metadata::operator==(const Metadata &other) const
 	return true;
 }
 
-const std::string &Metadata::getString(const std::string &name, u16 recursion) const
+const std::string& Metadata::getString(const std::string &name, u16 recursion) const
 {
 	StringMap::const_iterator it = m_stringvars.find(name);
 	if (it == m_stringvars.end()) {
@@ -105,7 +105,8 @@ bool Metadata::setString(const std::string &name, const std::string &var)
 	return true;
 }
 
-const std::string &Metadata::resolveString(const std::string &str, u16 recursion) const
+const std::string& Metadata::resolveString(const std::string &str,
+		u16 recursion) const
 {
 	if (recursion <= 1 && str.substr(0, 2) == "${" && str[str.length() - 1] == '}') {
 		return getString(str.substr(2, str.length() - 3), recursion + 1);

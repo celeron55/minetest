@@ -24,11 +24,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 	Cross-platform compatibility crap should go in porting.h.
 
-    Some things here are legacy crap.
+	Some things here are legacy crap.
 */
 
 /*
-    Connection
+	Connection
 */
 
 #define PEER_ID_INEXISTENT 0
@@ -48,7 +48,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define RESEND_TIMEOUT_FACTOR 4
 
 /*
-    Server
+	Server
 */
 
 // This many blocks are sent when player is building
@@ -57,7 +57,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define BLOCK_SEND_DISABLE_LIMITS_MAX_D 1
 
 /*
-    Map-related things
+	Map-related things
 */
 
 // The absolute working limit is (2^15 - viewing_range).
@@ -83,7 +83,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define PLAYER_DEFAULT_STEPHEIGHT 0.6f
 
 /*
-    Old stuff that shouldn't be hardcoded
+	Old stuff that shouldn't be hardcoded
 */
 
 // Size of player's main inventory
@@ -107,13 +107,13 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define SCREENSHOT_MAX_SERIAL_TRIES 1000
 
 /*
-    GUI related things
+	GUI related things
 */
 
 // TODO: implement dpi-based scaling for windows and remove this hack
 #if defined(_WIN32)
-#define TTF_DEFAULT_FONT_SIZE (18)
+	#define TTF_DEFAULT_FONT_SIZE (18)
 #else
-#define TTF_DEFAULT_FONT_SIZE (16)
+	#define TTF_DEFAULT_FONT_SIZE (16)
 #endif
 #define DEFAULT_FONT_SIZE (10)

@@ -29,8 +29,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define PLAYERNAME_SIZE 20
 
-#define PLAYERNAME_ALLOWED_CHARS "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"
-#define PLAYERNAME_ALLOWED_CHARS_USER_EXPL "'a' to 'z', 'A' to 'Z', '0' to '9', '-', '_'"
+#define PLAYERNAME_ALLOWED_CHARS \
+	"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"
+#define PLAYERNAME_ALLOWED_CHARS_USER_EXPL \
+	"'a' to 'z', 'A' to 'Z', '0' to '9', '-', '_'"
 
 struct PlayerFovSpec
 {
@@ -43,20 +45,20 @@ struct PlayerControl
 	PlayerControl() = default;
 
 	PlayerControl(
-		bool a_up,
-		bool a_down,
-		bool a_left,
-		bool a_right,
-		bool a_jump,
-		bool a_aux1,
-		bool a_sneak,
-		bool a_zoom,
-		bool a_LMB,
-		bool a_RMB,
-		float a_pitch,
-		float a_yaw,
-		float a_sidew_move_joystick_axis,
-		float a_forw_move_joystick_axis
+			bool a_up,
+			bool a_down,
+			bool a_left,
+			bool a_right,
+			bool a_jump,
+			bool a_aux1,
+			bool a_sneak,
+			bool a_zoom,
+			bool a_LMB,
+			bool a_RMB,
+			float a_pitch,
+			float a_yaw,
+			float a_sidew_move_joystick_axis,
+			float a_forw_move_joystick_axis
 	)
 	{
 		up = a_up;
@@ -102,7 +104,8 @@ struct PlayerSettings
 	bool autojump = false;
 
 	const std::string setting_names[8] = {
-		"free_move", "pitch_move", "fast_move", "continuous_forward", "always_fly_fast",
+		"free_move", "pitch_move", "fast_move", "continuous_forward",
+		"always_fly_fast",
 		"aux1_descends", "noclip", "autojump"
 	};
 	void readGlobalSettings();
@@ -128,7 +131,7 @@ public:
 			std::vector<CollisionInfo> *collision_info)
 	{}
 
-	const v3f &getSpeed() const
+	const v3f& getSpeed() const
 	{
 		return m_speed;
 	}
@@ -138,7 +141,7 @@ public:
 		m_speed = speed;
 	}
 
-	const char *getName() const { return m_name; }
+	const char* getName() const { return m_name; }
 
 	u32 getFreeHudID()
 	{
@@ -175,12 +178,12 @@ public:
 	std::string formspec_prepend;
 
 	PlayerControl control;
-	const PlayerControl& getPlayerControl() { return control; }
-	PlayerSettings &getPlayerSettings() { return m_player_settings; }
+	const PlayerControl& getPlayerControl(){ return control; }
+	PlayerSettings& getPlayerSettings(){ return m_player_settings; }
 	static void settingsChangedCallback(const std::string &name, void *data);
 
 	// Returns non-empty `selected` ItemStack. `hand` is a fallback, if specified
-	ItemStack &getWieldedItem(ItemStack *selected, ItemStack *hand) const;
+	ItemStack& getWieldedItem(ItemStack *selected, ItemStack *hand) const;
 	void setWieldIndex(u16 index);
 	u16 getWieldIndex() const { return m_wield_index; }
 
@@ -189,7 +192,7 @@ public:
 		m_fov_spec = spec;
 	}
 
-	const PlayerFovSpec &getFov() const
+	const PlayerFovSpec& getFov() const
 	{
 		return m_fov_spec;
 	}
@@ -197,7 +200,7 @@ public:
 	u32 keyPressed = 0;
 
 	HudElement* getHud(u32 id);
-	u32         addHud(HudElement* hud);
+	u32         addHud(HudElement *hud);
 	HudElement* removeHud(u32 id);
 	void        clearHud();
 
@@ -210,7 +213,7 @@ protected:
 	u16 m_wield_index = 0;
 	PlayerFovSpec m_fov_spec = { 0.0f, false };
 
-	std::vector<HudElement *> hud;
+	std::vector<HudElement*> hud;
 private:
 	// Protect some critical areas
 	// hud for example can be modified by EmergeThread

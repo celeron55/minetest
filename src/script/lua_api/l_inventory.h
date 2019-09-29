@@ -37,7 +37,7 @@ private:
 	static const char className[];
 	static const luaL_Reg methods[];
 
-	static InvRef *checkobject(lua_State *L, int narg);
+	static InvRef* checkobject(lua_State *L, int narg);
 
 	static Inventory* getinv(lua_State *L, InvRef *ref);
 

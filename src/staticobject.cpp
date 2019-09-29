@@ -21,9 +21,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "util/serialize.h"
 #include "content_sao.h"
 
-StaticObject::StaticObject(const ServerActiveObject *s_obj, const v3f &pos_):
-	type(s_obj->getType()),
-	pos(pos_)
+StaticObject::StaticObject(const ServerActiveObject *s_obj, const v3f &pos_) :
+type(s_obj->getType()),
+pos(pos_)
 {
 	s_obj->getStaticData(&data);
 }
@@ -59,9 +59,9 @@ void StaticObjectList::serialize(std::ostream &os)
 	// issue #2610 (Invalid block data in database: unsupported NameIdMapping version).
 	if (count > U16_MAX) {
 		errorstream << "StaticObjectList::serialize(): "
-			<< "too many objects (" << count << ") in list, "
-			<< "not writing them to disk." << std::endl;
-		writeU16(os, 0);  // count = 0
+				<< "too many objects (" << count << ") in list, "
+				<< "not writing them to disk." << std::endl;
+		writeU16(os, 0); // count = 0
 		return;
 	}
 	writeU16(os, count);
@@ -79,10 +79,10 @@ void StaticObjectList::deSerialize(std::istream &is)
 {
 	if (m_active.size()) {
 		errorstream << "StaticObjectList::deSerialize(): "
-			<< "deserializing objects while " << m_active.size()
-			<< " active objects already exist (not cleared). "
-			<< m_stored.size() << " stored objects _were_ cleared"
-			<< std::endl;
+				<< "deserializing objects while " << m_active.size()
+				<< " active objects already exist (not cleared). "
+				<< m_stored.size() << " stored objects _were_ cleared"
+				<< std::endl;
 	}
 	m_stored.clear();
 
@@ -90,7 +90,7 @@ void StaticObjectList::deSerialize(std::istream &is)
 	u8 version = readU8(is);
 	// count
 	u16 count = readU16(is);
-	for(u16 i = 0; i < count; i++) {
+	for (u16 i = 0; i < count; i++) {
 		StaticObject s_obj;
 		s_obj.deSerialize(is, version);
 		m_stored.push_back(s_obj);

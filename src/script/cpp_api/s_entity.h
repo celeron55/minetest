@@ -47,5 +47,5 @@ public:
 	void luaentity_on_detach(u16 id, ServerActiveObject *parent);
 private:
 	bool luaentity_run_simple_callback(u16 id, ServerActiveObject *sao,
-		const char *field);
+			const char *field);
 };

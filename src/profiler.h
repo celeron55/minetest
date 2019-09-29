@@ -27,7 +27,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "threading/mutex_auto_lock.h"
 #include "util/timetaker.h"
-#include "util/numeric.h"      // paging()
+#include "util/numeric.h" // paging()
 
 // Global profiler
 class Profiler;
@@ -62,7 +62,7 @@ public:
 		MutexAutoLock lock(m_mutex);
 		std::map<std::string, float>::iterator i =
 				m_graphvalues.find(id);
-		if(i == m_graphvalues.end())
+		if (i == m_graphvalues.end())
 			m_graphvalues[id] = value;
 		else
 			i->second += value;
@@ -74,7 +74,7 @@ public:
 		m_graphvalues.clear();
 	}
 
-	void remove(const std::string& name)
+	void remove(const std::string &name)
 	{
 		MutexAutoLock lock(m_mutex);
 		m_avgcounts.erase(name);
@@ -89,7 +89,7 @@ private:
 	u64 m_start_time;
 };
 
-enum ScopeProfilerType{
+enum ScopeProfilerType {
 	SPT_ADD,
 	SPT_AVG,
 	SPT_GRAPH_ADD

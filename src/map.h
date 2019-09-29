@@ -56,7 +56,7 @@ struct BlockMakeData;
 #define MAPTYPE_SERVER 1
 #define MAPTYPE_CLIENT 2
 
-enum MapEditEventType{
+enum MapEditEventType {
 	// Node added (changed from air or something else to something)
 	MEET_ADDNODE,
 	// Node removed (changed to air)
@@ -81,7 +81,7 @@ struct MapEditEvent
 
 	VoxelArea getArea() const
 	{
-		switch(type){
+		switch (type) {
 		case MEET_ADDNODE:
 			return VoxelArea(p);
 		case MEET_REMOVENODE:
@@ -89,22 +89,22 @@ struct MapEditEvent
 		case MEET_SWAPNODE:
 			return VoxelArea(p);
 		case MEET_BLOCK_NODE_METADATA_CHANGED:
-		{
-			v3s16 np1 = p*MAP_BLOCKSIZE;
-			v3s16 np2 = np1 + v3s16(1,1,1)*MAP_BLOCKSIZE - v3s16(1,1,1);
-			return VoxelArea(np1, np2);
-		}
-		case MEET_OTHER:
-		{
-			VoxelArea a;
-			for (v3s16 p : modified_blocks) {
+			{
 				v3s16 np1 = p*MAP_BLOCKSIZE;
-				v3s16 np2 = np1 + v3s16(1,1,1)*MAP_BLOCKSIZE - v3s16(1,1,1);
-				a.addPoint(np1);
-				a.addPoint(np2);
+				v3s16 np2 = np1 + v3s16(1, 1, 1)*MAP_BLOCKSIZE - v3s16(1, 1, 1);
+				return VoxelArea(np1, np2);
 			}
-			return a;
-		}
+		case MEET_OTHER:
+			{
+				VoxelArea a;
+				for (v3s16 p : modified_blocks) {
+					v3s16 np1 = p*MAP_BLOCKSIZE;
+					v3s16 np2 = np1 + v3s16(1, 1, 1)*MAP_BLOCKSIZE - v3s16(1, 1, 1);
+					a.addPoint(np1);
+					a.addPoint(np2);
+				}
+				return a;
+			}
 		}
 		return VoxelArea();
 	}
@@ -144,9 +144,9 @@ public:
 	void dispatchEvent(const MapEditEvent &event);
 
 	// On failure returns NULL
-	MapSector * getSectorNoGenerateNoLock(v2s16 p2d);
+	MapSector* getSectorNoGenerateNoLock(v2s16 p2d);
 	// Same as the above (there exists no lock anymore)
-	MapSector * getSectorNoGenerate(v2s16 p2d);
+	MapSector* getSectorNoGenerate(v2s16 p2d);
 	// Gets an existing sector or creates an empty one
 	//MapSector * getSectorCreate(v2s16 p2d);
 
@@ -154,18 +154,18 @@ public:
 		This is overloaded by ClientMap and ServerMap to allow
 		their differing fetch methods.
 	*/
-	virtual MapSector * emergeSector(v2s16 p){ return NULL; }
+	virtual MapSector* emergeSector(v2s16 p){ return NULL; }
 
 	// Returns InvalidPositionException if not found
-	MapBlock * getBlockNoCreate(v3s16 p);
+	MapBlock* getBlockNoCreate(v3s16 p);
 	// Returns NULL if not found
-	MapBlock * getBlockNoCreateNoEx(v3s16 p);
+	MapBlock* getBlockNoCreateNoEx(v3s16 p);
 
 	/* Server overrides */
-	virtual MapBlock * emergeBlock(v3s16 p, bool create_blank=true)
+	virtual MapBlock* emergeBlock(v3s16 p, bool create_blank = true)
 	{ return getBlockNoCreateNoEx(p); }
 
-	inline const NodeDefManager * getNodeDefManager() { return m_nodedef; }
+	inline const NodeDefManager* getNodeDefManager(){ return m_nodedef; }
 
 	// Returns InvalidPositionException if not found
 	bool isNodeUnderground(v3s16 p);
@@ -173,7 +173,7 @@ public:
 	bool isValidPosition(v3s16 p);
 
 	// throws InvalidPositionException if not found
-	void setNode(v3s16 p, MapNode & n);
+	void setNode(v3s16 p, MapNode &n);
 
 	// Returns a CONTENT_IGNORE node if not found
 	// If is_valid_position is not NULL then this will be set to true if the
@@ -198,28 +198,28 @@ public:
 	bool removeNodeWithEvent(v3s16 p);
 
 	// Call these before and after saving of many blocks
-	virtual void beginSave() {}
-	virtual void endSave() {}
+	virtual void beginSave(){}
+	virtual void endSave(){}
 
-	virtual void save(ModifiedState save_level) { FATAL_ERROR("FIXME"); }
+	virtual void save(ModifiedState save_level){ FATAL_ERROR("FIXME"); }
 
 	// Server implements these.
 	// Client leaves them as no-op.
-	virtual bool saveBlock(MapBlock *block) { return false; }
-	virtual bool deleteBlock(v3s16 blockpos) { return false; }
+	virtual bool saveBlock(MapBlock *block){ return false; }
+	virtual bool deleteBlock(v3s16 blockpos){ return false; }
 
 	/*
 		Updates usage timers and unloads unused blocks and sectors.
 		Saves modified blocks before unloading on MAPTYPE_SERVER.
 	*/
 	void timerUpdate(float dtime, float unload_timeout, u32 max_loaded_blocks,
-			std::vector<v3s16> *unloaded_blocks=NULL);
+			std::vector<v3s16> *unloaded_blocks = NULL);
 
 	/*
 		Unloads all blocks with a zero refCount().
 		Saves modified blocks before unloading on MAPTYPE_SERVER.
 	*/
-	void unloadUnreferencedBlocks(std::vector<v3s16> *unloaded_blocks=NULL);
+	void unloadUnreferencedBlocks(std::vector<v3s16> *unloaded_blocks = NULL);
 
 	// Deletes sectors and their blocks from memory
 	// Takes cache into account
@@ -229,7 +229,7 @@ public:
 	// For debug printing. Prints "Map: ", "ServerMap: " or "ClientMap: "
 	virtual void PrintInfo(std::ostream &out);
 
-	void transformLiquids(std::map<v3s16, MapBlock*> & modified_blocks,
+	void transformLiquids(std::map<v3s16, MapBlock*> &modified_blocks,
 			ServerEnvironment *env);
 
 	/*
@@ -238,7 +238,7 @@ public:
 	*/
 
 	std::vector<v3s16> findNodesWithMetadata(v3s16 p1, v3s16 p2);
-	NodeMetadata *getNodeMetadata(v3s16 p);
+	NodeMetadata* getNodeMetadata(v3s16 p);
 
 	/**
 	 * Sets metadata for a node.
@@ -269,7 +269,7 @@ public:
 	/*
 		Misc.
 	*/
-	std::map<v2s16, MapSector*> *getSectorsPtr(){return &m_sectors;}
+	std::map<v2s16, MapSector*>* getSectorsPtr(){ return &m_sectors; }
 
 	/*
 		Variables
@@ -300,10 +300,10 @@ protected:
 	const NodeDefManager *m_nodedef;
 
 	bool determineAdditionalOcclusionCheck(const v3s16 &pos_camera,
-		const core::aabbox3d<s16> &block_bounds, v3s16 &check);
+			const core::aabbox3d<s16> &block_bounds, v3s16 &check);
 	bool isOccluded(const v3s16 &pos_camera, const v3s16 &pos_target,
-		float step, float stepfac, float start_offset, float end_offset,
-		u32 needed_count);
+			float step, float stepfac, float start_offset, float end_offset,
+			u32 needed_count);
 
 private:
 	f32 m_transforming_liquid_loop_count_multiplier = 1.0f;
@@ -338,7 +338,7 @@ public:
 		- Check disk (doesn't load blocks)
 		- Create blank one
 	*/
-	MapSector *createSector(v2s16 p);
+	MapSector* createSector(v2s16 p);
 
 	/*
 		Blocks are generated by using these and makeBlock().
@@ -346,14 +346,14 @@ public:
 	bool blockpos_over_mapgen_limit(v3s16 p);
 	bool initBlockMake(v3s16 blockpos, BlockMakeData *data);
 	void finishBlockMake(BlockMakeData *data,
-		std::map<v3s16, MapBlock*> *changed_blocks);
+			std::map<v3s16, MapBlock*> *changed_blocks);
 
 	/*
 		Get a block from somewhere.
 		- Memory
 		- Create blank
 	*/
-	MapBlock *createBlock(v3s16 p);
+	MapBlock* createBlock(v3s16 p);
 
 	/*
 		Forcefully get a block from somewhere.
@@ -362,7 +362,7 @@ public:
 		- Create blank filled with CONTENT_IGNORE
 
 	*/
-	MapBlock *emergeBlock(v3s16 p, bool create_blank=true);
+	MapBlock* emergeBlock(v3s16 p, bool create_blank = true);
 
 	/*
 		Try to get a block.
@@ -370,7 +370,7 @@ public:
 		- Memory
 		- Emerge Queue (deferred disk or generate)
 	*/
-	MapBlock *getBlockOrEmerge(v3s16 p3d);
+	MapBlock* getBlockOrEmerge(v3s16 p3d);
 
 	// Helper for placing objects on ground level
 	s16 findGroundLevel(v2s16 p2d);
@@ -390,7 +390,8 @@ public:
 	/*
 		Database functions
 	*/
-	static MapDatabase *createDatabase(const std::string &name, const std::string &savedir, Settings &conf);
+	static MapDatabase* createDatabase(const std::string &name,
+			const std::string &savedir, Settings &conf);
 
 	// Returns true if the database file does not exist
 	bool loadFromFolders();
@@ -403,16 +404,17 @@ public:
 	void listAllLoadableBlocks(std::vector<v3s16> &dst);
 	void listAllLoadedBlocks(std::vector<v3s16> &dst);
 
-	MapgenParams *getMapgenParams();
+	MapgenParams* getMapgenParams();
 
 	bool saveBlock(MapBlock *block);
 	static bool saveBlock(MapBlock *block, MapDatabase *db);
 	// This will generate a sector with getSector if not found.
 	void loadBlock(const std::string &sectordir, const std::string &blockfile,
-			MapSector *sector, bool save_after_load=false);
+			MapSector *sector, bool save_after_load = false);
 	MapBlock* loadBlock(v3s16 p);
 	// Database version
-	void loadBlock(std::string *blob, v3s16 p3d, MapSector *sector, bool save_after_load=false);
+	void loadBlock(std::string *blob, v3s16 p3d, MapSector *sector,
+			bool save_after_load = false);
 
 	bool deleteBlock(v3s16 blockpos);
 
@@ -434,7 +436,7 @@ public:
 	 * changed), true otherwise.
 	 */
 	bool repairBlockLight(v3s16 blockpos,
-		std::map<v3s16, MapBlock *> *modified_blocks);
+			std::map<v3s16, MapBlock*> *modified_blocks);
 
 	MapSettingsManager settings_mgr;
 
@@ -479,11 +481,11 @@ public:
 	}
 
 	void initialEmerge(v3s16 blockpos_min, v3s16 blockpos_max,
-		bool load_if_inexistent = true);
+			bool load_if_inexistent = true);
 
 	// This is much faster with big chunks of generated data
-	void blitBackAll(std::map<v3s16, MapBlock*> * modified_blocks,
-		bool overwrite_generated = true);
+	void blitBackAll(std::map<v3s16, MapBlock*> *modified_blocks,
+			bool overwrite_generated = true);
 
 	bool m_is_dirty = false;
 

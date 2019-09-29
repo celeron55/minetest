@@ -58,7 +58,7 @@ static void push_area(lua_State *L, const Area *a,
 	}
 }
 
-static inline void push_areas(lua_State *L, const std::vector<Area *> &areas,
+static inline void push_areas(lua_State *L, const std::vector<Area*> &areas,
 		bool borders, bool data)
 {
 	lua_newtable(L);
@@ -76,7 +76,7 @@ static int deserialization_helper(lua_State *L, AreaStore *as,
 {
 	try {
 		as->deserialize(is);
-	} catch (const SerializationError &e) {
+	} catch(const SerializationError &e) {
 		lua_pushboolean(L, false);
 		lua_pushstring(L, e.what());
 		return 2;
@@ -89,7 +89,7 @@ static int deserialization_helper(lua_State *L, AreaStore *as,
 // garbage collector
 int LuaAreaStore::gc_object(lua_State *L)
 {
-	LuaAreaStore *o = *(LuaAreaStore **)(lua_touserdata(L, 1));
+	LuaAreaStore *o = *(LuaAreaStore**)(lua_touserdata(L, 1));
 	delete o;
 	return 0;
 }
@@ -133,7 +133,7 @@ int LuaAreaStore::l_get_areas_for_pos(lua_State *L)
 	bool include_data = false;
 	get_data_and_border_flags(L, 3, &include_borders, &include_data);
 
-	std::vector<Area *> res;
+	std::vector<Area*> res;
 
 	ast->getAreasForPos(&res, pos);
 	push_areas(L, res, include_borders, include_data);
@@ -159,7 +159,7 @@ int LuaAreaStore::l_get_areas_in_area(lua_State *L)
 		accept_overlap = readParam<bool>(L, 4);
 		get_data_and_border_flags(L, 5, &include_borders, &include_data);
 	}
-	std::vector<Area *> res;
+	std::vector<Area*> res;
 
 	ast->getAreasInArea(&res, minedge, maxedge, accept_overlap);
 	push_areas(L, res, include_borders, include_data);
@@ -329,16 +329,16 @@ int LuaAreaStore::create_object(lua_State *L)
 	NO_MAP_LOCK_REQUIRED;
 
 	LuaAreaStore *o = (lua_isstring(L, 1)) ?
-		new LuaAreaStore(readParam<std::string>(L, 1)) :
-		new LuaAreaStore();
+			new LuaAreaStore(readParam<std::string>(L, 1)) :
+	new LuaAreaStore();
 
-	*(void **)(lua_newuserdata(L, sizeof(void *))) = o;
+	*(void**)(lua_newuserdata(L, sizeof(void*))) = o;
 	luaL_getmetatable(L, className);
 	lua_setmetatable(L, -2);
 	return 1;
 }
 
-LuaAreaStore *LuaAreaStore::checkobject(lua_State *L, int narg)
+LuaAreaStore* LuaAreaStore::checkobject(lua_State *L, int narg)
 {
 	NO_MAP_LOCK_REQUIRED;
 
@@ -348,7 +348,7 @@ LuaAreaStore *LuaAreaStore::checkobject(lua_State *L, int narg)
 	if (!ud)
 		luaL_typerror(L, narg, className);
 
-	return *(LuaAreaStore **)ud;  // unbox pointer
+	return *(LuaAreaStore**)ud; // unbox pointer
 }
 
 void LuaAreaStore::Register(lua_State *L)
@@ -360,7 +360,7 @@ void LuaAreaStore::Register(lua_State *L)
 
 	lua_pushliteral(L, "__metatable");
 	lua_pushvalue(L, methodtable);
-	lua_settable(L, metatable);  // hide metatable from Lua getmetatable()
+	lua_settable(L, metatable); // hide metatable from Lua getmetatable()
 
 	lua_pushliteral(L, "__index");
 	lua_pushvalue(L, methodtable);
@@ -370,10 +370,10 @@ void LuaAreaStore::Register(lua_State *L)
 	lua_pushcfunction(L, gc_object);
 	lua_settable(L, metatable);
 
-	lua_pop(L, 1);  // drop metatable
+	lua_pop(L, 1); // drop metatable
 
-	luaL_openlib(L, 0, methods, 0);  // fill methodtable
-	lua_pop(L, 1);  // drop methodtable
+	luaL_openlib(L, 0, methods, 0); // fill methodtable
+	lua_pop(L, 1); // drop methodtable
 
 	// Can be created from Lua (AreaStore())
 	lua_register(L, className, create_object);
@@ -392,5 +392,5 @@ const luaL_Reg LuaAreaStore::methods[] = {
 	luamethod(LuaAreaStore, to_file),
 	luamethod(LuaAreaStore, from_string),
 	luamethod(LuaAreaStore, from_file),
-	{0,0}
+	{ 0, 0 }
 };

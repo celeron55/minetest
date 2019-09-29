@@ -50,9 +50,9 @@ public:
 		return m_pos;
 	}
 
-	MapBlock * getBlockNoCreateNoEx(s16 y);
-	MapBlock * createBlankBlockNoInsert(s16 y);
-	MapBlock * createBlankBlock(s16 y);
+	MapBlock* getBlockNoCreateNoEx(s16 y);
+	MapBlock* createBlankBlockNoInsert(s16 y);
+	MapBlock* createBlankBlock(s16 y);
 
 	void insertBlock(MapBlock *block);
 
@@ -81,6 +81,6 @@ protected:
 	/*
 		Private methods
 	*/
-	MapBlock *getBlockBuffered(s16 y);
+	MapBlock* getBlockBuffered(s16 y);
 
 };

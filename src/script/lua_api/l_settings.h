@@ -73,13 +73,14 @@ public:
 	LuaSettings(const std::string &filename, bool write_allowed);
 	~LuaSettings();
 
-	static void create(lua_State *L, Settings *settings, const std::string &filename);
+	static void create(lua_State *L, Settings *settings,
+			const std::string &filename);
 
 	// LuaSettings(filename)
 	// Creates a LuaSettings and leaves it on top of the stack
 	static int create_object(lua_State *L);
 
-	static LuaSettings *checkobject(lua_State *L, int narg);
+	static LuaSettings* checkobject(lua_State *L, int narg);
 
 	static void Register(lua_State *L);
 };

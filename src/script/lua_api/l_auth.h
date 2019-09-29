@@ -46,7 +46,7 @@ private:
 	static int l_auth_reload(lua_State *L);
 
 	// helper for auth* methods
-	static AuthDatabase *getAuthDb(lua_State *L);
+	static AuthDatabase* getAuthDb(lua_State *L);
 	static void pushAuthEntry(lua_State *L, const AuthEntry &authEntry);
 
 public:

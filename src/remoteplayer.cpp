@@ -23,7 +23,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "content_sao.h"
 #include "filesys.h"
 #include "gamedef.h"
-#include "porting.h"  // strlcpy
+#include "porting.h" // strlcpy
 #include "server.h"
 #include "settings.h"
 #include "convert_json.h"
@@ -36,28 +36,39 @@ bool RemotePlayer::m_setting_cache_loaded = false;
 float RemotePlayer::m_setting_chat_message_limit_per_10sec = 0.0f;
 u16 RemotePlayer::m_setting_chat_message_limit_trigger_kick = 0;
 
-RemotePlayer::RemotePlayer(const char *name, IItemDefManager *idef):
-	Player(name, idef)
+RemotePlayer::RemotePlayer(const char *name, IItemDefManager *idef) :
+Player(name, idef)
 {
 	if (!RemotePlayer::m_setting_cache_loaded) {
 		RemotePlayer::m_setting_chat_message_limit_per_10sec =
-			g_settings->getFloat("chat_message_limit_per_10sec");
+				g_settings->getFloat("chat_message_limit_per_10sec");
 		RemotePlayer::m_setting_chat_message_limit_trigger_kick =
-			g_settings->getU16("chat_message_limit_trigger_kick");
+				g_settings->getU16("chat_message_limit_trigger_kick");
 		RemotePlayer::m_setting_cache_loaded = true;
 	}
-	movement_acceleration_default   = g_settings->getFloat("movement_acceleration_default")   * BS;
-	movement_acceleration_air       = g_settings->getFloat("movement_acceleration_air")       * BS;
-	movement_acceleration_fast      = g_settings->getFloat("movement_acceleration_fast")      * BS;
-	movement_speed_walk             = g_settings->getFloat("movement_speed_walk")             * BS;
-	movement_speed_crouch           = g_settings->getFloat("movement_speed_crouch")           * BS;
-	movement_speed_fast             = g_settings->getFloat("movement_speed_fast")             * BS;
-	movement_speed_climb            = g_settings->getFloat("movement_speed_climb")            * BS;
-	movement_speed_jump             = g_settings->getFloat("movement_speed_jump")             * BS;
-	movement_liquid_fluidity        = g_settings->getFloat("movement_liquid_fluidity")        * BS;
-	movement_liquid_fluidity_smooth = g_settings->getFloat("movement_liquid_fluidity_smooth") * BS;
-	movement_liquid_sink            = g_settings->getFloat("movement_liquid_sink")            * BS;
-	movement_gravity                = g_settings->getFloat("movement_gravity")                * BS;
+	movement_acceleration_default = g_settings->getFloat(
+			"movement_acceleration_default")   * BS;
+	movement_acceleration_air =
+			g_settings->getFloat("movement_acceleration_air")       * BS;
+	movement_acceleration_fast =
+			g_settings->getFloat("movement_acceleration_fast")      * BS;
+	movement_speed_walk = g_settings->getFloat("movement_speed_walk")             *
+			BS;
+	movement_speed_crouch = g_settings->getFloat("movement_speed_crouch")           *
+			BS;
+	movement_speed_fast = g_settings->getFloat("movement_speed_fast")             *
+			BS;
+	movement_speed_climb = g_settings->getFloat("movement_speed_climb")            *
+			BS;
+	movement_speed_jump = g_settings->getFloat("movement_speed_jump")             *
+			BS;
+	movement_liquid_fluidity =
+			g_settings->getFloat("movement_liquid_fluidity")        * BS;
+	movement_liquid_fluidity_smooth = g_settings->getFloat(
+			"movement_liquid_fluidity_smooth") * BS;
+	movement_liquid_sink = g_settings->getFloat("movement_liquid_sink")            *
+			BS;
+	movement_gravity = g_settings->getFloat("movement_gravity")                * BS;
 
 	// copy defaults
 	m_cloud_params.density = 0.4f;
@@ -88,7 +99,8 @@ void RemotePlayer::deSerialize(std::istream &is, const std::string &playername,
 	Settings args;
 
 	if (!args.parseConfigLines(is, "PlayerArgsEnd")) {
-		throw SerializationError("PlayerArgsEnd of player " + playername + " not found!");
+		throw SerializationError(
+				"PlayerArgsEnd of player " + playername + " not found!");
 	}
 
 	m_dirty = true;
@@ -105,18 +117,18 @@ void RemotePlayer::deSerialize(std::istream &is, const std::string &playername,
 
 		try {
 			sao->setBasePosition(args.getV3F("position"));
-		} catch (SettingNotFoundException &e) {}
+		} catch(SettingNotFoundException &e) {}
 
 		try {
 			sao->setLookPitch(args.getFloat("pitch"));
-		} catch (SettingNotFoundException &e) {}
+		} catch(SettingNotFoundException &e) {}
 		try {
 			sao->setPlayerYaw(args.getFloat("yaw"));
-		} catch (SettingNotFoundException &e) {}
+		} catch(SettingNotFoundException &e) {}
 
 		try {
 			sao->setBreath(args.getU16("breath"), false);
-		} catch (SettingNotFoundException &e) {}
+		} catch(SettingNotFoundException &e) {}
 
 		try {
 			const std::string &extended_attributes = args.get("extended_attributes");
@@ -134,14 +146,14 @@ void RemotePlayer::deSerialize(std::istream &is, const std::string &playername,
 				sao->getMeta().setString(it, attr_value.asString());
 			}
 			sao->getMeta().setModified(false);
-		} catch (SettingNotFoundException &e) {}
+		} catch(SettingNotFoundException &e) {}
 	}
 
 	try {
 		inventory.deSerialize(is);
-	} catch (SerializationError &e) {
+	} catch(SerializationError &e) {
 		errorstream << "Failed to deserialize player inventory. player_name="
-			<< name << " " << e.what() << std::endl;
+				<< name << " " << e.what() << std::endl;
 	}
 
 	if (!inventory.getList("craftpreview") && inventory.getList("craftresult")) {
@@ -149,9 +161,9 @@ void RemotePlayer::deSerialize(std::istream &is, const std::string &playername,
 		inventory.addList("craftpreview", 1);
 
 		bool craftresult_is_preview = true;
-		if(args.exists("craftresult_is_preview"))
+		if (args.exists("craftresult_is_preview"))
 			craftresult_is_preview = args.getBool("craftresult_is_preview");
-		if(craftresult_is_preview)
+		if (craftresult_is_preview)
 		{
 			// Clear craftresult
 			inventory.getList("craftresult")->changeItem(0, ItemStack());
@@ -197,7 +209,8 @@ const RemotePlayerChatResult RemotePlayer::canSendChatMessage()
 		return RPLAYER_CHATRESULT_OK;
 	}
 
-	m_chat_message_allowance += time_passed * (m_setting_chat_message_limit_per_10sec / 8.0f);
+	m_chat_message_allowance += time_passed *
+			(m_setting_chat_message_limit_per_10sec / 8.0f);
 	if (m_chat_message_allowance > m_setting_chat_message_limit_per_10sec) {
 		m_chat_message_allowance = m_setting_chat_message_limit_per_10sec;
 	}
@@ -208,7 +221,8 @@ const RemotePlayerChatResult RemotePlayer::canSendChatMessage()
 
 		// Kick player if flooding is too intensive
 		m_message_rate_overhead++;
-		if (m_message_rate_overhead > RemotePlayer::m_setting_chat_message_limit_trigger_kick) {
+		if (m_message_rate_overhead >
+				RemotePlayer::m_setting_chat_message_limit_trigger_kick) {
 			return RPLAYER_CHATRESULT_KICK;
 		}
 

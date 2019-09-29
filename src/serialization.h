@@ -31,7 +31,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 	For map data (blocks, nodes, sectors).
 
 	NOTE: The goal is to increment this so that saved maps will be
-	      loadable by any version. Other compatibility is not
+		  loadable by any version. Other compatibility is not
 		  maintained.
 
 	0: original networked test with 1-byte nodes
@@ -77,7 +77,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // in memory; conversion just won't work in this direction.
 #define SER_FMT_VER_LOWEST_WRITE 24
 
-inline bool ser_ver_supported(s32 v) {
+inline bool ser_ver_supported(s32 v){
 	return v >= SER_FMT_VER_LOWEST_READ && v <= SER_FMT_VER_HIGHEST_READ;
 }
 
@@ -85,7 +85,8 @@ inline bool ser_ver_supported(s32 v) {
 	Misc. serialization functions
 */
 
-void compressZlib(const u8 *data, size_t data_size, std::ostream &os, int level = -1);
+void compressZlib(const u8 *data, size_t data_size, std::ostream &os,
+		int level = -1);
 void compressZlib(const std::string &data, std::ostream &os, int level = -1);
 void decompressZlib(std::istream &is, std::ostream &os);
 

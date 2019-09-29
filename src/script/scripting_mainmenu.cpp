@@ -34,14 +34,14 @@ extern "C" {
 #define MAINMENU_NUM_ASYNC_THREADS 4
 
 
-MainMenuScripting::MainMenuScripting(GUIEngine* guiengine):
-		ScriptApiBase(ScriptingType::MainMenu)
+MainMenuScripting::MainMenuScripting(GUIEngine *guiengine) :
+ScriptApiBase(ScriptingType::MainMenu)
 {
 	setGuiEngine(guiengine);
 
 	SCRIPTAPI_PRECHECKHEADER
 
-	lua_getglobal(L, "core");
+			lua_getglobal(L, "core");
 	int top = lua_gettop(L);
 
 	lua_newtable(L);

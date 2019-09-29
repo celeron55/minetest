@@ -25,14 +25,14 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #if USE_GETTEXT
 	#include <libintl.h>
 #else
-	// In certain environments, some standard headers like <iomanip>
-	// and <locale> include libintl.h. If libintl.h is included after
-	// we define our gettext macro below, this causes a syntax error
-	// at the declaration of the gettext function in libintl.h.
-	// Fix this by including such a header before defining the macro.
-	// See issue #4446.
-	// Note that we can't include libintl.h directly since we're in
-	// the USE_GETTEXT=0 case and can't assume that gettext is installed.
+// In certain environments, some standard headers like <iomanip>
+// and <locale> include libintl.h. If libintl.h is included after
+// we define our gettext macro below, this causes a syntax error
+// at the declaration of the gettext function in libintl.h.
+// Fix this by including such a header before defining the macro.
+// See issue #4446.
+// Note that we can't include libintl.h directly since we're in
+// the USE_GETTEXT=0 case and can't assume that gettext is installed.
 	#include <locale>
 
 	#define gettext(String) String
@@ -43,13 +43,13 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define N_(String) gettext_noop((String))
 
 void init_gettext(const char *path, const std::string &configured_language,
-	int argc, char *argv[]);
+		int argc, char *argv[]);
 
-extern wchar_t *utf8_to_wide_c(const char *str);
+extern wchar_t* utf8_to_wide_c(const char *str);
 
 // You must free the returned string!
 // The returned string is allocated using new
-inline const wchar_t *wgettext(const char *str)
+inline const wchar_t* wgettext(const char *str)
 {
 	// We must check here that is not an empty string to avoid trying to translate it
 	return str[0] ? utf8_to_wide_c(gettext(str)) : utf8_to_wide_c("");

@@ -48,8 +48,8 @@ void ToolGroupCap::fromJson(const Json::Value &json)
 		if (times_object.isArray()) {
 			Json::ArrayIndex size = times_object.size();
 			for (Json::ArrayIndex i = 0; i < size; ++i)
-				if (times_object[i].isDouble())
-					times[i] = times_object[i].asFloat();
+			if (times_object[i].isDouble())
+				times[i] = times_object[i].asFloat();
 		}
 	}
 }
@@ -103,7 +103,7 @@ void ToolCapabilities::deSerialize(std::istream &is)
 		cap.uses = readS16(is);
 		cap.maxlevel = readS16(is);
 		u32 times_size = readU32(is);
-		for(u32 i = 0; i < times_size; i++) {
+		for (u32 i = 0; i < times_size; i++) {
 			int level = readS16(is);
 			float time = readF32(is);
 			cap.times[level] = time;
@@ -161,7 +161,7 @@ void ToolCapabilities::deserializeJson(std::istream &is)
 		if (groupcaps_object.isObject()) {
 			Json::ValueIterator gciter;
 			for (gciter = groupcaps_object.begin();
-					gciter != groupcaps_object.end(); ++gciter) {
+			gciter != groupcaps_object.end(); ++gciter) {
 				ToolGroupCap groupcap;
 				groupcap.fromJson(*gciter);
 				groupcaps[gciter.key().asString()] = groupcap;
@@ -172,11 +172,11 @@ void ToolCapabilities::deserializeJson(std::istream &is)
 		if (damage_groups_object.isObject()) {
 			Json::ValueIterator dgiter;
 			for (dgiter = damage_groups_object.begin();
-					dgiter != damage_groups_object.end(); ++dgiter) {
+			dgiter != damage_groups_object.end(); ++dgiter) {
 				Json::Value &value = *dgiter;
 				if (value.isInt())
 					damageGroups[dgiter.key().asString()] =
-						value.asInt();
+							value.asInt();
 			}
 		}
 	}
@@ -252,7 +252,7 @@ HitParams getHitParams(const ItemGroupList &armor_groups,
 		result_wear = 1.0f / tp->punch_attack_uses * punch_interval_multiplier;
 
 	u16 wear_i = U16_MAX * result_wear;
-	return {damage, wear_i};
+	return { damage, wear_i };
 }
 
 HitParams getHitParams(const ItemGroupList &armor_groups,
@@ -266,7 +266,7 @@ PunchDamageResult getPunchDamage(
 		const ToolCapabilities *toolcap,
 		const ItemStack *punchitem,
 		float time_from_last_punch
-){
+		){
 	bool do_hit = true;
 	{
 		if (do_hit && punchitem) {
@@ -276,13 +276,13 @@ PunchDamageResult getPunchDamage(
 		}
 
 		if (do_hit) {
-			if(itemgroup_get(armor_groups, "immortal"))
+			if (itemgroup_get(armor_groups, "immortal"))
 				do_hit = false;
 		}
 	}
 
 	PunchDamageResult result;
-	if(do_hit)
+	if (do_hit)
 	{
 		HitParams hitparams = getHitParams(armor_groups, toolcap,
 				time_from_last_punch);

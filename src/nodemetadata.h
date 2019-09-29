@@ -40,14 +40,14 @@ public:
 	NodeMetadata(IItemDefManager *item_def_mgr);
 	~NodeMetadata();
 
-	void serialize(std::ostream &os, u8 version, bool disk=true) const;
+	void serialize(std::ostream &os, u8 version, bool disk = true) const;
 	void deSerialize(std::istream &is, u8 version);
 
 	void clear();
 	bool empty() const;
 
 	// The inventory
-	Inventory *getInventory()
+	Inventory* getInventory()
 	{
 		return m_inventory;
 	}
@@ -70,26 +70,26 @@ private:
 	List of metadata of all the nodes of a block
 */
 
-typedef std::map<v3s16, NodeMetadata *> NodeMetadataMap;
+typedef std::map<v3s16, NodeMetadata* > NodeMetadataMap;
 
 class NodeMetadataList
 {
 public:
 	NodeMetadataList(bool is_metadata_owner = true) :
-		m_is_metadata_owner(is_metadata_owner)
+	m_is_metadata_owner(is_metadata_owner)
 	{}
 
 	~NodeMetadataList();
 
 	void serialize(std::ostream &os, u8 blockver, bool disk = true,
-		bool absolute_pos = false) const;
+			bool absolute_pos = false) const;
 	void deSerialize(std::istream &is, IItemDefManager *item_def_mgr,
-		bool absolute_pos = false);
+			bool absolute_pos = false);
 
 	// Add all keys in this list to the vector keys
 	std::vector<v3s16> getAllKeys();
 	// Get pointer to data
-	NodeMetadata *get(v3s16 p);
+	NodeMetadata* get(v3s16 p);
 	// Deletes data
 	void remove(v3s16 p);
 	// Deletes old data and sets a new one

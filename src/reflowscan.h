@@ -32,7 +32,7 @@ public:
 	void scan(MapBlock *block, UniqueQueue<v3s16> *liquid_queue);
 
 private:
-	MapBlock *lookupBlock(int x, int y, int z);
+	MapBlock* lookupBlock(int x, int y, int z);
 	bool isLiquidFlowableTo(int x, int y, int z);
 	bool isLiquidHorizontallyFlowable(int x, int y, int z);
 	void scanColumn(int x, int z);

@@ -204,20 +204,20 @@ public:
 	LuaABM(lua_State *L, int id,
 			const std::vector<std::string> &trigger_contents,
 			const std::vector<std::string> &required_neighbors,
-			float trigger_interval, u32 trigger_chance, bool simple_catch_up):
-		m_id(id),
-		m_trigger_contents(trigger_contents),
-		m_required_neighbors(required_neighbors),
-		m_trigger_interval(trigger_interval),
-		m_trigger_chance(trigger_chance),
-		m_simple_catch_up(simple_catch_up)
+			float trigger_interval, u32 trigger_chance, bool simple_catch_up) :
+	m_id(id),
+	m_trigger_contents(trigger_contents),
+	m_required_neighbors(required_neighbors),
+	m_trigger_interval(trigger_interval),
+	m_trigger_chance(trigger_chance),
+	m_simple_catch_up(simple_catch_up)
 	{
 	}
-	virtual const std::vector<std::string> &getTriggerContents() const
+	virtual const std::vector<std::string>& getTriggerContents() const
 	{
 		return m_trigger_contents;
 	}
-	virtual const std::vector<std::string> &getRequiredNeighbors() const
+	virtual const std::vector<std::string>& getRequiredNeighbors() const
 	{
 		return m_required_neighbors;
 	}
@@ -245,8 +245,8 @@ public:
 	LuaLBM(lua_State *L, int id,
 			const std::set<std::string> &trigger_contents,
 			const std::string &name,
-			bool run_at_every_load):
-		m_id(id)
+			bool run_at_every_load) :
+	m_id(id)
 	{
 		this->run_at_every_load = run_at_every_load;
 		this->trigger_contents = trigger_contents;
@@ -277,10 +277,10 @@ private:
 public:
 	//! Constructor with the same arguments as RaycastState.
 	LuaRaycast(
-		const core::line3d<f32> &shootline,
-		bool objects_pointable,
-		bool liquids_pointable) :
-		state(shootline, objects_pointable, liquids_pointable)
+			const core::line3d<f32> &shootline,
+			bool objects_pointable,
+			bool liquids_pointable) :
+	state(shootline, objects_pointable, liquids_pointable)
 	{}
 
 	//! Creates a LuaRaycast and leaves it on top of the stack.
@@ -290,7 +290,7 @@ public:
 	 * Returns the Raycast from the stack or throws an error.
 	 * @param narg location of the RaycastState in the stack
 	 */
-	static LuaRaycast *checkobject(lua_State *L, int narg);
+	static LuaRaycast* checkobject(lua_State *L, int narg);
 
 	//! Registers Raycast as a Lua userdata type.
 	static void Register(lua_State *L);

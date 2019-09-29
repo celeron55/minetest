@@ -54,10 +54,10 @@ struct LuaJobInfo
 // Asynchronous working environment
 class AsyncWorkerThread : public Thread, public ScriptApiBase {
 public:
-	AsyncWorkerThread(AsyncEngine* jobDispatcher, const std::string &name);
+	AsyncWorkerThread(AsyncEngine *jobDispatcher, const std::string &name);
 	virtual ~AsyncWorkerThread();
 
-	void *run();
+	void* run();
 
 private:
 	AsyncEngine *jobDispatcher = nullptr;
@@ -66,7 +66,7 @@ private:
 // Asynchornous thread and job management
 class AsyncEngine {
 	friend class AsyncWorkerThread;
-	typedef void (*StateInitializer)(lua_State *L, int top);
+	typedef void (*StateInitializer)(lua_State * L, int top);
 public:
 	AsyncEngine() = default;
 	~AsyncEngine();
@@ -125,7 +125,7 @@ protected:
 	 * @param L Lua stack to initialize
 	 * @param top Stack position
 	 */
-	void prepareEnvironment(lua_State* L, int top);
+	void prepareEnvironment(lua_State *L, int top);
 
 private:
 	// Variable locking the engine against further modification

@@ -31,10 +31,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
  * It should *never* be used for engine-managed objects, including
  * those created with @c addTexture and similar methods.
  */
-template <class ReferenceCounted,
-		class = typename std::enable_if<std::is_base_of<IReferenceCounted,
-				ReferenceCounted>::value>::type>
-class irr_ptr
+template<class ReferenceCounted,
+			class = typename std::enable_if<std::is_base_of<IReferenceCounted,
+			ReferenceCounted>::value>::type>
+		class irr_ptr
 {
 	ReferenceCounted *value = nullptr;
 
@@ -49,7 +49,7 @@ class irr_ptr
 	}
 
 public:
-	irr_ptr() {}
+	irr_ptr(){}
 
 	irr_ptr(std::nullptr_t) noexcept {}
 
@@ -57,16 +57,16 @@ public:
 
 	irr_ptr(irr_ptr &&b) noexcept { reset(b.release()); }
 
-	template <typename B, class = typename std::enable_if<std::is_convertible<B *,
-					      ReferenceCounted *>::value>::type>
-	irr_ptr(const irr_ptr<B> &b) noexcept
+	template<typename B, class = typename std::enable_if<std::is_convertible<B*,
+				ReferenceCounted*>::value>::type>
+			irr_ptr(const irr_ptr<B> &b) noexcept
 	{
 		grab(b.get());
 	}
 
-	template <typename B, class = typename std::enable_if<std::is_convertible<B *,
-					      ReferenceCounted *>::value>::type>
-	irr_ptr(irr_ptr<B> &&b) noexcept
+	template<typename B, class = typename std::enable_if<std::is_convertible<B*,
+				ReferenceCounted*>::value>::type>
+			irr_ptr(irr_ptr<B> &&b) noexcept
 	{
 		reset(b.release());
 	}
@@ -76,49 +76,49 @@ public:
 	 */
 	explicit irr_ptr(ReferenceCounted *object) noexcept { reset(object); }
 
-	~irr_ptr() { reset(); }
+	~irr_ptr(){ reset(); }
 
-	irr_ptr &operator=(const irr_ptr &b) noexcept
+	irr_ptr& operator=(const irr_ptr &b) noexcept
 	{
 		grab(b.get());
 		return *this;
 	}
 
-	irr_ptr &operator=(irr_ptr &&b) noexcept
+	irr_ptr& operator=(irr_ptr &&b) noexcept
 	{
 		reset(b.release());
 		return *this;
 	}
 
-	template <typename B, class = typename std::enable_if<std::is_convertible<B *,
-					      ReferenceCounted *>::value>::type>
-	irr_ptr &operator=(const irr_ptr<B> &b) noexcept
+	template<typename B, class = typename std::enable_if<std::is_convertible<B*,
+				ReferenceCounted*>::value>::type>
+			irr_ptr& operator=(const irr_ptr<B> &b) noexcept
 	{
 		grab(b.get());
 		return *this;
 	}
 
-	template <typename B, class = typename std::enable_if<std::is_convertible<B *,
-					      ReferenceCounted *>::value>::type>
-	irr_ptr &operator=(irr_ptr<B> &&b) noexcept
+	template<typename B, class = typename std::enable_if<std::is_convertible<B*,
+				ReferenceCounted*>::value>::type>
+			irr_ptr& operator=(irr_ptr<B> &&b) noexcept
 	{
 		reset(b.release());
 		return *this;
 	}
 
-	ReferenceCounted &operator*() const noexcept { return *value; }
-	ReferenceCounted *operator->() const noexcept { return value; }
-	explicit operator ReferenceCounted *() const noexcept { return value; }
+	ReferenceCounted& operator*() const noexcept { return *value; }
+	ReferenceCounted* operator->() const noexcept { return value; }
+	explicit operator ReferenceCounted*() const noexcept { return value; }
 	explicit operator bool() const noexcept { return !!value; }
 
 	/** Returns the stored pointer.
 	 */
-	ReferenceCounted *get() const noexcept { return value; }
+	ReferenceCounted* get() const noexcept { return value; }
 
 	/** Returns the stored pointer, erasing it from this class.
 	 * @note Move semantics: reference counter is not changed.
 	 */
-	ReferenceCounted *release() noexcept
+	ReferenceCounted* release() noexcept
 	{
 		ReferenceCounted *object = value;
 		value = nullptr;

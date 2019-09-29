@@ -42,7 +42,7 @@ void LuaLocalPlayer::create(lua_State *L, LocalPlayer *m)
 	}
 
 	LuaLocalPlayer *o = new LuaLocalPlayer(m);
-	*(void **)(lua_newuserdata(L, sizeof(void *))) = o;
+	*(void**)(lua_newuserdata(L, sizeof(void*))) = o;
 	luaL_getmetatable(L, className);
 	lua_setmetatable(L, -2);
 
@@ -345,7 +345,7 @@ int LuaLocalPlayer::l_hud_get(lua_State *L)
 	return 1;
 }
 
-LuaLocalPlayer *LuaLocalPlayer::checkobject(lua_State *L, int narg)
+LuaLocalPlayer* LuaLocalPlayer::checkobject(lua_State *L, int narg)
 {
 	luaL_checktype(L, narg, LUA_TUSERDATA);
 
@@ -353,15 +353,15 @@ LuaLocalPlayer *LuaLocalPlayer::checkobject(lua_State *L, int narg)
 	if (!ud)
 		luaL_typerror(L, narg, className);
 
-	return *(LuaLocalPlayer **)ud;
+	return *(LuaLocalPlayer**)ud;
 }
 
-LocalPlayer *LuaLocalPlayer::getobject(LuaLocalPlayer *ref)
+LocalPlayer* LuaLocalPlayer::getobject(LuaLocalPlayer *ref)
 {
 	return ref->m_localplayer;
 }
 
-LocalPlayer *LuaLocalPlayer::getobject(lua_State *L, int narg)
+LocalPlayer* LuaLocalPlayer::getobject(lua_State *L, int narg)
 {
 	LuaLocalPlayer *ref = checkobject(L, narg);
 	assert(ref);
@@ -372,7 +372,7 @@ LocalPlayer *LuaLocalPlayer::getobject(lua_State *L, int narg)
 
 int LuaLocalPlayer::gc_object(lua_State *L)
 {
-	LuaLocalPlayer *o = *(LuaLocalPlayer **)(lua_touserdata(L, 1));
+	LuaLocalPlayer *o = *(LuaLocalPlayer**)(lua_touserdata(L, 1));
 	delete o;
 	return 0;
 }
@@ -399,37 +399,37 @@ void LuaLocalPlayer::Register(lua_State *L)
 	lua_pop(L, 1); // Drop metatable
 
 	luaL_openlib(L, 0, methods, 0); // fill methodtable
-	lua_pop(L, 1);			// Drop methodtable
+	lua_pop(L, 1); // Drop methodtable
 }
 
 const char LuaLocalPlayer::className[] = "LocalPlayer";
 const luaL_Reg LuaLocalPlayer::methods[] = {
-		luamethod(LuaLocalPlayer, get_velocity),
-		luamethod(LuaLocalPlayer, get_hp),
-		luamethod(LuaLocalPlayer, get_name),
-		luamethod(LuaLocalPlayer, is_attached),
-		luamethod(LuaLocalPlayer, is_touching_ground),
-		luamethod(LuaLocalPlayer, is_in_liquid),
-		luamethod(LuaLocalPlayer, is_in_liquid_stable),
-		luamethod(LuaLocalPlayer, get_liquid_viscosity),
-		luamethod(LuaLocalPlayer, is_climbing),
-		luamethod(LuaLocalPlayer, swimming_vertical),
-		luamethod(LuaLocalPlayer, get_physics_override),
-		luamethod(LuaLocalPlayer, get_override_pos),
-		luamethod(LuaLocalPlayer, get_last_pos),
-		luamethod(LuaLocalPlayer, get_last_velocity),
-		luamethod(LuaLocalPlayer, get_last_look_horizontal),
-		luamethod(LuaLocalPlayer, get_last_look_vertical),
-		luamethod(LuaLocalPlayer, get_key_pressed),
-		luamethod(LuaLocalPlayer, get_breath),
-		luamethod(LuaLocalPlayer, get_pos),
-		luamethod(LuaLocalPlayer, get_movement_acceleration),
-		luamethod(LuaLocalPlayer, get_movement_speed),
-		luamethod(LuaLocalPlayer, get_movement),
-		luamethod(LuaLocalPlayer, hud_add),
-		luamethod(LuaLocalPlayer, hud_remove),
-		luamethod(LuaLocalPlayer, hud_change),
-		luamethod(LuaLocalPlayer, hud_get),
+	luamethod(LuaLocalPlayer, get_velocity),
+	luamethod(LuaLocalPlayer, get_hp),
+	luamethod(LuaLocalPlayer, get_name),
+	luamethod(LuaLocalPlayer, is_attached),
+	luamethod(LuaLocalPlayer, is_touching_ground),
+	luamethod(LuaLocalPlayer, is_in_liquid),
+	luamethod(LuaLocalPlayer, is_in_liquid_stable),
+	luamethod(LuaLocalPlayer, get_liquid_viscosity),
+	luamethod(LuaLocalPlayer, is_climbing),
+	luamethod(LuaLocalPlayer, swimming_vertical),
+	luamethod(LuaLocalPlayer, get_physics_override),
+	luamethod(LuaLocalPlayer, get_override_pos),
+	luamethod(LuaLocalPlayer, get_last_pos),
+	luamethod(LuaLocalPlayer, get_last_velocity),
+	luamethod(LuaLocalPlayer, get_last_look_horizontal),
+	luamethod(LuaLocalPlayer, get_last_look_vertical),
+	luamethod(LuaLocalPlayer, get_key_pressed),
+	luamethod(LuaLocalPlayer, get_breath),
+	luamethod(LuaLocalPlayer, get_pos),
+	luamethod(LuaLocalPlayer, get_movement_acceleration),
+	luamethod(LuaLocalPlayer, get_movement_speed),
+	luamethod(LuaLocalPlayer, get_movement),
+	luamethod(LuaLocalPlayer, hud_add),
+	luamethod(LuaLocalPlayer, hud_remove),
+	luamethod(LuaLocalPlayer, hud_change),
+	luamethod(LuaLocalPlayer, hud_get),
 
-		{0, 0}
+	{ 0, 0 }
 };

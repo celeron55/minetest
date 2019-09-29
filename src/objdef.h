@@ -60,35 +60,35 @@ public:
 	virtual ~ObjDefManager();
 	DISABLE_CLASS_COPY(ObjDefManager);
 
-	virtual const char *getObjectTitle() const { return "ObjDef"; }
+	virtual const char* getObjectTitle() const { return "ObjDef"; }
 
 	virtual void clear();
-	virtual ObjDef *getByName(const std::string &name) const;
+	virtual ObjDef* getByName(const std::string &name) const;
 
 	//// Add new/get/set object definitions by handle
 	virtual ObjDefHandle add(ObjDef *obj);
-	virtual ObjDef *get(ObjDefHandle handle) const;
-	virtual ObjDef *set(ObjDefHandle handle, ObjDef *obj);
+	virtual ObjDef* get(ObjDefHandle handle) const;
+	virtual ObjDef* set(ObjDefHandle handle, ObjDef *obj);
 
 	//// Raw variants that work on indexes
 	virtual u32 addRaw(ObjDef *obj);
 
 	// It is generally assumed that getRaw() will always return a valid object
 	// This won't be true if people do odd things such as call setRaw() with NULL
-	virtual ObjDef *getRaw(u32 index) const;
-	virtual ObjDef *setRaw(u32 index, ObjDef *obj);
+	virtual ObjDef* getRaw(u32 index) const;
+	virtual ObjDef* setRaw(u32 index, ObjDef *obj);
 
 	size_t getNumObjects() const { return m_objects.size(); }
 	ObjDefType getType() const { return m_objtype; }
-	const NodeDefManager *getNodeDef() const { return m_ndef; }
+	const NodeDefManager* getNodeDef() const { return m_ndef; }
 
 	u32 validateHandle(ObjDefHandle handle) const;
 	static ObjDefHandle createHandle(u32 index, ObjDefType type, u32 uid);
 	static bool decodeHandle(ObjDefHandle handle, u32 *index,
-		ObjDefType *type, u32 *uid);
+			ObjDefType *type, u32 *uid);
 
 protected:
 	const NodeDefManager *m_ndef;
-	std::vector<ObjDef *> m_objects;
+	std::vector<ObjDef*> m_objects;
 	ObjDefType m_objtype;
 };

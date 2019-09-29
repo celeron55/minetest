@@ -70,18 +70,18 @@ int ModApiParticlesLocal::l_add_particle(lua_State *L)
 	glow = getintfield_default(L, 1, "glow", 0);
 
 	ClientEvent *event = new ClientEvent();
-	event->type                              = CE_SPAWN_PARTICLE;
-	event->spawn_particle.pos                = new v3f (pos);
-	event->spawn_particle.vel                = new v3f (vel);
-	event->spawn_particle.acc                = new v3f (acc);
-	event->spawn_particle.expirationtime     = expirationtime;
-	event->spawn_particle.size               = size;
+	event->type = CE_SPAWN_PARTICLE;
+	event->spawn_particle.pos = new v3f(pos);
+	event->spawn_particle.vel = new v3f(vel);
+	event->spawn_particle.acc = new v3f(acc);
+	event->spawn_particle.expirationtime = expirationtime;
+	event->spawn_particle.size = size;
 	event->spawn_particle.collisiondetection = collisiondetection;
-	event->spawn_particle.collision_removal  = collision_removal;
-	event->spawn_particle.vertical           = vertical;
-	event->spawn_particle.texture            = new std::string(texture);
-	event->spawn_particle.animation          = animation;
-	event->spawn_particle.glow               = glow;
+	event->spawn_particle.collision_removal = collision_removal;
+	event->spawn_particle.vertical = vertical;
+	event->spawn_particle.texture = new std::string(texture);
+	event->spawn_particle.animation = animation;
+	event->spawn_particle.glow = glow;
 	getClient(L)->pushToEventQueue(event);
 
 	return 0;
@@ -157,27 +157,27 @@ int ModApiParticlesLocal::l_add_particlespawner(lua_State *L)
 	u64 id = getClient(L)->getParticleManager()->generateSpawnerId();
 
 	auto event = new ClientEvent();
-	event->type                                   = CE_ADD_PARTICLESPAWNER;
-	event->add_particlespawner.amount             = amount;
-	event->add_particlespawner.spawntime          = time;
-	event->add_particlespawner.minpos             = new v3f (minpos);
-	event->add_particlespawner.maxpos             = new v3f (maxpos);
-	event->add_particlespawner.minvel             = new v3f (minvel);
-	event->add_particlespawner.maxvel             = new v3f (maxvel);
-	event->add_particlespawner.minacc             = new v3f (minacc);
-	event->add_particlespawner.maxacc             = new v3f (maxacc);
-	event->add_particlespawner.minexptime         = minexptime;
-	event->add_particlespawner.maxexptime         = maxexptime;
-	event->add_particlespawner.minsize            = minsize;
-	event->add_particlespawner.maxsize            = maxsize;
+	event->type = CE_ADD_PARTICLESPAWNER;
+	event->add_particlespawner.amount = amount;
+	event->add_particlespawner.spawntime = time;
+	event->add_particlespawner.minpos = new v3f(minpos);
+	event->add_particlespawner.maxpos = new v3f(maxpos);
+	event->add_particlespawner.minvel = new v3f(minvel);
+	event->add_particlespawner.maxvel = new v3f(maxvel);
+	event->add_particlespawner.minacc = new v3f(minacc);
+	event->add_particlespawner.maxacc = new v3f(maxacc);
+	event->add_particlespawner.minexptime = minexptime;
+	event->add_particlespawner.maxexptime = maxexptime;
+	event->add_particlespawner.minsize = minsize;
+	event->add_particlespawner.maxsize = maxsize;
 	event->add_particlespawner.collisiondetection = collisiondetection;
-	event->add_particlespawner.collision_removal  = collision_removal;
-	event->add_particlespawner.attached_id        = 0;
-	event->add_particlespawner.vertical           = vertical;
-	event->add_particlespawner.texture            = new std::string(texture);
-	event->add_particlespawner.id                 = id;
-	event->add_particlespawner.animation          = animation;
-	event->add_particlespawner.glow               = glow;
+	event->add_particlespawner.collision_removal = collision_removal;
+	event->add_particlespawner.attached_id = 0;
+	event->add_particlespawner.vertical = vertical;
+	event->add_particlespawner.texture = new std::string(texture);
+	event->add_particlespawner.id = id;
+	event->add_particlespawner.animation = animation;
+	event->add_particlespawner.glow = glow;
 
 	getClient(L)->pushToEventQueue(event);
 	lua_pushnumber(L, id);
@@ -191,7 +191,7 @@ int ModApiParticlesLocal::l_delete_particlespawner(lua_State *L)
 	u32 id = luaL_checknumber(L, 1);
 
 	ClientEvent *event = new ClientEvent();
-	event->type                      = CE_DELETE_PARTICLESPAWNER;
+	event->type = CE_DELETE_PARTICLESPAWNER;
 	event->delete_particlespawner.id = id;
 
 	getClient(L)->pushToEventQueue(event);

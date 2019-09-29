@@ -35,7 +35,7 @@ private:
 
 	static int gc_object(lua_State *L);
 
-	static NodeTimerRef *checkobject(lua_State *L, int narg);
+	static NodeTimerRef* checkobject(lua_State *L, int narg);
 
 	static int l_set(lua_State *L);
 

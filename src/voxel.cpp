@@ -23,7 +23,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "nodedef.h"
 #include "util/directiontables.h"
 #include "util/timetaker.h"
-#include <cstring>  // memcpy, memset
+#include <cstring> // memcpy, memset
 
 /*
 	Debug stuff
@@ -49,51 +49,51 @@ void VoxelManipulator::clear()
 }
 
 void VoxelManipulator::print(std::ostream &o, const NodeDefManager *ndef,
-	VoxelPrintMode mode)
+		VoxelPrintMode mode)
 {
 	const v3s16 &em = m_area.getExtent();
 	v3s16 of = m_area.MinEdge;
 	o<<"size: "<<em.X<<"x"<<em.Y<<"x"<<em.Z
-	 <<" offset: ("<<of.X<<","<<of.Y<<","<<of.Z<<")"<<std::endl;
+			<<" offset: ("<<of.X<<","<<of.Y<<","<<of.Z<<")"<<std::endl;
 
-	for(s32 y=m_area.MaxEdge.Y; y>=m_area.MinEdge.Y; y--)
+	for (s32 y = m_area.MaxEdge.Y; y>=m_area.MinEdge.Y; y--)
 	{
-		if(em.X >= 3 && em.Y >= 3)
+		if (em.X >= 3 && em.Y >= 3)
 		{
-			if     (y==m_area.MinEdge.Y+2) o<<"^     ";
-			else if(y==m_area.MinEdge.Y+1) o<<"|     ";
-			else if(y==m_area.MinEdge.Y+0) o<<"y x-> ";
-			else                           o<<"      ";
+			if (y==m_area.MinEdge.Y+2) o<<"^     ";
+			else if (y==m_area.MinEdge.Y+1) o<<"|     ";
+			else if (y==m_area.MinEdge.Y+0) o<<"y x-> ";
+			else o<<"      ";
 		}
 
-		for(s32 z=m_area.MinEdge.Z; z<=m_area.MaxEdge.Z; z++)
+		for (s32 z = m_area.MinEdge.Z; z<=m_area.MaxEdge.Z; z++)
 		{
-			for(s32 x=m_area.MinEdge.X; x<=m_area.MaxEdge.X; x++)
+			for (s32 x = m_area.MinEdge.X; x<=m_area.MaxEdge.X; x++)
 			{
-				u8 f = m_flags[m_area.index(x,y,z)];
+				u8 f = m_flags[m_area.index(x, y, z)];
 				char c;
-				if(f & VOXELFLAG_NO_DATA)
+				if (f & VOXELFLAG_NO_DATA)
 					c = 'N';
 				else
 				{
 					c = 'X';
-					MapNode n = m_data[m_area.index(x,y,z)];
+					MapNode n = m_data[m_area.index(x, y, z)];
 					content_t m = n.getContent();
 					u8 pr = n.param2;
-					if(mode == VOXELPRINT_MATERIAL)
+					if (mode == VOXELPRINT_MATERIAL)
 					{
-						if(m <= 9)
+						if (m <= 9)
 							c = m + '0';
 					}
-					else if(mode == VOXELPRINT_WATERPRESSURE)
+					else if (mode == VOXELPRINT_WATERPRESSURE)
 					{
-						if(ndef->get(m).isLiquid())
+						if (ndef->get(m).isLiquid())
 						{
 							c = 'w';
-							if(pr <= 9)
+							if (pr <= 9)
 								c = pr + '0';
 						}
-						else if(m == CONTENT_AIR)
+						else if (m == CONTENT_AIR)
 						{
 							c = ' ';
 						}
@@ -102,16 +102,16 @@ void VoxelManipulator::print(std::ostream &o, const NodeDefManager *ndef,
 							c = '#';
 						}
 					}
-					else if(mode == VOXELPRINT_LIGHT_DAY)
+					else if (mode == VOXELPRINT_LIGHT_DAY)
 					{
-						if(ndef->get(m).light_source != 0)
+						if (ndef->get(m).light_source != 0)
 							c = 'S';
-						else if(!ndef->get(m).light_propagates)
+						else if (!ndef->get(m).light_propagates)
 							c = 'X';
 						else
 						{
 							u8 light = n.getLight(LIGHTBANK_DAY, ndef);
-							if(light < 10)
+							if (light < 10)
 								c = '0' + light;
 							else
 								c = 'a' + (light-10);
@@ -133,7 +133,7 @@ void VoxelManipulator::addArea(const VoxelArea &area)
 		return;
 
 	// Cancel if m_area already contains the requested area
-	if(m_area.contains(area))
+	if (m_area.contains(area))
 		return;
 
 	TimeTaker timer("addArea", &addarea_time);
@@ -141,7 +141,7 @@ void VoxelManipulator::addArea(const VoxelArea &area)
 	// Calculate new area
 	VoxelArea new_area;
 	// New area is the requested area if m_area has zero volume
-	if(m_area.hasEmptyExtent())
+	if (m_area.hasEmptyExtent())
 	{
 		new_area = area;
 	}
@@ -172,11 +172,11 @@ void VoxelManipulator::addArea(const VoxelArea &area)
 
 	// Copy old data
 	s32 old_x_width = m_area.MaxEdge.X - m_area.MinEdge.X + 1;
-	for(s32 z=m_area.MinEdge.Z; z<=m_area.MaxEdge.Z; z++)
-	for(s32 y=m_area.MinEdge.Y; y<=m_area.MaxEdge.Y; y++)
+	for (s32 z = m_area.MinEdge.Z; z<=m_area.MaxEdge.Z; z++)
+	for (s32 y = m_area.MinEdge.Y; y<=m_area.MaxEdge.Y; y++)
 	{
-		unsigned int old_index = m_area.index(m_area.MinEdge.X,y,z);
-		unsigned int new_index = new_area.index(m_area.MinEdge.X,y,z);
+		unsigned int old_index = m_area.index(m_area.MinEdge.X, y, z);
+		unsigned int new_index = new_area.index(m_area.MinEdge.X, y, z);
 
 		memcpy(&new_data[new_index], &m_data[old_index],
 				old_x_width * sizeof(MapNode));
@@ -203,7 +203,7 @@ void VoxelManipulator::addArea(const VoxelArea &area)
 	//dstream<<"addArea done"<<std::endl;
 }
 
-void VoxelManipulator::copyFrom(MapNode *src, const VoxelArea& src_area,
+void VoxelManipulator::copyFrom(MapNode *src, const VoxelArea &src_area,
 		v3s16 from_pos, v3s16 to_pos, const v3s16 &size)
 {
 	/* The reason for this optimised code is that we're a member function
@@ -251,11 +251,11 @@ void VoxelManipulator::copyFrom(MapNode *src, const VoxelArea& src_area,
 	}
 }
 
-void VoxelManipulator::copyTo(MapNode *dst, const VoxelArea& dst_area,
+void VoxelManipulator::copyTo(MapNode *dst, const VoxelArea &dst_area,
 		v3s16 dst_pos, v3s16 from_pos, const v3s16 &size)
 {
-	for(s16 z=0; z<size.Z; z++)
-	for(s16 y=0; y<size.Y; y++)
+	for (s16 z = 0; z<size.Z; z++)
+	for (s16 y = 0; y<size.Y; y++)
 	{
 		s32 i_dst = dst_area.index(dst_pos.X, dst_pos.Y+y, dst_pos.Z+z);
 		s32 i_local = m_area.index(from_pos.X, from_pos.Y+y, from_pos.Z+z);
@@ -297,7 +297,7 @@ void VoxelManipulator::clearFlag(u8 flags)
 	}*/
 
 	s32 volume = m_area.getVolume();
-	for(s32 i=0; i<volume; i++)
+	for (s32 i = 0; i<volume; i++)
 	{
 		m_flags[i] &= ~flags;
 	}

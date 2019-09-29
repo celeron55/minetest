@@ -25,7 +25,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 //! Sorts PointedThings based on their distance.
 struct RaycastSort
 {
-	bool operator() (const PointedThing &pt1, const PointedThing &pt2) const;
+	bool operator()(const PointedThing &pt1, const PointedThing &pt2) const;
 };
 
 //! Describes the state of a raycast.
@@ -38,7 +38,7 @@ public:
 	 * @param liquids pointable if false, liquid nodes won't be found
 	 */
 	RaycastState(const core::line3d<f32> &shootline, bool objects_pointable,
-		bool liquids_pointable);
+			bool liquids_pointable);
 
 	//! Shootline of the raycast.
 	core::line3d<f32> m_shootline;
@@ -51,7 +51,8 @@ public:
 	 * This priority queue stores the found pointed things
 	 * waiting to be returned.
 	 */
-	std::priority_queue<PointedThing, std::vector<PointedThing>, RaycastSort> m_found;
+	std::priority_queue<PointedThing, std::vector<PointedThing>,
+				RaycastSort> m_found;
 
 	bool m_objects_pointable;
 	bool m_liquids_pointable;
@@ -74,4 +75,4 @@ public:
  * @returns true if a collision point was found
  */
 bool boxLineCollision(const aabb3f &box, const v3f &start, const v3f &dir,
-	v3f *collision_point, v3s16 *collision_normal);
+		v3f *collision_point, v3s16 *collision_normal);

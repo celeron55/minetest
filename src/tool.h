@@ -68,12 +68,12 @@ struct ToolCapabilities
 			const ToolGCMap &groupcaps_ = ToolGCMap(),
 			const DamageGroup &damageGroups_ = DamageGroup(),
 			int punch_attack_uses_ = 0
-	):
-		full_punch_interval(full_punch_interval_),
-		max_drop_level(max_drop_level_),
-		groupcaps(groupcaps_),
-		damageGroups(damageGroups_),
-		punch_attack_uses(punch_attack_uses_)
+			) :
+	full_punch_interval(full_punch_interval_),
+	max_drop_level(max_drop_level_),
+	groupcaps(groupcaps_),
+	damageGroups(damageGroups_),
+	punch_attack_uses(punch_attack_uses_)
 	{}
 
 	void serialize(std::ostream &os, u16 version) const;
@@ -92,11 +92,11 @@ struct DigParams
 	std::string main_group;
 
 	DigParams(bool a_diggable = false, float a_time = 0.0f, u16 a_wear = 0,
-			const std::string &a_main_group = ""):
-		diggable(a_diggable),
-		time(a_time),
-		wear(a_wear),
-		main_group(a_main_group)
+			const std::string &a_main_group = "") :
+	diggable(a_diggable),
+	time(a_time),
+	wear(a_wear),
+	main_group(a_main_group)
 	{}
 };
 
@@ -108,9 +108,9 @@ struct HitParams
 	s16 hp;
 	u16 wear;
 
-	HitParams(s16 hp_ = 0, u16 wear_ = 0):
-		hp(hp_),
-		wear(wear_)
+	HitParams(s16 hp_ = 0, u16 wear_ = 0) :
+	hp(hp_),
+	wear(wear_)
 	{}
 };
 

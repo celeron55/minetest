@@ -53,8 +53,8 @@ void ModApiStorage::Initialize(lua_State *L, int top)
 	API_FCT(get_mod_storage);
 }
 
-StorageRef::StorageRef(ModMetadata *object):
-	m_object(object)
+StorageRef::StorageRef(ModMetadata *object) :
+m_object(object)
 {
 }
 
@@ -66,14 +66,14 @@ StorageRef::~StorageRef()
 void StorageRef::create(lua_State *L, ModMetadata *object)
 {
 	StorageRef *o = new StorageRef(object);
-	*(void **)(lua_newuserdata(L, sizeof(void *))) = o;
+	*(void**)(lua_newuserdata(L, sizeof(void*))) = o;
 	luaL_getmetatable(L, className);
 	lua_setmetatable(L, -2);
 }
 
 int StorageRef::gc_object(lua_State *L)
 {
-	StorageRef *o = *(StorageRef **)(lua_touserdata(L, 1));
+	StorageRef *o = *(StorageRef**)(lua_touserdata(L, 1));
 	// Server side
 	if (IGameDef *gamedef = getGameDef(L))
 		gamedef->unregisterModStorage(getobject(o)->getModName());
@@ -90,7 +90,7 @@ void StorageRef::Register(lua_State *L)
 
 	lua_pushliteral(L, "__metatable");
 	lua_pushvalue(L, methodtable);
-	lua_settable(L, metatable);  // hide metatable from Lua getmetatable()
+	lua_settable(L, metatable); // hide metatable from Lua getmetatable()
 
 	lua_pushliteral(L, "metadata_class");
 	lua_pushlstring(L, className, strlen(className));
@@ -108,10 +108,10 @@ void StorageRef::Register(lua_State *L)
 	lua_pushcfunction(L, l_equals);
 	lua_settable(L, metatable);
 
-	lua_pop(L, 1);  // drop metatable
+	lua_pop(L, 1); // drop metatable
 
-	luaL_openlib(L, 0, methods, 0);  // fill methodtable
-	lua_pop(L, 1);  // drop methodtable
+	luaL_openlib(L, 0, methods, 0); // fill methodtable
+	lua_pop(L, 1); // drop methodtable
 }
 
 StorageRef* StorageRef::checkobject(lua_State *L, int narg)
@@ -119,7 +119,7 @@ StorageRef* StorageRef::checkobject(lua_State *L, int narg)
 	luaL_checktype(L, narg, LUA_TUSERDATA);
 	void *ud = luaL_checkudata(L, narg, className);
 	if (!ud) luaL_typerror(L, narg, className);
-	return *(StorageRef**)ud;  // unbox pointer
+	return *(StorageRef**)ud; // unbox pointer
 }
 
 ModMetadata* StorageRef::getobject(StorageRef *ref)
@@ -151,5 +151,5 @@ const luaL_Reg StorageRef::methods[] = {
 	luamethod(MetaDataRef, to_table),
 	luamethod(MetaDataRef, from_table),
 	luamethod(MetaDataRef, equals),
-	{0,0}
+	{ 0, 0 }
 };

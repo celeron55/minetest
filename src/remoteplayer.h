@@ -43,10 +43,11 @@ public:
 	RemotePlayer(const char *name, IItemDefManager *idef);
 	virtual ~RemotePlayer() = default;
 
-	void deSerialize(std::istream &is, const std::string &playername, PlayerSAO *sao);
+	void deSerialize(std::istream &is, const std::string &playername,
+			PlayerSAO *sao);
 
-	PlayerSAO *getPlayerSAO() { return m_sao; }
-	void setPlayerSAO(PlayerSAO *sao) { m_sao = sao; }
+	PlayerSAO* getPlayerSAO(){ return m_sao; }
+	void setPlayerSAO(PlayerSAO *sao){ m_sao = sao; }
 
 	const RemotePlayerChatResult canSendChatMessage();
 
@@ -69,16 +70,16 @@ public:
 		*ratio = m_day_night_ratio;
 	}
 
-	void setHotbarImage(const std::string &name) { hud_hotbar_image = name; }
+	void setHotbarImage(const std::string &name){ hud_hotbar_image = name; }
 
-	const std::string &getHotbarImage() const { return hud_hotbar_image; }
+	const std::string& getHotbarImage() const { return hud_hotbar_image; }
 
 	void setHotbarSelectedImage(const std::string &name)
 	{
 		hud_hotbar_selected_image = name;
 	}
 
-	const std::string &getHotbarSelectedImage() const
+	const std::string& getHotbarSelectedImage() const
 	{
 		return hud_hotbar_selected_image;
 	}
@@ -106,11 +107,11 @@ public:
 		m_cloud_params = cloud_params;
 	}
 
-	const CloudParams &getCloudParams() const { return m_cloud_params; }
+	const CloudParams& getCloudParams() const { return m_cloud_params; }
 
 	bool checkModified() const { return m_dirty || inventory.checkModified(); }
 
-	inline void setModified(const bool x) { m_dirty = x; }
+	inline void setModified(const bool x){ m_dirty = x; }
 
 	void setLocalAnimations(v2s32 frames[4], float frame_speed)
 	{
@@ -126,7 +127,7 @@ public:
 		*frame_speed = local_animation_speed;
 	}
 
-	void setDirty(bool dirty) { m_dirty = true; }
+	void setDirty(bool dirty){ m_dirty = true; }
 
 	u16 protocol_version = 0;
 
@@ -135,7 +136,7 @@ public:
 
 	session_t getPeerId() const { return m_peer_id; }
 
-	void setPeerId(session_t peer_id) { m_peer_id = peer_id; }
+	void setPeerId(session_t peer_id){ m_peer_id = peer_id; }
 
 	void onSuccessfulSave();
 

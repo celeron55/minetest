@@ -44,9 +44,9 @@ extern "C" {
 	so we can use numeric indices freely.
 */
 #ifdef LUA_RIDX_LAST
-#define CUSTOM_RIDX_BASE ((LUA_RIDX_LAST)+1)
+	#define CUSTOM_RIDX_BASE ((LUA_RIDX_LAST)+1)
 #else
-#define CUSTOM_RIDX_BASE 1
+	#define CUSTOM_RIDX_BASE 1
 #endif
 
 #define CUSTOM_RIDX_SCRIPTAPI           (CUSTOM_RIDX_BASE)
@@ -59,10 +59,10 @@ extern "C" {
 	(lua_rawgeti((L), LUA_REGISTRYINDEX, CUSTOM_RIDX_BACKTRACE), lua_gettop((L)))
 
 #define PCALL_RESL(L, RES) {                            \
-	int result_ = (RES);                                \
-	if (result_ != 0) {                                 \
-		script_error((L), result_, NULL, __FUNCTION__); \
-	}                                                   \
+		int result_ = (RES);                                \
+		if (result_ != 0) {                                 \
+			script_error((L), result_, NULL, __FUNCTION__); \
+		}                                                   \
 }
 
 #define script_run_callbacks(L, nargs, mode) \
@@ -102,5 +102,5 @@ std::string script_get_backtrace(lua_State *L);
 int script_exception_wrapper(lua_State *L, lua_CFunction f);
 void script_error(lua_State *L, int pcall_result, const char *mod, const char *fxn);
 void script_run_callbacks_f(lua_State *L, int nargs,
-	RunCallbacksMode mode, const char *fxn);
+		RunCallbacksMode mode, const char *fxn);
 void log_deprecated(lua_State *L, const std::string &message);

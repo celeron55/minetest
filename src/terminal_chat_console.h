@@ -37,8 +37,8 @@ public:
 	}
 
 	virtual void log(LogLevel lev, const std::string &combined,
-		const std::string &time, const std::string &thread_name,
-		const std::string &payload_text)
+			const std::string &time, const std::string &thread_name,
+			const std::string &payload_text)
 	{
 		std::ostringstream os(std::ios_base::binary);
 		os << time << ": [" << thread_name << "] " << payload_text;
@@ -53,23 +53,23 @@ class TerminalChatConsole : public Thread {
 public:
 
 	TerminalChatConsole() :
-		Thread("TerminalThread")
+	Thread("TerminalThread")
 	{}
 
 	void setup(
-		ChatInterface *iface,
-		bool *kill_requested,
-		const std::string &nick)
+			ChatInterface *iface,
+			bool *kill_requested,
+			const std::string &nick)
 	{
 		m_nick = nick;
 		m_kill_requested = kill_requested;
 		m_chat_interface = iface;
 	}
 
-	virtual void *run();
+	virtual void* run();
 
 	// Highly required!
-	void clearKillStatus() { m_kill_requested = nullptr; }
+	void clearKillStatus(){ m_kill_requested = nullptr; }
 
 	void stopAndWaitforThread();
 
@@ -91,10 +91,10 @@ private:
 	// Used to ensure the deinitialisation is always called.
 	struct CursesInitHelper {
 		TerminalChatConsole *cons;
-		CursesInitHelper(TerminalChatConsole * a_console)
-			: cons(a_console)
+		CursesInitHelper(TerminalChatConsole *a_console)
+		: cons(a_console)
 		{ cons->initOfCurses(); }
-		~CursesInitHelper() { cons->deInitOfCurses(); }
+		~CursesInitHelper(){ cons->deInitOfCurses(); }
 	};
 
 	int m_log_level = LL_ACTION;

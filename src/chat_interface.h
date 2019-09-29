@@ -33,15 +33,15 @@ enum ChatEventType {
 
 class ChatEvent {
 protected:
-	ChatEvent(ChatEventType a_type) { type = a_type; }
+	ChatEvent(ChatEventType a_type){ type = a_type; }
 public:
 	ChatEventType type;
 };
 
 struct ChatEventTimeInfo : public ChatEvent {
 	ChatEventTimeInfo(
-		u64 a_game_time,
-		u32 a_time) :
+			u64 a_game_time,
+			u32 a_time) :
 	ChatEvent(CET_TIME_INFO),
 	game_time(a_game_time),
 	time(a_time)
@@ -53,9 +53,9 @@ struct ChatEventTimeInfo : public ChatEvent {
 
 struct ChatEventNick : public ChatEvent {
 	ChatEventNick(ChatEventType a_type,
-		const std::string &a_nick) :
+			const std::string &a_nick) :
 	ChatEvent(a_type), // one of CET_NICK_ADD, CET_NICK_REMOVE
-	nick(a_nick)
+			nick(a_nick)
 	{}
 
 	std::string nick;
@@ -63,7 +63,7 @@ struct ChatEventNick : public ChatEvent {
 
 struct ChatEventChat : public ChatEvent {
 	ChatEventChat(const std::string &a_nick,
-		const std::wstring &an_evt_msg) :
+			const std::wstring &an_evt_msg) :
 	ChatEvent(CET_CHAT),
 	nick(a_nick),
 	evt_msg(an_evt_msg)
@@ -74,6 +74,6 @@ struct ChatEventChat : public ChatEvent {
 };
 
 struct ChatInterface {
-	MutexedQueue<ChatEvent *> command_queue; // chat backend --> server
-	MutexedQueue<ChatEvent *> outgoing_queue; // server --> chat backend
+	MutexedQueue<ChatEvent*> command_queue; // chat backend --> server
+	MutexedQueue<ChatEvent*> outgoing_queue; // server --> chat backend
 };

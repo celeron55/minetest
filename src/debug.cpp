@@ -52,9 +52,10 @@ void sanity_check_fn(const char *assertion, const char *file,
 #endif
 
 	errorstream << std::endl << "In thread " << std::hex
-		<< std::this_thread::get_id() << ":" << std::endl;
+			<< std::this_thread::get_id() << ":" << std::endl;
 	errorstream << file << ":" << line << ": " << function
-		<< ": An engine assumption '" << assertion << "' failed." << std::endl;
+			<< ": An engine assumption '" << assertion << "' failed." <<
+			std::endl;
 
 	abort();
 }
@@ -67,16 +68,16 @@ void fatal_error_fn(const char *msg, const char *file,
 #endif
 
 	errorstream << std::endl << "In thread " << std::hex
-		<< std::this_thread::get_id() << ":" << std::endl;
+			<< std::this_thread::get_id() << ":" << std::endl;
 	errorstream << file << ":" << line << ": " << function
-		<< ": A fatal error occurred: " << msg << std::endl;
+			<< ": A fatal error occurred: " << msg << std::endl;
 
 	abort();
 }
 
 #ifdef _MSC_VER
 
-const char *Win32ExceptionCodeToString(DWORD exception_code)
+const char* Win32ExceptionCodeToString(DWORD exception_code)
 {
 	switch (exception_code) {
 	case EXCEPTION_ACCESS_VIOLATION:
@@ -142,20 +143,20 @@ long WINAPI Win32ExceptionHandler(struct _EXCEPTION_POINTERS *pExceptInfo)
 	version_str += g_version_hash;
 
 	HANDLE hFile = CreateFileA(dumpfile.c_str(), GENERIC_WRITE,
-		FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+			FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (hFile == INVALID_HANDLE_VALUE)
 		goto minidump_failed;
 
 	if (SetEndOfFile(hFile) == FALSE)
 		goto minidump_failed;
 
-	mdei.ClientPointers	   = NULL;
+	mdei.ClientPointers = NULL;
 	mdei.ExceptionPointers = pExceptInfo;
-	mdei.ThreadId		   = GetCurrentThreadId();
+	mdei.ThreadId = GetCurrentThreadId();
 
-	mdus.Type       = CommentStreamA;
+	mdus.Type = CommentStreamA;
 	mdus.BufferSize = version_str.size();
-	mdus.Buffer     = (PVOID)version_str.c_str();
+	mdus.Buffer = (PVOID)version_str.c_str();
 
 	mdusi.UserStreamArray = &mdus;
 	mdusi.UserStreamCount = 1;
@@ -172,10 +173,10 @@ minidump_failed:
 
 	DWORD excode = pExceptInfo->ExceptionRecord->ExceptionCode;
 	_snprintf(buf, sizeof(buf),
-		" >> === FATAL ERROR ===\n"
-		" >> %s (Exception 0x%08X) at 0x%p\n",
-		Win32ExceptionCodeToString(excode), excode,
-		pExceptInfo->ExceptionRecord->ExceptionAddress);
+			" >> === FATAL ERROR ===\n"
+			" >> %s (Exception 0x%08X) at 0x%p\n",
+			Win32ExceptionCodeToString(excode), excode,
+			pExceptInfo->ExceptionRecord->ExceptionAddress);
 	dstream << buf;
 
 	if (minidump_created)

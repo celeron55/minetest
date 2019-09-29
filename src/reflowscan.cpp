@@ -25,8 +25,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 
 ReflowScan::ReflowScan(Map *map, const NodeDefManager *ndef) :
-	m_map(map),
-	m_ndef(ndef)
+m_map(map),
+m_ndef(ndef)
 {
 }
 
@@ -48,7 +48,7 @@ void ReflowScan::scan(MapBlock *block, UniqueQueue<v3s16> *liquid_queue)
 
 	// Scan the columns in the block
 	for (s16 z = 0; z < MAP_BLOCKSIZE; z++)
-	for (s16 x = 0; x < MAP_BLOCKSIZE; x++) {
+		for (s16 x = 0; x < MAP_BLOCKSIZE; x++) {
 		scanColumn(x, z);
 	}
 
@@ -62,7 +62,7 @@ void ReflowScan::scan(MapBlock *block, UniqueQueue<v3s16> *liquid_queue)
 	}
 }
 
-inline MapBlock *ReflowScan::lookupBlock(int x, int y, int z)
+inline MapBlock* ReflowScan::lookupBlock(int x, int y, int z)
 {
 	// Gets the block that contains (x,y,z) relativ to the scanned block.
 	// This uses a lookup as there might be many lookups into the same
@@ -108,9 +108,9 @@ inline bool ReflowScan::isLiquidHorizontallyFlowable(int x, int y, int z)
 	// Check if the (x,y,z) might spread to one of the horizontally
 	// neighbouring nodes
 	return isLiquidFlowableTo(x - 1, y, z) ||
-		isLiquidFlowableTo(x + 1, y, z) ||
-		isLiquidFlowableTo(x, y, z - 1) ||
-		isLiquidFlowableTo(x, y, z + 1);
+			isLiquidFlowableTo(x + 1, y, z) ||
+			isLiquidFlowableTo(x, y, z - 1) ||
+			isLiquidFlowableTo(x, y, z + 1);
 }
 
 void ReflowScan::scanColumn(int x, int z)
@@ -179,7 +179,8 @@ void ReflowScan::scanColumn(int x, int z)
 	// Check the node below the current block
 	MapBlock *below = lookupBlock(x, -1, z);
 	if (below) {
-		MapNode node = below->getNodeNoCheck(dx, MAP_BLOCKSIZE - 1, dz, &valid_position);
+		MapNode node = below->getNodeNoCheck(dx, MAP_BLOCKSIZE - 1, dz,
+				&valid_position);
 		const ContentFeatures &f = m_ndef->get(node);
 		bool is_ignore = node.getContent() == CONTENT_IGNORE;
 		bool is_liquid = f.isLiquid();

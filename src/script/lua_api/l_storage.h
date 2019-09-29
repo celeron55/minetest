@@ -42,7 +42,7 @@ private:
 	static const char className[];
 	static const luaL_Reg methods[];
 
-	virtual Metadata *getmeta(bool auto_create);
+	virtual Metadata* getmeta(bool auto_create);
 	virtual void clearMeta();
 
 	// garbage collector
@@ -55,6 +55,6 @@ public:
 	static void Register(lua_State *L);
 	static void create(lua_State *L, ModMetadata *object);
 
-	static StorageRef *checkobject(lua_State *L, int narg);
-	static ModMetadata *getobject(StorageRef *ref);
+	static StorageRef* checkobject(lua_State *L, int narg);
+	static ModMetadata* getobject(StorageRef *ref);
 };

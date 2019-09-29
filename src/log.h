@@ -25,7 +25,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <fstream>
 #include <thread>
 #include <mutex>
-#if !defined(_WIN32)  // POSIX
+#if !defined(_WIN32) // POSIX
 	#include <unistd.h>
 #endif
 #include "irrlichttypes.h"
@@ -36,7 +36,7 @@ enum LogLevel {
 	LL_NONE, // Special level that is always printed
 	LL_ERROR,
 	LL_WARNING,
-	LL_ACTION,  // In-game actions
+	LL_ACTION, // In-game actions
 	LL_INFO,
 	LL_VERBOSE,
 	LL_MAX,
@@ -67,8 +67,8 @@ public:
 	// Logs without a prefix
 	void logRaw(LogLevel lev, const std::string &text);
 
-	void setTraceEnabled(bool enable) { m_trace_enabled = enable; }
-	bool getTraceEnabled() { return m_trace_enabled; }
+	void setTraceEnabled(bool enable){ m_trace_enabled = enable; }
+	bool getTraceEnabled(){ return m_trace_enabled; }
 
 	static LogLevel stringToLevel(const std::string &name);
 	static const std::string getLevelLabel(LogLevel lev);
@@ -78,12 +78,12 @@ public:
 private:
 	void logToOutputsRaw(LogLevel, const std::string &line);
 	void logToOutputs(LogLevel, const std::string &combined,
-		const std::string &time, const std::string &thread_name,
-		const std::string &payload_text);
+			const std::string &time, const std::string &thread_name,
+			const std::string &payload_text);
 
 	const std::string getThreadName();
 
-	std::vector<ILogOutput *> m_outputs[LL_MAX];
+	std::vector<ILogOutput*> m_outputs[LL_MAX];
 
 	// Should implement atomic loads and stores (even though it's only
 	// written to when one thread has access currently).
@@ -98,15 +98,15 @@ class ILogOutput {
 public:
 	virtual void logRaw(LogLevel, const std::string &line) = 0;
 	virtual void log(LogLevel, const std::string &combined,
-		const std::string &time, const std::string &thread_name,
-		const std::string &payload_text) = 0;
+			const std::string &time, const std::string &thread_name,
+			const std::string &payload_text) = 0;
 };
 
 class ICombinedLogOutput : public ILogOutput {
 public:
 	void log(LogLevel lev, const std::string &combined,
-		const std::string &time, const std::string &thread_name,
-		const std::string &payload_text)
+			const std::string &time, const std::string &thread_name,
+			const std::string &payload_text)
 	{
 		logRaw(lev, combined);
 	}
@@ -115,7 +115,7 @@ public:
 class StreamLogOutput : public ICombinedLogOutput {
 public:
 	StreamLogOutput(std::ostream &stream) :
-		m_stream(stream)
+	m_stream(stream)
 	{
 #if !defined(_WIN32)
 		is_tty = isatty(fileno(stdout));
@@ -127,34 +127,34 @@ public:
 	void logRaw(LogLevel lev, const std::string &line)
 	{
 		bool colored_message = (Logger::color_mode == LOG_COLOR_ALWAYS) ||
-			(Logger::color_mode == LOG_COLOR_AUTO && is_tty);
+				(Logger::color_mode == LOG_COLOR_AUTO && is_tty);
 		if (colored_message)
 			switch (lev) {
-			case LL_ERROR:
-				// error is red
-				m_stream << "\033[91m";
-				break;
-			case LL_WARNING:
-				// warning is yellow
-				m_stream << "\033[93m";
-				break;
-			case LL_INFO:
-				// info is a bit dark
-				m_stream << "\033[37m";
-				break;
-			case LL_VERBOSE:
-				// verbose is darker than info
-				m_stream << "\033[2m";
-				break;
-			default:
-				// action is white
-				colored_message = false;
-			}
+		case LL_ERROR:
+			// error is red
+			m_stream << "\033[91m";
+			break;
+		case LL_WARNING:
+			// warning is yellow
+			m_stream << "\033[93m";
+			break;
+		case LL_INFO:
+			// info is a bit dark
+			m_stream << "\033[37m";
+			break;
+		case LL_VERBOSE:
+			// verbose is darker than info
+			m_stream << "\033[2m";
+			break;
+		default:
+			// action is white
+			colored_message = false;
+		}
 
 		m_stream << line << std::endl;
 
 		if (colored_message)
-			// reset to white color
+		// reset to white color
 			m_stream << "\033[0m";
 	}
 
@@ -179,7 +179,7 @@ private:
 class LogOutputBuffer : public ICombinedLogOutput {
 public:
 	LogOutputBuffer(Logger &logger, LogLevel lev) :
-		m_logger(logger)
+	m_logger(logger)
 	{
 		m_logger.addOutput(this, lev);
 	}
@@ -241,9 +241,9 @@ extern std::ostream verbosestream;
 extern std::ostream dstream;
 
 #define TRACEDO(x) do {               \
-	if (g_logger.getTraceEnabled()) { \
-		x;                            \
-	}                                 \
+		if (g_logger.getTraceEnabled()) { \
+			x;                            \
+		}                                 \
 } while (0)
 
 #define TRACESTREAM(x) TRACEDO(verbosestream x)

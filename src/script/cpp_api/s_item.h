@@ -32,7 +32,7 @@ class InventoryList;
 struct InventoryLocation;
 
 class ScriptApiItem
-: virtual public ScriptApiBase
+		: virtual public ScriptApiBase
 {
 public:
 	bool item_OnDrop(ItemStack &item,
@@ -53,7 +53,8 @@ protected:
 	friend class ModApiItemMod;
 	friend class LuaRaycast;
 
-	bool getItemCallback(const char *name, const char *callbackname, const v3s16 *p = nullptr);
+	bool getItemCallback(const char *name, const char *callbackname,
+			const v3s16 *p = nullptr);
 	/*!
 	 * Pushes a `pointed_thing` tabe to the stack.
 	 * \param hitpoint If true, the exact pointing location is also pushed

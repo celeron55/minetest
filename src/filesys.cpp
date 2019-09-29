@@ -28,7 +28,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "config.h"
 #include "porting.h"
 #ifdef __ANDROID__
-#include "settings.h" // For g_settings
+	#include "settings.h" // For g_settings
 #endif
 
 namespace fs
@@ -36,9 +36,9 @@ namespace fs
 
 #ifdef _WIN32 // WINDOWS
 
-#define _WIN32_WINNT 0x0501
-#include <windows.h>
-#include <shlwapi.h>
+	#define _WIN32_WINNT 0x0501
+	#include <windows.h>
+	#include <shlwapi.h>
 
 std::vector<DirListNode> GetDirListing(const std::string &pathstring)
 {
@@ -75,7 +75,7 @@ std::vector<DirListNode> GetDirListing(const std::string &pathstring)
 			DirListNode node;
 			node.name = FindFileData.cFileName;
 			node.dir = FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
-			if(node.name != "." && node.name != "..")
+			if (node.name != "." && node.name != "..")
 				listing.push_back(node);
 		}
 
@@ -86,7 +86,7 @@ std::vector<DirListNode> GetDirListing(const std::string &pathstring)
 					<< " Error is " << dwError << std::endl;
 			listing.clear();
 			return listing;
- 		}
+		}
 	}
 	return listing;
 }
@@ -94,9 +94,9 @@ std::vector<DirListNode> GetDirListing(const std::string &pathstring)
 bool CreateDir(const std::string &path)
 {
 	bool r = CreateDirectory(path.c_str(), NULL);
-	if(r == true)
+	if (r == true)
 		return true;
-	if(GetLastError() == ERROR_ALREADY_EXISTS)
+	if (GetLastError() == ERROR_ALREADY_EXISTS)
 		return true;
 	return false;
 }
@@ -138,7 +138,7 @@ bool RecursiveDelete(const std::string &path)
 	infostream << "RecursiveDelete: Deleting content of directory "
 			<< path << std::endl;
 	std::vector<DirListNode> content = GetDirListing(path);
-	for (const DirListNode &n: content) {
+	for (const DirListNode &n : content) {
 		std::string fullpath = path + DIR_DELIM + n.name;
 		if (!RecursiveDelete(fullpath)) {
 			errorstream << "RecursiveDelete: Failed to recurse to "
@@ -160,7 +160,7 @@ bool DeleteSingleFileOrEmptyDirectory(const std::string &path)
 	DWORD attr = GetFileAttributes(path.c_str());
 	bool is_directory = (attr != INVALID_FILE_ATTRIBUTES &&
 			(attr & FILE_ATTRIBUTE_DIRECTORY));
-	if(!is_directory)
+	if (!is_directory)
 	{
 		bool did = DeleteFile(path.c_str());
 		return did;
@@ -175,13 +175,13 @@ bool DeleteSingleFileOrEmptyDirectory(const std::string &path)
 std::string TempPath()
 {
 	DWORD bufsize = GetTempPath(0, NULL);
-	if(bufsize == 0){
+	if (bufsize == 0) {
 		errorstream<<"GetTempPath failed, error = "<<GetLastError()<<std::endl;
 		return "";
 	}
 	std::vector<char> buf(bufsize);
 	DWORD len = GetTempPath(bufsize, &buf[0]);
-	if(len == 0 || len > bufsize){
+	if (len == 0 || len > bufsize) {
 		errorstream<<"GetTempPath failed, error = "<<GetLastError()<<std::endl;
 		return "";
 	}
@@ -190,11 +190,11 @@ std::string TempPath()
 
 #else // POSIX
 
-#include <sys/types.h>
-#include <dirent.h>
-#include <sys/stat.h>
-#include <sys/wait.h>
-#include <unistd.h>
+	#include <sys/types.h>
+	#include <dirent.h>
+	#include <sys/stat.h>
+	#include <sys/wait.h>
+	#include <unistd.h>
 
 std::vector<DirListNode> GetDirListing(const std::string &pathstring)
 {
@@ -202,7 +202,7 @@ std::vector<DirListNode> GetDirListing(const std::string &pathstring)
 
 	DIR *dp;
 	struct dirent *dirp;
-	if((dp = opendir(pathstring.c_str())) == NULL) {
+	if ((dp = opendir(pathstring.c_str())) == NULL) {
 		//infostream<<"Error("<<errno<<") opening "<<pathstring<<std::endl;
 		return listing;
 	}
@@ -211,7 +211,7 @@ std::vector<DirListNode> GetDirListing(const std::string &pathstring)
 		// NOTE:
 		// Be very sure to not include '..' in the results, it will
 		// result in an epic failure when deleting stuff.
-		if(strcmp(dirp->d_name, ".") == 0 || strcmp(dirp->d_name, "..") == 0)
+		if (strcmp(dirp->d_name, ".") == 0 || strcmp(dirp->d_name, "..") == 0)
 			continue;
 
 		DirListNode node;
@@ -226,17 +226,17 @@ std::vector<DirListNode> GetDirListing(const std::string &pathstring)
 
 			Also we don't know whether symlinks are directories or not.
 		*/
-#ifdef _DIRENT_HAVE_D_TYPE
-		if(dirp->d_type != DT_UNKNOWN && dirp->d_type != DT_LNK)
+	#ifdef _DIRENT_HAVE_D_TYPE
+		if (dirp->d_type != DT_UNKNOWN && dirp->d_type != DT_LNK)
 			isdir = (dirp->d_type == DT_DIR);
-#endif /* _DIRENT_HAVE_D_TYPE */
+	#endif /* _DIRENT_HAVE_D_TYPE */
 
 		/*
 			Was d_type DT_UNKNOWN, DT_LNK or nonexistent?
 			If so, try stat().
 		*/
-		if(isdir == -1) {
-			struct stat statbuf{};
+		if (isdir == -1) {
+			struct stat statbuf {};
 			if (stat((pathstring + "/" + node.name).c_str(), &statbuf))
 				continue;
 			isdir = ((statbuf.st_mode & S_IFDIR) == S_IFDIR);
@@ -265,8 +265,8 @@ bool CreateDir(const std::string &path)
 
 bool PathExists(const std::string &path)
 {
-	struct stat st{};
-	return (stat(path.c_str(),&st) == 0);
+	struct stat st {};
+	return (stat(path.c_str(), &st) == 0);
 }
 
 bool IsPathAbsolute(const std::string &path)
@@ -276,8 +276,8 @@ bool IsPathAbsolute(const std::string &path)
 
 bool IsDir(const std::string &path)
 {
-	struct stat statbuf{};
-	if(stat(path.c_str(), &statbuf))
+	struct stat statbuf {};
+	if (stat(path.c_str(), &statbuf))
 		return false; // Actually error; but certainly not a directory
 	return ((statbuf.st_mode & S_IFDIR) == S_IFDIR);
 }
@@ -299,15 +299,15 @@ bool RecursiveDelete(const std::string &path)
 
 	pid_t child_pid = fork();
 
-	if(child_pid == 0)
+	if (child_pid == 0)
 	{
 		// Child
 		char argv_data[3][10000];
-#ifdef __ANDROID__
+	#ifdef __ANDROID__
 		strcpy(argv_data[0], "/system/bin/rm");
-#else
+	#else
 		strcpy(argv_data[0], "/bin/rm");
-#endif
+	#endif
 		strcpy(argv_data[1], "-rf");
 		strncpy(argv_data[2], path.c_str(), sizeof(argv_data[2]) - 1);
 		char *argv[4];
@@ -329,10 +329,10 @@ bool RecursiveDelete(const std::string &path)
 		// Parent
 		int child_status;
 		pid_t tpid;
-		do{
+		do {
 			tpid = wait(&child_status);
 			//if(tpid != child_pid) process_terminated(tpid);
-		}while(tpid != child_pid);
+		} while (tpid != child_pid);
 		return (child_status == 0);
 	}
 }
@@ -343,14 +343,14 @@ bool DeleteSingleFileOrEmptyDirectory(const std::string &path)
 		bool did = (rmdir(path.c_str()) == 0);
 		if (!did)
 			errorstream << "rmdir errno: " << errno << ": " << strerror(errno)
-					<< std::endl;
+			<< std::endl;
 		return did;
 	}
 
 	bool did = (unlink(path.c_str()) == 0);
 	if (!did)
 		errorstream << "unlink errno: " << errno << ": " << strerror(errno)
-				<< std::endl;
+		<< std::endl;
 	return did;
 }
 
@@ -365,11 +365,11 @@ std::string TempPath()
 		compatible with lua's os.tmpname which under the default
 		configuration hardcodes mkstemp("/tmp/lua_XXXXXX").
 	*/
-#ifdef __ANDROID__
+	#ifdef __ANDROID__
 	return g_settings->get("TMPFolder");
-#else
+	#else
 	return DIR_DELIM "tmp";
-#endif
+	#endif
 }
 
 #endif
@@ -391,9 +391,9 @@ std::vector<std::string> GetRecursiveDirs(const std::string &dir)
 }
 
 void GetRecursiveSubPaths(const std::string &path,
-		  std::vector<std::string> &dst,
-		  bool list_files,
-		  const std::set<char> &ignore)
+		std::vector<std::string> &dst,
+		bool list_files,
+		const std::set<char> &ignore)
 {
 	std::vector<DirListNode> content = GetDirListing(path);
 	for (const auto &n : content) {
@@ -411,10 +411,10 @@ bool DeletePaths(const std::vector<std::string> &paths)
 {
 	bool success = true;
 	// Go backwards to succesfully delete the output of GetRecursiveSubPaths
-	for(int i=paths.size()-1; i>=0; i--){
+	for (int i = paths.size()-1; i>=0; i--) {
 		const std::string &path = paths[i];
 		bool did = DeleteSingleFileOrEmptyDirectory(path);
-		if(!did){
+		if (!did) {
 			errorstream<<"Failed to delete "<<path<<std::endl;
 			success = false;
 		}
@@ -427,11 +427,11 @@ bool RecursiveDeleteContent(const std::string &path)
 	infostream<<"Removing content of \""<<path<<"\""<<std::endl;
 	std::vector<DirListNode> list = GetDirListing(path);
 	for (const DirListNode &dln : list) {
-		if(trim(dln.name) == "." || trim(dln.name) == "..")
+		if (trim(dln.name) == "." || trim(dln.name) == "..")
 			continue;
 		std::string childpath = path + DIR_DELIM + dln.name;
 		bool r = RecursiveDelete(childpath);
-		if(!r) {
+		if (!r) {
 			errorstream << "Removing \"" << childpath << "\" failed" << std::endl;
 			return false;
 		}
@@ -444,32 +444,32 @@ bool CreateAllDirs(const std::string &path)
 
 	std::vector<std::string> tocreate;
 	std::string basepath = path;
-	while(!PathExists(basepath))
+	while (!PathExists(basepath))
 	{
 		tocreate.push_back(basepath);
 		basepath = RemoveLastPathComponent(basepath);
-		if(basepath.empty())
+		if (basepath.empty())
 			break;
 	}
-	for(int i=tocreate.size()-1;i>=0;i--)
-		if(!CreateDir(tocreate[i]))
-			return false;
+	for (int i = tocreate.size()-1; i>=0; i--)
+	if (!CreateDir(tocreate[i]))
+		return false;
 	return true;
 }
 
 bool CopyFileContents(const std::string &source, const std::string &target)
 {
 	FILE *sourcefile = fopen(source.c_str(), "rb");
-	if(sourcefile == NULL){
+	if (sourcefile == NULL) {
 		errorstream<<source<<": can't open for reading: "
-			<<strerror(errno)<<std::endl;
+				<<strerror(errno)<<std::endl;
 		return false;
 	}
 
 	FILE *targetfile = fopen(target.c_str(), "wb");
-	if(targetfile == NULL){
+	if (targetfile == NULL) {
 		errorstream<<target<<": can't open for writing: "
-			<<strerror(errno)<<std::endl;
+				<<strerror(errno)<<std::endl;
 		fclose(sourcefile);
 		return false;
 	}
@@ -478,26 +478,26 @@ bool CopyFileContents(const std::string &source, const std::string &target)
 	bool retval = true;
 	bool done = false;
 	char readbuffer[BUFSIZ];
-	while(!done){
+	while (!done) {
 		size_t readbytes = fread(readbuffer, 1,
 				sizeof(readbuffer), sourcefile);
 		total += readbytes;
-		if(ferror(sourcefile)){
+		if (ferror(sourcefile)) {
 			errorstream<<source<<": IO error: "
-				<<strerror(errno)<<std::endl;
+					<<strerror(errno)<<std::endl;
 			retval = false;
 			done = true;
 		}
-		if(readbytes > 0){
+		if (readbytes > 0) {
 			fwrite(readbuffer, 1, readbytes, targetfile);
 		}
-		if(feof(sourcefile) || ferror(sourcefile)){
+		if (feof(sourcefile) || ferror(sourcefile)) {
 			// flush destination file to catch write errors
 			// (e.g. disk full)
 			fflush(targetfile);
 			done = true;
 		}
-		if(ferror(targetfile)){
+		if (ferror(targetfile)) {
 			errorstream<<target<<": IO error: "
 					<<strerror(errno)<<std::endl;
 			retval = false;
@@ -505,7 +505,7 @@ bool CopyFileContents(const std::string &source, const std::string &target)
 		}
 	}
 	infostream<<"copied "<<total<<" bytes from "
-		<<source<<" to "<<target<<std::endl;
+			<<source<<" to "<<target<<std::endl;
 	fclose(sourcefile);
 	fclose(targetfile);
 	return retval;
@@ -513,8 +513,8 @@ bool CopyFileContents(const std::string &source, const std::string &target)
 
 bool CopyDir(const std::string &source, const std::string &target)
 {
-	if(PathExists(source)){
-		if(!PathExists(target)){
+	if (PathExists(source)) {
+		if (!PathExists(target)) {
 			fs::CreateAllDirs(target);
 		}
 		bool retval = true;
@@ -523,13 +523,13 @@ bool CopyDir(const std::string &source, const std::string &target)
 		for (const auto &dln : content) {
 			std::string sourcechild = source + DIR_DELIM + dln.name;
 			std::string targetchild = target + DIR_DELIM + dln.name;
-			if(dln.dir){
-				if(!fs::CopyDir(sourcechild, targetchild)){
+			if (dln.dir) {
+				if (!fs::CopyDir(sourcechild, targetchild)) {
 					retval = false;
 				}
 			}
 			else {
-				if(!fs::CopyFileContents(sourcechild, targetchild)){
+				if (!fs::CopyFileContents(sourcechild, targetchild)) {
 					retval = false;
 				}
 			}
@@ -546,44 +546,44 @@ bool PathStartsWith(const std::string &path, const std::string &prefix)
 	size_t pathpos = 0;
 	size_t prefixsize = prefix.size();
 	size_t prefixpos = 0;
-	for(;;){
+	for (;;) {
 		bool delim1 = pathpos == pathsize
-			|| IsDirDelimiter(path[pathpos]);
+				|| IsDirDelimiter(path[pathpos]);
 		bool delim2 = prefixpos == prefixsize
-			|| IsDirDelimiter(prefix[prefixpos]);
+				|| IsDirDelimiter(prefix[prefixpos]);
 
-		if(delim1 != delim2)
+		if (delim1 != delim2)
 			return false;
 
-		if(delim1){
-			while(pathpos < pathsize &&
+		if (delim1) {
+			while (pathpos < pathsize &&
 					IsDirDelimiter(path[pathpos]))
 				++pathpos;
-			while(prefixpos < prefixsize &&
+			while (prefixpos < prefixsize &&
 					IsDirDelimiter(prefix[prefixpos]))
 				++prefixpos;
-			if(prefixpos == prefixsize)
+			if (prefixpos == prefixsize)
 				return true;
-			if(pathpos == pathsize)
+			if (pathpos == pathsize)
 				return false;
 		}
-		else{
+		else {
 			size_t len = 0;
-			do{
+			do {
 				char pathchar = path[pathpos+len];
 				char prefixchar = prefix[prefixpos+len];
-				if(FILESYS_CASE_INSENSITIVE){
+				if (FILESYS_CASE_INSENSITIVE) {
 					pathchar = tolower(pathchar);
 					prefixchar = tolower(prefixchar);
 				}
-				if(pathchar != prefixchar)
+				if (pathchar != prefixchar)
 					return false;
 				++len;
-			} while(pathpos+len < pathsize
-					&& !IsDirDelimiter(path[pathpos+len])
+			} while (pathpos+len < pathsize
+						&& !IsDirDelimiter(path[pathpos+len])
 					&& prefixpos+len < prefixsize
-					&& !IsDirDelimiter(
-						prefix[prefixpos+len]));
+						&& !IsDirDelimiter(
+					prefix[prefixpos+len]));
 			pathpos += len;
 			prefixpos += len;
 		}
@@ -593,27 +593,27 @@ bool PathStartsWith(const std::string &path, const std::string &prefix)
 std::string RemoveLastPathComponent(const std::string &path,
 		std::string *removed, int count)
 {
-	if(removed)
+	if (removed)
 		*removed = "";
 
 	size_t remaining = path.size();
 
-	for(int i = 0; i < count; ++i){
+	for (int i = 0; i < count; ++i) {
 		// strip a dir delimiter
-		while(remaining != 0 && IsDirDelimiter(path[remaining-1]))
+		while (remaining != 0 && IsDirDelimiter(path[remaining-1]))
 			remaining--;
 		// strip a path component
 		size_t component_end = remaining;
-		while(remaining != 0 && !IsDirDelimiter(path[remaining-1]))
+		while (remaining != 0 && !IsDirDelimiter(path[remaining-1]))
 			remaining--;
 		size_t component_start = remaining;
 		// strip a dir delimiter
-		while(remaining != 0 && IsDirDelimiter(path[remaining-1]))
+		while (remaining != 0 && IsDirDelimiter(path[remaining-1]))
 			remaining--;
-		if(removed){
+		if (removed) {
 			std::string component = path.substr(component_start,
 					component_end - component_start);
-			if(i)
+			if (i)
 				*removed = component + DIR_DELIM + *removed;
 			else
 				*removed = component;
@@ -658,7 +658,7 @@ std::string RemoveRelativePathComponents(std::string path)
 				path = path.substr(component_with_delim_end, std::string::npos);
 			} else {
 				path = path.substr(0, pos) + DIR_DELIM +
-					path.substr(component_with_delim_end, std::string::npos);
+						path.substr(component_with_delim_end, std::string::npos);
 			}
 			if (pos > 0)
 				pos++;
@@ -688,7 +688,7 @@ std::string AbsolutePath(const std::string &path)
 	return abs_path_str;
 }
 
-const char *GetFilenameFromPath(const char *path)
+const char* GetFilenameFromPath(const char *path)
 {
 	const char *filename = strrchr(path, DIR_DELIM_CHAR);
 	return filename ? filename + 1 : path;
