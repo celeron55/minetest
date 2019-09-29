@@ -34,7 +34,7 @@ extern Settings *g_settings;
 extern std::string g_settings_path;
 
 // Type for a settings changed callback function
-typedef void (*SettingsChangedCallback)(const std::string &name, void * data);
+typedef void (*SettingsChangedCallback)(const std::string &name, void *data);
 
 typedef std::vector<
 			std::pair<

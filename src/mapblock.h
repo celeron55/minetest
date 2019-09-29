@@ -620,7 +620,7 @@ private:
 	int m_refcount = 0;
 };
 
-typedef std::vector<MapBlock* > MapBlockVect;
+typedef std::vector<MapBlock*> MapBlockVect;
 
 inline bool objectpos_over_limit(v3f p)
 {

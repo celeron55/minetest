@@ -737,7 +737,7 @@ int ModApiMainMenu::l_delete_dir(lua_State *L)
 int ModApiMainMenu::l_copy_dir(lua_State *L)
 {
 	const char *source = luaL_checkstring(L, 1);
-	const char *destination	= luaL_checkstring(L, 2);
+	const char *destination = luaL_checkstring(L, 2);
 
 	bool keep_source = true;
 
@@ -766,8 +766,8 @@ int ModApiMainMenu::l_copy_dir(lua_State *L)
 /******************************************************************************/
 int ModApiMainMenu::l_extract_zip(lua_State *L)
 {
-	const char *zipfile	= luaL_checkstring(L, 1);
-	const char *destination	= luaL_checkstring(L, 2);
+	const char *zipfile = luaL_checkstring(L, 1);
+	const char *destination = luaL_checkstring(L, 2);
 
 	std::string absolute_destination = fs::RemoveRelativePathComponents(destination);
 

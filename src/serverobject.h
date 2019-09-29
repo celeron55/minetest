@@ -253,7 +253,7 @@ protected:
 	virtual void onDetach(int parent_id){}
 
 	// Used for creating objects based on type
-	typedef ServerActiveObject*(* Factory)
+	typedef ServerActiveObject*(*Factory)
 			(ServerEnvironment *env, v3f pos,
 			const std::string &data);
 	static void registerType(u16 type, Factory f);

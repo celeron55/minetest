@@ -197,7 +197,7 @@ enum ClearObjectsMode {
 	This is not thread-safe. Server uses an environment mutex.
 */
 
-typedef std::unordered_map<u16, ServerActiveObject* > ServerActiveObjectMap;
+typedef std::unordered_map<u16, ServerActiveObject*> ServerActiveObjectMap;
 
 class ServerEnvironment : public Environment
 {

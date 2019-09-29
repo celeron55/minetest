@@ -66,7 +66,7 @@ private:
 // Asynchornous thread and job management
 class AsyncEngine {
 	friend class AsyncWorkerThread;
-	typedef void (*StateInitializer)(lua_State * L, int top);
+	typedef void (*StateInitializer)(lua_State *L, int top);
 public:
 	AsyncEngine() = default;
 	~AsyncEngine();

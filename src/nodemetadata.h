@@ -70,7 +70,7 @@ private:
 	List of metadata of all the nodes of a block
 */
 
-typedef std::map<v3s16, NodeMetadata* > NodeMetadataMap;
+typedef std::map<v3s16, NodeMetadata*> NodeMetadataMap;
 
 class NodeMetadataList
 {

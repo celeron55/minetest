@@ -42,16 +42,16 @@ class GUIEngine;
 class ModApiBase : protected LuaHelper {
 
 public:
-	static ScriptApiBase*   getScriptApiBase(lua_State *L);
-	static Server*          getServer(lua_State *L);
+	static ScriptApiBase* getScriptApiBase(lua_State *L);
+	static Server* getServer(lua_State *L);
 #ifndef SERVER
-	static Client*          getClient(lua_State *L);
+	static Client* getClient(lua_State *L);
 #endif // !SERVER
 
-	static IGameDef*        getGameDef(lua_State *L);
+	static IGameDef* getGameDef(lua_State *L);
 
-	static Environment*     getEnv(lua_State *L);
-	static GUIEngine*       getGuiEngine(lua_State *L);
+	static Environment* getEnv(lua_State *L);
+	static GUIEngine* getGuiEngine(lua_State *L);
 	// When we are not loading the mod, this function returns "."
 	static std::string      getCurrentModPath(lua_State *L);
 

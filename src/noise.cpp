@@ -37,11 +37,11 @@
 #define NOISE_MAGIC_Z    52591
 #define NOISE_MAGIC_SEED 1013
 
-typedef float (* Interp2dFxn)(
+typedef float (*Interp2dFxn)(
 		float v00, float v10, float v01, float v11,
 		float x, float y);
 
-typedef float (* Interp3dFxn)(
+typedef float (*Interp3dFxn)(
 		float v000, float v100, float v010, float v110,
 		float v001, float v101, float v011, float v111,
 		float x, float y, float z);
