@@ -60,10 +60,6 @@ done
 # Why the hell does uncrustify do stuff like "while(1) ;"?
 sed -i -e 's/)[\t ]\+;$/);/' $header_files $cpp_files
 
-# Fix some random things (what the fuck uncrustify?)
-# typedef T1*T2 -> typedef T1* T2
-sed -i -e 's/typedef \(.*\)\*\(.*\)/typedef \1* \2/g' $header_files $cpp_files
-
 # Remove trailing whitespace
 #sed -i -e 's/[\t ]*$//' $header_files $cpp_files
 
